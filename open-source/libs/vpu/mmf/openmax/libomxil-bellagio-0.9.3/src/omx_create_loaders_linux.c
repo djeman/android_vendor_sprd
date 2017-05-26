@@ -22,8 +22,7 @@
   along with this library; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA
   02110-1301  USA
-  
-  This file is modified in 2015/05/21 to fix the unexpected end of call problem when using Google Hangout.
+
 */
 
 #define _GNU_SOURCE
@@ -50,7 +49,7 @@
  * added checking validation of a pointer variable once free
  * fixed omxloader_registry_filename memory leak
  */
-
+	
 /**
  * This function allocates all the structures needed by the component loaders
  * available in the system and initialize the function pointers of the loader.

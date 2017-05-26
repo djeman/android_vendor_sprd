@@ -15,9 +15,7 @@ LOCAL_CFLAGS := -DOMXILCOMPONENTSPATH=\"/system/lib\" -DCONFIG_DEBUG_LEVEL=0
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/src \
-	$(TOP)/frameworks/av/include/media/stagefright/ \
-	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/ \
-	$(TOP)/frameworks/native/include/media/openmax
+	$(LOCAL_PATH)/include
 
 LOCAL_SHARED_LIBRARIES :=       \
         libutils                \
@@ -72,9 +70,7 @@ LOCAL_SHARED_LIBRARIES :=       \
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/src \
 	$(LOCAL_PATH)/src/base \
-	$(TOP)/frameworks/av/include/media/stagefright/ \
-	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/ \
-	$(TOP)/frameworks/native/include/media/openmax
+	$(LOCAL_PATH)/include
 
 
 LOCAL_COPY_HEADERS_TO := ./bellagio

@@ -86,6 +86,9 @@ OSCL_EXPORT_REF int tsem_timed_down(tsem_t* tsem, unsigned int milliSecondsDelay
     while (tsem->semval == 0) {
         err = pthread_cond_timedwait(&tsem->condition, &tsem->mutex, &final_time);
         if (err != 0) {
+            /** @@ Modified code
+             * fixed a bug in tsem_timed_down function.
+             **/
             tsem->semval++;
         }
     }

@@ -21,7 +21,6 @@
   51 Franklin St, Fifth Floor, Boston, MA
   02110-1301  USA
 
-  This file is modified in 2015/05/07 to play the 1080i video in mobile tv(SM Player).
 */
 
 #include <string.h>
@@ -46,7 +45,7 @@
   *
   * @return OMX_ErrorInsufficientResources if a memory allocation fails
   */
-
+  
 /** @@ Modified code
   * added checking validation of a pointer variable once free.
   * fixed cMIMEType memory corruption

@@ -87,7 +87,7 @@ OMX_ERRORTYPE BOSA_ST_InitComponentLoader(BOSA_COMPONENTLOADER *loader) {
     char *registry_filename;
     int index_readline = 0;
 
-    DEBUG(DEB_LEV_FUNCTION_NAME, "In %s\n", __func__);
+  DEBUG(DEB_LEV_FUNCTION_NAME, "In %s\n", __func__);
 
     registry_filename = componentsRegistryGetFilename();
     omxregistryfp = fopen(registry_filename, "r");

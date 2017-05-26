@@ -274,19 +274,16 @@ OMX_ERRORTYPE base_port_FlushProcessingBuffers(omx_base_PortType *openmaxStandPo
             }
         } else {
             DEBUG(DEB_LEV_FULL_SEQ, "others EmptyBufferDone or FillBufferDone");
-#if 1
-            openmaxStandPort->ReturnBufferFunction(openmaxStandPort, pBuffer);
+			openmaxStandPort->ReturnBufferFunction(openmaxStandPort, pBuffer);
             /** @@ Modified code
             * replaced the using of BufferProcessedCallback function to ReturnBufferFunction function 
             * in base_port_FlushProcessingBuffers to be overrided a drived component.
-            **/
-#else
-            /*replaced by C&M*/
-            (*(openmaxStandPort->BufferProcessedCallback))(
-                    openmaxStandPort->standCompContainer,
-                    omx_base_component_Private->callbackData,
-                    pBuffer);
-#endif
+            **/  
+// replaced by C&M
+// 			(*(openmaxStandPort->BufferProcessedCallback))(
+// 				openmaxStandPort->standCompContainer,
+// 				omx_base_component_Private->callbackData,
+// 				pBuffer);
         }
     }
     /*Port is tunneled and supplier and didn't received all it's buffer then wait for the buffers*/

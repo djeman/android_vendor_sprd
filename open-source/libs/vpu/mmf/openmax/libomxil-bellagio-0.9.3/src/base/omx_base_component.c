@@ -21,8 +21,7 @@
   along with this library; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA
   02110-1301  USA
-  
-  This file is modified in 2015/05/07 to play the 1080i video in mobile tv(SM Player).
+
 */
 
 #ifdef __cplusplus
@@ -1227,6 +1226,7 @@ OSCL_EXPORT_REF OMX_ERRORTYPE omx_base_component_SetParameter(
                 pPortParam->format.video.nFrameWidth            = pPortDef->format.video.nFrameWidth;
                 pPortParam->format.video.nFrameHeight           = pPortDef->format.video.nFrameHeight;
                 pPortParam->format.video.nStride                = pPortDef->format.video.nStride;
+                pPortParam->format.video.nSliceHeight                = pPortDef->format.video.nSliceHeight;
                 pPortParam->format.video.xFramerate             = pPortDef->format.video.xFramerate;
                 pPortParam->format.video.bFlagErrorConcealment  = pPortDef->format.video.bFlagErrorConcealment;
                 pPortParam->format.video.eCompressionFormat     = pPortDef->format.video.eCompressionFormat;

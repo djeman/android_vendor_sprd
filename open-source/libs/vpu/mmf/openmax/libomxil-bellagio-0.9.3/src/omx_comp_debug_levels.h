@@ -75,7 +75,7 @@
  */
 #define DEB_ALL_MESS   255
 
-//#define CONFIG_DEBUG_LEVEL DEB_LEV_SIMPLE_SEQ | DEB_LEV_PARAMS | DEB_LEV_ERR
+#define CONFIG_DEBUG_LEVEL DEB_LEV_SIMPLE_SEQ | DEB_LEV_PARAMS | DEB_LEV_ERR
 
 #ifdef CONFIG_DEBUG_LEVEL
 /** \def DEBUG_LEVEL is the current level do debug output on standard err */

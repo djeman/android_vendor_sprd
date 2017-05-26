@@ -2,17 +2,17 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
-    SprdOMXPlugin.cpp \
+	SprdOMXPlugin.cpp \
 	SprdOMXComponent.cpp \
 	SprdSimpleOMXComponent.cpp
 
 LOCAL_CFLAGS := $(PV_CFLAGS_MINUS_VISIBILITY)
 
-LOCAL_C_INCLUDES:= \
+LOCAL_C_INCLUDES := \
 	$(TOP)/frameworks/native/include/media/hardware \
-	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include	\
-	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax	\
-	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
+	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include \
+	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax \
+	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion
 
 ifeq ($(strip $(TARGET_GPU_PLATFORM)),midgard)
     LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/midgard
@@ -29,7 +29,7 @@ LOCAL_SHARED_LIBRARIES :=       \
 	libstagefright_foundation
 LOCAL_MODULE := libstagefrighthw
 
-LOCAL_CFLAGS:= -DLOG_TAG=\"$(TARGET_BOARD_PLATFORM).libstagefright\"
+LOCAL_CFLAGS := -DLOG_TAG=\"$(TARGET_BOARD_PLATFORM).libstagefright\"
 
 include $(BUILD_SHARED_LIBRARY)
 

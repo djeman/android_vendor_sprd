@@ -1,18 +1,18 @@
-/*
- * Copyright (C) 2011 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//--=========================================================================--
+//  This file is a part of VPU OpenMAX API project
+//-----------------------------------------------------------------------------
+//
+//       This confidential and proprietary software may be used only
+//     as authorized by a licensing agreement from Chips&Media Inc.
+//     In the event of publication, the following notice is applicable:
+//
+//            (C) COPYRIGHT 2006 - 2011  CHIPS&MEDIA INC.
+//                      ALL RIGHTS RESERVED
+//
+//       The entire notice above must be reproduced on all authorized
+//       copies.
+//
+//--=========================================================================--
 
 //#define LOG_NDEBUG 0
 #define LOG_TAG "VPUOMXPlugin"
@@ -25,6 +25,8 @@
 
 #include <dlfcn.h>
 
+#define OMX_CORE_LIBRARY "libomxil-bellagio.so"
+
 namespace android {
 
 static const struct {
@@ -32,7 +34,6 @@ static const struct {
     const char *mRole;
 
 } kComponents[] = {
-
     { "OMX.vpu.video_decoder.avc", "video_decoder.avc" },
     { "OMX.vpu.video_decoder.mpeg2", "video_decoder.mpeg2" },
 };
@@ -45,33 +46,39 @@ OMXPluginBase *createOMXPlugin() {
 }
 
 VPUOMXPlugin::VPUOMXPlugin()
-    : mLibHandle(dlopen("libomxil-bellagio.so", RTLD_NOW)),
-      mInit(NULL),
-      mDeinit(NULL),
-      mComponentNameEnum(NULL),
-      mGetHandle(NULL),
-      mFreeHandle(NULL),
-      mGetRolesOfComponentHandle(NULL) {
+: mLibHandle(dlopen(OMX_CORE_LIBRARY, RTLD_NOW)),
+mInit(NULL),
+mDeinit(NULL),
+mComponentNameEnum(NULL),
+mGetHandle(NULL),
+mFreeHandle(NULL),
+mGetRolesOfComponentHandle(NULL) {
+	
     if (mLibHandle != NULL) {
         mInit = (InitFunc)dlsym(mLibHandle, "OMX_Init");
-        mDeinit = (DeinitFunc)dlsym(mLibHandle, "OMX_DeInit");
-
+        mDeinit = (DeinitFunc)dlsym(mLibHandle, "OMX_Deinit");
+		
         mComponentNameEnum =
             (ComponentNameEnumFunc)dlsym(mLibHandle, "OMX_ComponentNameEnum");
-
+		
         mGetHandle = (GetHandleFunc)dlsym(mLibHandle, "OMX_GetHandle");
         mFreeHandle = (FreeHandleFunc)dlsym(mLibHandle, "OMX_FreeHandle");
-
+		
         mGetRolesOfComponentHandle =
             (GetRolesOfComponentFunc)dlsym(
-                    mLibHandle, "OMX_GetRolesOfComponent");
+			mLibHandle, "OMX_GetRolesOfComponent");
+		
+        //(*mInit)();
     }
+	else {
+		ALOGE("not found libomx-bellagio.so\n");
+	}
 }
 
 VPUOMXPlugin::~VPUOMXPlugin() {
     if (mLibHandle != NULL) {
         (*mDeinit)();
-        
+		
         dlclose(mLibHandle);
         mLibHandle = NULL;
     }
@@ -82,7 +89,8 @@ OMX_ERRORTYPE VPUOMXPlugin::makeComponentInstance(
         const OMX_CALLBACKTYPE *callbacks,
         OMX_PTR appData,
         OMX_COMPONENTTYPE **component) {
-    ALOGI("makeComponentInstance '%s'", name);
+
+    ALOGI("makeComponentInstance: %s", name);
 
     if (mLibHandle == NULL) {
         return OMX_ErrorUndefined;
@@ -94,13 +102,14 @@ OMX_ERRORTYPE VPUOMXPlugin::makeComponentInstance(
     }
 
     return (*mGetHandle)(
-            reinterpret_cast<OMX_HANDLETYPE *>(component),
-            const_cast<char *>(name),
-            appData, const_cast<OMX_CALLBACKTYPE *>(callbacks));
+		reinterpret_cast<OMX_HANDLETYPE *>(component),
+		const_cast<char *>(name),
+		appData, const_cast<OMX_CALLBACKTYPE *>(callbacks));	
 }
 
 OMX_ERRORTYPE VPUOMXPlugin::destroyComponentInstance(
         OMX_COMPONENTTYPE *component) {
+
     if (mLibHandle == NULL) {
         return OMX_ErrorUndefined;
     }
