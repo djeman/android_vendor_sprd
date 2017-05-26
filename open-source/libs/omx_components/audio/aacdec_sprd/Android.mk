@@ -1,4 +1,4 @@
-#ifeq (0,true)
+ifeq (0,true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -25,4 +25,4 @@ LOCAL_MODULE := libstagefright_sprd_aacdec
 LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_SHARED_LIBRARY)
-#endif
+endif

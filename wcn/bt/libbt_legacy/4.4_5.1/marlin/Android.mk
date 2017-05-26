@@ -1,4 +1,4 @@
-ifneq (,$(filter true, $(BOARD_SPRD_WCNBT_MARLIN) $(BOARD_HAVE_BLUETOOTH_SPRD)))
+#ifneq (,$(filter true, $(BOARD_SPRD_WCNBT_MARLIN) $(BOARD_HAVE_BLUETOOTH_SPRD)))
 
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
@@ -40,4 +40,4 @@ LOCAL_MODULE_OWNER := sprd
 include $(LOCAL_PATH)/vnd_buildcfg.mk
 include $(BUILD_SHARED_LIBRARY)
 
-endif
+#endif
