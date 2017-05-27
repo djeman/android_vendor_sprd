@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
- * Copyright (C) 2015 The CyanogenMod Project
+ * Copyright (C) 2015-2016 The CyanogenMod Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,52 +30,50 @@
 #include <sys/types.h>
 
 #include <hardware/lights.h>
+#include <liblights/samsung_lights_helper.h>
 
-#define PANEL_FILE "/sys/class/backlight/panel/brightness"
-#define BUTTON_FILE "/sys/class/sec/sec_touchkey/brightness"
-#define LED_BLINK "/sys/class/sec/led/led_blink"
+#include "samsung_lights.h"
 
 #define COLOR_MASK 0x00ffffff
 
+#define MAX_INPUT_BRIGHTNESS 255
+
+enum component_mask_t {
+    COMPONENT_BACKLIGHT = 0x1,
+    COMPONENT_BUTTON_LIGHT = 0x2,
+    COMPONENT_LED = 0x4,
+};
+
+// Assume backlight is always supported
+static int hw_components = COMPONENT_BACKLIGHT;
+
 static pthread_once_t g_init = PTHREAD_ONCE_INIT;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
+
+struct backlight_config {
+    int cur_brightness, max_brightness;
+};
 
 struct led_config {
     unsigned int color;
     int delay_on, delay_off;
 };
 
+static struct backlight_config g_backlight; // For panel backlight
 static struct led_config g_leds[3]; // For battery, notifications, and attention.
 static int g_cur_led = -1;          // Presently showing LED of the above.
+
+void check_component_support()
+{
+    if (access(BUTTON_BRIGHTNESS_NODE, W_OK) == 0)
+        hw_components |= COMPONENT_BUTTON_LIGHT;
+    if (access(LED_BLINK_NODE, W_OK) == 0)
+        hw_components |= COMPONENT_LED;
+}
 
 void init_g_lock(void)
 {
     pthread_mutex_init(&g_lock, NULL);
-}
-
-static int write_int(char const *path, int value)
-{
-    int fd;
-    static int already_warned;
-
-    already_warned = 0;
-
-    ALOGV("write_int: path %s, value %d", path, value);
-    fd = open(path, O_RDWR);
-
-    if (fd >= 0) {
-        char buffer[20];
-        int bytes = sprintf(buffer, "%d\n", value);
-        int amt = write(fd, buffer, bytes);
-        close(fd);
-        return amt == -1 ? -errno : 0;
-    } else {
-        if (already_warned == 0) {
-            ALOGE("write_int failed to open %s\n", path);
-            already_warned = 1;
-        }
-        return -errno;
-    }
 }
 
 static int write_str(char const *path, const char* value)
@@ -114,9 +112,23 @@ static int set_light_backlight(struct light_device_t *dev __unused,
 {
     int err = 0;
     int brightness = rgb_to_brightness(state);
+    int max_brightness = g_backlight.max_brightness;
+
+    /*
+     * If our max panel brightness is > 255, apply linear scaling across the
+     * accepted range.
+     */
+    if (max_brightness > MAX_INPUT_BRIGHTNESS) {
+        int old_brightness = brightness;
+        brightness = brightness * max_brightness / MAX_INPUT_BRIGHTNESS;
+        ALOGV("%s: scaling brightness %d => %d\n", __func__,
+            old_brightness, brightness);
+    }
 
     pthread_mutex_lock(&g_lock);
-    err = write_int(PANEL_FILE, brightness);
+    err = set_cur_panel_brightness(brightness);
+    if (err == 0)
+        g_backlight.cur_brightness = brightness;
 
     pthread_mutex_unlock(&g_lock);
     return err;
@@ -130,7 +142,7 @@ static int set_light_buttons(struct light_device_t* dev __unused,
 
     pthread_mutex_lock(&g_lock);
 
-    err = write_int(BUTTON_FILE, on ? 1 : 0);
+    err = set_cur_button_brightness(on ? 1 : 0);
 
     pthread_mutex_unlock(&g_lock);
 
@@ -179,7 +191,7 @@ static int write_leds(const struct led_config *led)
     blink[count+1] = '\0';
 
     pthread_mutex_lock(&g_lock);
-    err = write_str(LED_BLINK, blink);
+    err = write_str(LED_BLINK_NODE, blink);
     pthread_mutex_unlock(&g_lock);
 
     return err;
@@ -292,21 +304,44 @@ static int set_light_leds_attention(struct light_device_t *dev __unused,
 static int open_lights(const struct hw_module_t *module, char const *name,
                         struct hw_device_t **device)
 {
+    int requested_component;
     int (*set_light)(struct light_device_t *dev,
         struct light_state_t const *state);
 
-    if (0 == strcmp(LIGHT_ID_BACKLIGHT, name))
+    check_component_support();
+
+    if (0 == strcmp(LIGHT_ID_BACKLIGHT, name)) {
+        requested_component = COMPONENT_BACKLIGHT;
         set_light = set_light_backlight;
-    /*else if (0 == strcmp(LIGHT_ID_BUTTONS, name))
+    } else if (0 == strcmp(LIGHT_ID_BUTTONS, name)) {
+        requested_component = COMPONENT_BUTTON_LIGHT;
         set_light = set_light_buttons;
-    else if (0 == strcmp(LIGHT_ID_BATTERY, name))
+    } else if (0 == strcmp(LIGHT_ID_BATTERY, name)) {
+        requested_component = COMPONENT_LED;
         set_light = set_light_leds_battery;
-    else if (0 == strcmp(LIGHT_ID_NOTIFICATIONS, name))
+    } else if (0 == strcmp(LIGHT_ID_NOTIFICATIONS, name)) {
+        requested_component = COMPONENT_LED;
         set_light = set_light_leds_notifications;
-    else if (0 == strcmp(LIGHT_ID_ATTENTION, name))
-        set_light = set_light_leds_attention;*/
-    else
+    } else if (0 == strcmp(LIGHT_ID_ATTENTION, name)) {
+        requested_component = COMPONENT_LED;
+        set_light = set_light_leds_attention;
+    } else {
         return -EINVAL;
+    }
+
+    if ((hw_components & requested_component) == 0) {
+        ALOGV("%s: component 0x%x not supported by device", __func__,
+            requested_component);
+        return -EINVAL;
+    }
+
+    int max_brightness = get_max_panel_brightness();
+    if (max_brightness < 0) {
+        ALOGE("%s: failed to read max panel brightness, fallback to 255!",
+            __func__);
+        max_brightness = 255;
+    }
+    g_backlight.max_brightness = max_brightness;
 
     pthread_once(&g_init, init_g_lock);
 
@@ -337,4 +372,3 @@ struct hw_module_t HAL_MODULE_INFO_SYM = {
     .author = "The CyanogenMod Project",
     .methods = &lights_module_methods,
 };
-
