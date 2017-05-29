@@ -141,6 +141,8 @@ struct image_info download_image_info[] = {
 		//fdl
 		#ifdef PARTITION_PATH_4.4
 		"/dev/block/platform/sprd-sdhci.3/by-name/wcnfdl",
+		#elif SAMSUNG
+		"/system/etc/firmware/sc2331_fdl.bin",
 		#else
 		"/dev/block/platform/sdio_emmc/by-name/wcnfdl",
 		#endif
@@ -151,6 +153,8 @@ struct image_info download_image_info[] = {
 		//img
 		#ifdef PARTITION_PATH_4.4
 		"/dev/block/platform/sprd-sdhci.3/by-name/wcnmodem",
+		#elif SAMSUNG
+		"/system/etc/firmware/sc2331_fw.bin",
 		#else
 		"/dev/block/platform/sdio_emmc/by-name/wcnmodem",
 		#endif
