@@ -25,6 +25,7 @@
 #define LTE_MODEM_ENABLE_PROP        "persist.modem.l.enable"
 #define LF_MODEM_ENABLE_PROP        "persist.modem.lf.enable"
 #define TL_MODEM_ENABLE_PROP        "persist.modem.tl.enable"
+char SP_ENABLE_PROP[25]; // persist.modem.*.enable
 
 // modem is external or not, default is internal
 #define MODEM_EXTERNAL_PROP        "ro.modem.external.enable"

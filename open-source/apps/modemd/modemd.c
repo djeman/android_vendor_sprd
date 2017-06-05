@@ -28,9 +28,10 @@ int  engpc_client_fd[MAX_CLIENT_NUM] ;// engpc_client that notify modemd start/s
 static fd_set engpcFds;//engcontrol_listen thread listen(select) engpc_fd
 static int nengfds = 0; //max engpc_fd ;
 
- int notifypipe[2] = {-1}; //for engcontrol_thread nofity engcontrol_listen that some engpc_cil connect
+int notifypipe[2] = {-1}; //for engcontrol_thread nofity engcontrol_listen that some engpc_cil connect
 
 static int ttydev_fd;
+char modem_selected[3] = {0};
 
 /*
  * Returns 1 if found, 0 otherwise. needle must be null-terminated.
@@ -687,17 +688,24 @@ static void *modemd_engcontrol_thread()
     return NULL;
 }
 
-void start_modem (char *modem)
+void start_modem(char *modem)
 {
     pthread_t tid1, tid2;
     static int blk = 0;
+    char modem_enable[PROPERTY_VALUE_MAX];
     char modem_dev[PROPERTY_VALUE_MAX];
     int vlx = 0;
 
-    MODEMD_LOGD("start_modem() get ModemType %s", modem);
+    snprintf(SP_ENABLE_PROP, sizeof(SP_ENABLE_PROP), "persist.modem.%s.enable", modem);
+    property_get(SP_ENABLE_PROP, modem_enable, "");
+    if (strcmp(modem_enable, "1") != 0) {
+        MODEMD_LOGD("%s modem is not enabled", modem);
+        return;
+    }
+    strcpy(modem_selected, modem);
 
     /* if modem is not alive, wait modem alive here */
-    if(modem_alive != 1){
+    if (modem_alive != 1) {
         pthread_mutex_lock(&aliveMutex);
         pthread_cond_wait(&aliveCond, &aliveMutex);
         pthread_mutex_unlock(&aliveMutex);
@@ -708,9 +716,10 @@ void start_modem (char *modem)
     property_get(SP_PROC_PROP, modem_dev, "");
 
     if (strcmp(modem, "t") == 0 || strcmp(modem, "w") == 0 || strcmp(modem, "l") == 0
-            || strcmp(modem, "lf") == 0 || strcmp(modem, "tl") == 0){
+            || strcmp(modem, "lf") == 0 || strcmp(modem, "tl") == 0) {
         vlx = 0;
     }
+
     if (vlx == 0) {
         MODEMD_LOGD("It's %s native version", modem);
         //start_service(modem, 0, 0);
@@ -772,8 +781,7 @@ reconnect:
            goto reconnect;
        }
 
-       //get modem type from prop
-       property_get("ro.radio.modemtype",modem, "");
+       strcpy(modem, modem_selected);
        MODEMD_LOGD("the modem type is %s!", modem);
 
        MODEMD_LOGD("%s: read numRead=%d, buf=%s", __func__, numRead, buf);
@@ -852,14 +860,12 @@ int main(int argc, char *argv[])
      */
 
     if (!is_external_modem()) {
-        property_get("ro.radio.modemtype", ModemType, "");
-        if (strcmp(ModemType, "") != 0) {
-            /* start td/w/l/tl/lf modem*/
-            start_modem(ModemType);
-        } else {
-            MODEMD_LOGE("ERROR: property for the modem type isn't configured.");
-            return 0;
-        }
+        /* start td/w/l/tl/lf modem*/
+        start_modem("t");
+        start_modem("w");
+        start_modem("l");
+        start_modem("tl");
+        start_modem("lf");
     } else {
         /* start external  modem*/
         start_ext_modem();
