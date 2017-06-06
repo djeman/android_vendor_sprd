@@ -17,6 +17,7 @@
 #define ENG_USB_PROPERTY	    "persist.sys.sprd.usbfactorymode"
 #define RAWDATA_PROPERTY		"sys.rawdata.ready"
 #define ENG_ATDIAG_AT			"AT+SPBTWIFICALI="
+#define ENG_ATRIL_BUFFER_SIZE 		8192
 #define ENG_BUFFER_SIZE			2048
 #define ENG_CMDLINE_LEN			1024
 #define ENG_DEV_PATH_LEN        260
@@ -53,5 +54,11 @@ typedef struct eng_dev_info {
     eng_host_int_t host_int;
     eng_modem_int_t modem_int;
 }eng_dev_info_t;
+
+typedef struct eng_atril_samsung {
+    int socket;
+    int client_fd;
+    int uart_fd;
+}eng_atril_samsung_t;
 
 #endif

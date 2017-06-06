@@ -13,16 +13,16 @@
 int eng_file_lock(void)
 {
     int fd;
-    if ((fd = open("/data/local/englog/file_lock.test", O_CREAT|O_RDONLY, 0444)) != -1) {
-        ENG_LOG("open data/local/englog/file_lock.test fd = %d\n",fd);
+    if ((fd = open("/data/file_lock.test", O_CREAT|O_RDONLY, 0444)) != -1) {
+        ENG_LOG("open data/file_lock.test fd = %d\n",fd);
         if (flock(fd,LOCK_EX | LOCK_NB) != -1) {
-            ENG_LOG("lock /data/local/englog/file_lock.test \n");
+            ENG_LOG("lock /data/file_lock.test \n");
         }
         return fd;
      } else {
-		 ENG_LOG("open data/local/englog/file_lock.test fail %s\n", strerror(errno));
-	 }
-      return -1;
+        ENG_LOG("open data/file_lock.test fail %s\n", strerror(errno));
+     }
+     return -1;
 }
 
 int eng_file_unlock(int fd)

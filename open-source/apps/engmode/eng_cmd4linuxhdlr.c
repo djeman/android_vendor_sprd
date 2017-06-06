@@ -33,6 +33,7 @@
 #else
 #define ENG_KEYPAD_PATH "/sys/devices/platform/sprd-keypad/emulate"
 #endif
+
 extern int g_reset;
 extern int g_setuart_ok;
 extern eng_dev_info_t *g_dev_info;
@@ -46,6 +47,10 @@ extern int eng_atdiag_euthdlr(char *buf,int len,char* rsp,int module_index);
 #endif
 extern void eng_check_factorymode(int normal_cali);
 extern int turnoff_lcd_backlight(void);
+extern char* SendRequestToATD(char* req, int reqlen);
+extern void direct_write(char* rsp);
+extern int eng_atd_direct_write(int chan);
+
 static unsigned char g_buffer[ENG_BUFFER_SIZE];
 static int eng_linuxcmd_rpoweron(char *req, char *rsp);
 static int eng_linuxcmd_keypad(char *req, char *rsp);
@@ -75,10 +80,13 @@ static int eng_linuxcmd_gpseutmode(char *req,char *rsp);
 static int eng_linuxcmd_batttest(char *req,char *rsp);
 static int eng_linuxcmd_temptest(char *req,char *rsp);
 static int eng_linuxcmd_rtctest(char *req,char *rsp);
-static int eng_linuxcmd_setuartspeed(char* req, char* rsp);
-static int eng_linuxcmd_wiqpb(char* req, char* rsp);
-
-
+// static int eng_linuxcmd_setuartspeed(char* req, char* rsp);
+// static int eng_linuxcmd_wiqpb(char* req, char* rsp);
+static int eng_linuxcmd_send2samsung(char* req, char* rsp);
+static int eng_linuxcmd_send2samsung_syssleep(char* req, char* rsp);
+static int eng_linuxcmd_batgetlevel(char *req, char *rsp);
+static int eng_linuxcmd_e0(char *req, char *rsp);
+static int eng_linuxcmd_e1(char *req, char *rsp);
 
 
 static struct eng_linuxcmd_str eng_linuxcmd[] = {
@@ -99,20 +107,155 @@ static struct eng_linuxcmd_str eng_linuxcmd[] = {
     {CMD_ETSCHECKRESET,  CMD_TO_AP,     "AT+ETSCHECKRESET", eng_linuxcmd_getfactoryreset},
     {CMD_SIMCHK,         CMD_TO_AP,     "AT+SIMCHK",        eng_linuxcmd_simchk},
     {CMD_INFACTORYMODE,  CMD_TO_AP,     "AT+FACTORYMODE",   eng_linuxcmd_infactorymode},
-    {CMD_FASTDEEPSLEEP,  CMD_TO_APCP,   "AT+SYSSLEEP",      eng_linuxcmd_fastdeepsleep},
+    {CMD_FASTDEEPSLEEP,  CMD_TO_APCP,   "AT+SYSSLEEP",      eng_linuxcmd_send2samsung_syssleep},
     {CMD_CHARGERTEST,    CMD_TO_AP,     "AT+CHARGERTEST",   eng_linuxcmd_chargertest},
     {CMD_SPBTTEST,       CMD_TO_AP,     "AT+SPBTTEST",      eng_linuxcmd_bteutmode},
     {CMD_SPBTTEST,       CMD_TO_AP,     "AT+SPBLETEST",     eng_linuxcmd_bleeutmode},
     {CMD_SPWIFITEST,     CMD_TO_AP,     "AT+SPWIFITEST",    eng_linuxcmd_wifieutmode},
     {CMD_SPGPSTEST,      CMD_TO_AP,     "AT+SPGPSTEST",     eng_linuxcmd_gpseutmode},
     {CMD_ATDIAG,         CMD_TO_AP,     "+SPBTWIFICALI",    eng_linuxcmd_atdiag},
-    {CMD_BATTTEST,       CMD_TO_AP,     "AT+BATTTEST",      eng_linuxcmd_batttest},
-    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST",      eng_linuxcmd_temptest},
-    {CMD_RTCTEST,        CMD_TO_AP,     "AT+RTCCTEST",      eng_linuxcmd_rtctest},
-    {CMD_SETUARTSPEED,   CMD_TO_AP,     "AT+SETUARTSPEED",  eng_linuxcmd_setuartspeed},
-    {CMD_SPWIQ,          CMD_TO_AP,     "AT+SPWIQ",         eng_linuxcmd_wiqpb},
-};
+    
+    {CMD_E0,             CMD_TO_AP,     "ATE0",             eng_linuxcmd_e0},
+    {CMD_E1,             CMD_TO_AP,     "ATE1",             eng_linuxcmd_e1},
 
+    {CMD_HEADINFO,       CMD_TO_AP,     "AT+HEADINFO",      eng_linuxcmd_send2samsung},
+    {CMD_MITSRFTS,       CMD_TO_AP,     "AT+MITSRFTS",      eng_linuxcmd_send2samsung},
+    {CMD_RTCTEST,        CMD_TO_AP,     "AT+RTCCTEST",      eng_linuxcmd_send2samsung},
+    {CMD_CPRMTEST,       CMD_TO_AP,     "AT+CPRMTEST",      eng_linuxcmd_send2samsung},
+    {CMD_DEVCONINFO,     CMD_TO_AP,     "AT+DEVCONINFO",    eng_linuxcmd_send2samsung},
+    {CMD_BATGETLEVEL,    CMD_TO_AP,     "AT+BATGETLEVEL?",  eng_linuxcmd_batgetlevel},
+
+    {CMD_FCEPTEST,       CMD_TO_AP,     "AT+FCEPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_FCESTEST,       CMD_TO_AP,     "AT+FCESTEST",      eng_linuxcmd_send2samsung},
+
+    {CMD_VERSNAME,       CMD_TO_AP,     "AT+VERSNAME",      eng_linuxcmd_send2samsung},
+    {CMD_FCBTTEST,       CMD_TO_AP,     "AT+FCBTTEST",      eng_linuxcmd_send2samsung},
+    {CMD_FCFMTEST,       CMD_TO_AP,     "AT+FCFMTEST",      eng_linuxcmd_send2samsung},
+    {CMD_FCMPTEST,       CMD_TO_AP,     "AT+FCMPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_IMEMTEST,       CMD_TO_AP,     "AT+IMEMTEST",      eng_linuxcmd_send2samsung},
+    {CMD_EMEMTEST,       CMD_TO_AP,     "AT+EMEMTEST",      eng_linuxcmd_send2samsung},
+    {CMD_GEOMAGSS,       CMD_TO_AP,     "AT+GEOMAGSS",      eng_linuxcmd_send2samsung},
+    {CMD_SPKSTEST,       CMD_TO_AP,     "AT+SPKSTEST",      eng_linuxcmd_send2samsung},
+    {CMD_PROXIMIT,       CMD_TO_AP,     "AT+PROXIMIT",      eng_linuxcmd_send2samsung},
+    {CMD_GPSSTEST,       CMD_TO_AP,     "AT+GPSSTEST",      eng_linuxcmd_send2samsung},
+    {CMD_HDMITEST,       CMD_TO_AP,     "AT+HDMITEST",      eng_linuxcmd_send2samsung},
+    {CMD_NFCMTEST,       CMD_TO_AP,     "AT+NFCMTEST",      eng_linuxcmd_send2samsung},
+    {CMD_FSBUILDC,       CMD_TO_AP,     "AT+FSBUILDC",      eng_linuxcmd_send2samsung},
+    {CMD_FACTOLOG,       CMD_TO_AP,     "AT+FACTOLOG",      eng_linuxcmd_send2samsung},
+    {CMD_ACSENSOR,       CMD_TO_AP,     "AT+ACSENSOR",      eng_linuxcmd_send2samsung},
+    {CMD_CAMETEST,       CMD_TO_AP,     "AT+CAMETEST",      eng_linuxcmd_send2samsung},
+    {CMD_VIBRTEST,       CMD_TO_AP,     "AT+VIBRTEST",      eng_linuxcmd_send2samsung},
+    {CMD_BATTTEST,       CMD_TO_AP,     "AT+BATTTEST",      eng_linuxcmd_send2samsung},
+
+    {CMD_WIFITEST,       CMD_TO_AP,     "AT+WIFITEST",      eng_linuxcmd_send2samsung},
+    {CMD_GYROSCOP,       CMD_TO_AP,     "AT+GYROSCOP",      eng_linuxcmd_send2samsung},
+    {CMD_AROTATEC,       CMD_TO_AP,     "AT+AROTATEC",      eng_linuxcmd_send2samsung},
+    {CMD_FUNCTEST,       CMD_TO_AP,     "AT+FUNCTEST",      eng_linuxcmd_send2samsung},
+    {CMD_SETTESTNV,      CMD_TO_AP,     "AT+SETTESTNV",     eng_linuxcmd_send2samsung},
+    {CMD_GETTESTNV,      CMD_TO_AP,     "AT+GETTESTNV",     eng_linuxcmd_send2samsung},
+    {CMD_SETFULLTESTNV,  CMD_TO_AP,     "AT+SETFULLTESTNV", eng_linuxcmd_send2samsung},
+    {CMD_GETFULLTESTNV,  CMD_TO_AP,     "AT+GETFULLTESTNV", eng_linuxcmd_send2samsung},
+    {CMD_SETFULLHISTNV,  CMD_TO_AP,     "AT+GETFULLHISTNV", eng_linuxcmd_send2samsung},
+    {CMD_LOGERASE,       CMD_TO_AP,     "AT+LOGERASE",      eng_linuxcmd_send2samsung},
+    {CMD_SETFDATA,       CMD_TO_AP,     "AT+SETFDATA",      eng_linuxcmd_send2samsung},
+    {CMD_SETFULLFDATA,   CMD_TO_AP,     "AT+SETFULLFDATA",  eng_linuxcmd_send2samsung},
+    {CMD_GETFDATA,       CMD_TO_AP,     "AT+GETFDATA",      eng_linuxcmd_send2samsung},
+    {CMD_GETFULLFDATA,   CMD_TO_AP,     "AT+GETFULLFDATA",  eng_linuxcmd_send2samsung},
+    {CMD_HWINDICK,       CMD_TO_AP,     "AT+HWINDICK",      eng_linuxcmd_send2samsung},
+    {CMD_SERIALNO,       CMD_TO_AP,     "AT+SERIALNO",      eng_linuxcmd_send2samsung},
+    {CMD_FAILDUMP,       CMD_TO_AP,     "AT+FAILDUMP",      eng_linuxcmd_send2samsung},
+    {CMD_KEYHOLD,        CMD_TO_AP,     "AT+KEYHOLD",       eng_linuxcmd_send2samsung},
+    {CMD_BATTCALI,       CMD_TO_AP,     "AT+BATTCALI",      eng_linuxcmd_send2samsung},
+    {CMD_PRECONFG,       CMD_TO_AP,     "AT+PRECONFG",      eng_linuxcmd_send2samsung},
+    {CMD_BTIDTEST,       CMD_TO_AP,     "AT+BTIDTEST",      eng_linuxcmd_send2samsung},
+    {CMD_WIFIIDRV,       CMD_TO_AP,     "AT+WIFIIDRW",      eng_linuxcmd_send2samsung},
+    {CMD_HDCPTEST,       CMD_TO_AP,     "AT+HDCPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_KSTRINGB,       CMD_TO_AP,     "AT+KSTRINGB",      eng_linuxcmd_send2samsung},
+    {CMD_MEMOSIZE,       CMD_TO_AP,     "AT+MEMOSIZE",      eng_linuxcmd_send2samsung},
+    {CMD_DISPSIZE,       CMD_TO_AP,     "AT+DISPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_PORTCHAN,       CMD_TO_AP,     "AT+PORTCHAN",      eng_linuxcmd_send2samsung},
+    {CMD_MSLSECUR,       CMD_TO_AP,     "AT+MSLSECUR",      eng_linuxcmd_send2samsung},
+    {CMD_AKSEEDNO,       CMD_TO_AP,     "AT+AKSEEDNO",      eng_linuxcmd_send2samsung},
+    {CMD_IMEITEST,       CMD_TO_AP,     "AT+IMEITEST",      eng_linuxcmd_send2samsung},
+    {CMD_PRODCODE,       CMD_TO_AP,     "AT+PRODCODE",      eng_linuxcmd_send2samsung},
+
+    {CMD_SCMMONIT,       CMD_TO_AP,     "AT+SCMMONIT",      eng_linuxcmd_send2samsung},
+
+    {CMD_CALIDATE,       CMD_TO_AP,     "AT+CALIDATE",      eng_linuxcmd_send2samsung},
+    {CMD_LVOFLOCK,       CMD_TO_AP,     "AT+LVOFLOCK",      eng_linuxcmd_send2samsung},
+
+    {CMD_DETALOCK,       CMD_TO_AP,     "AT+DETALOCK",      eng_linuxcmd_send2samsung},
+    {CMD_FUELGAIC,       CMD_TO_AP,     "AT+FUELGAIC",      eng_linuxcmd_send2samsung},
+    {CMD_FACTORSD,       CMD_TO_AP,     "AT+FACTORST",      eng_linuxcmd_send2samsung},
+    {CMD_RSTVERIF,       CMD_TO_AP,     "AT+RSTVERIF",      eng_linuxcmd_send2samsung},
+    {CMD_LOCKREAD,       CMD_TO_AP,     "AT+LOCKREAD",      eng_linuxcmd_send2samsung},
+    {CMD_TOUCHKEY,       CMD_TO_AP,     "AT+TOUCHKEY",      eng_linuxcmd_send2samsung},
+    {CMD_TSPPTEST,       CMD_TO_AP,     "AT+TSPPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_DEBUGLVC,       CMD_TO_AP,     "AT+DEBUGLVC",      eng_linuxcmd_send2samsung},
+    {CMD_IMEICERT,       CMD_TO_AP,     "AT+IMEICERT",      eng_linuxcmd_send2samsung},
+    {CMD_IMEISIGN,       CMD_TO_AP,     "AT+IMEISIGN",      eng_linuxcmd_send2samsung},
+    {CMD_WPROTECT,       CMD_TO_AP,     "AT+WPROTECT",      eng_linuxcmd_send2samsung},
+    {CMD_SECUREOS,       CMD_TO_AP,     "AT+SECUREOS",      eng_linuxcmd_send2samsung},
+    {CMD_SYSSCOPE,       CMD_TO_AP,     "AT+SYSSCOPE",      eng_linuxcmd_send2samsung},
+    {CMD_KEY,            CMD_TO_AP,     "AT+KEY",           eng_linuxcmd_send2samsung},
+    {CMD_TOUCH,          CMD_TO_AP,     "AT+TOUCH",         eng_linuxcmd_send2samsung},
+    {CMD_MICSD,          CMD_TO_AP,     "AT+MICSD?",        eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,0,0", eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,0,3", eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,0,6", eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,1,0", eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,1,7", eng_linuxcmd_send2samsung},
+    {CMD_TEMPTEST,       CMD_TO_AP,     "AT+TEMPTEST=1,1,1", eng_linuxcmd_send2samsung},
+    {CMD_INITTEST,       CMD_TO_AP,     "AT+INITTEST",      eng_linuxcmd_send2samsung},
+    {CMD_CALLCONN,       CMD_TO_AP,     "AT+CALLCONN=0",    eng_linuxcmd_send2samsung},
+    {CMD_CALLCONN,       CMD_TO_APCP,   "AT+CALLCONN=1",    eng_linuxcmd_send2samsung},
+    {CMD_FAILHIST,       CMD_TO_AP,     "AT+FAILHIST",      eng_linuxcmd_send2samsung},
+    {CMD_LOOPTEST,       CMD_TO_AP,     "AT+LOOPTEST",      eng_linuxcmd_send2samsung},
+    {CMD_MULFUNCF,       CMD_TO_AP,     "AT+MULFUNCF",      eng_linuxcmd_send2samsung},
+    {CMD_SVCIFPGM,       CMD_TO_AP,     "AT+SVCIFPGM",      eng_linuxcmd_send2samsung},
+    {CMD_WHO,            CMD_TO_AP,     "AT+WHO",           eng_linuxcmd_send2samsung},
+    {CMD_NFCTESTSCRIP,   CMD_TO_AP,     "AT+NFCTESTSCRIPT", eng_linuxcmd_send2samsung},
+    {CMD_SIMSTATE,       CMD_TO_AP,     "AT+SIMSTATE",      eng_linuxcmd_send2samsung},
+    {CMD_GETCTSIM,       CMD_TO_AP,     "AT+GETCTSIM",      eng_linuxcmd_send2samsung},
+    {CMD_LAUNCHPKG,      CMD_TO_AP,     "AT+LAUNCH_PKG",    eng_linuxcmd_send2samsung},
+    {CMD_GETCOUNTIMAGE,  CMD_TO_AP,     "AT+GET_COUNT_IMAGE", eng_linuxcmd_send2samsung},
+    {CMD_GETCOUNTVIDEO,  CMD_TO_AP,     "AT+GET_COUNT_VIDEO", eng_linuxcmd_send2samsung},
+    {CMD_GETEMERGENCYRESULT, CMD_TO_AP, "AT+GETEMERGENCYRESULT", eng_linuxcmd_send2samsung},
+    {CMD_RAMSIZEC,       CMD_TO_AP,     "AT+RAMSIZEC",      eng_linuxcmd_send2samsung},
+
+    {CMD_SWDLMODE,       CMD_TO_AP,     "AT+SWDLMODE",      eng_linuxcmd_send2samsung},
+    {CMD_CBLKFTDF,       CMD_TO_AP,     "AT+CBLKFTDF",      eng_linuxcmd_send2samsung},
+    {CMD_FIRMVERS,       CMD_TO_AP,     "AT+FIRMVERS",      eng_linuxcmd_send2samsung},
+    {CMD_POWRESET,       CMD_TO_AP,     "AT+POWRESET",      eng_linuxcmd_send2samsung},
+    {CMD_SIMDETECT,      CMD_TO_AP,     "AT+SIMDETEC",      eng_linuxcmd_send2samsung},
+    {CMD_ISDBTEST,       CMD_TO_AP,     "AT+ISDBTEST",      eng_linuxcmd_send2samsung},
+    {CMD_CORECTRL,       CMD_TO_AP,     "AT+CORECTRL",      eng_linuxcmd_send2samsung},
+    {CMD_OTGGTEST,       CMD_TO_AP,     "AT+OTGGTEST",      eng_linuxcmd_send2samsung},
+    {CMD_GRIPSENS,       CMD_TO_AP,     "AT+GRIPSENS",      eng_linuxcmd_send2samsung},
+
+    {CMD_LVOFLOCK,       CMD_TO_AP,     "AT+LOCKINFO",      eng_linuxcmd_send2samsung},
+    {CMD_CONTROLN,       CMD_TO_AP,     "AT+CONTROLN",      eng_linuxcmd_send2samsung},
+
+    {CMD_BACKUPCHK,      CMD_TO_AP,     "AT+BAKUPCHK",      eng_linuxcmd_send2samsung},
+    {CMD_REACTIVE,       CMD_TO_AP,     "AT+REACTIVE",      eng_linuxcmd_send2samsung},
+};
+/*
+static struct eng_linuxcmd_str eng_linuxcmd_cali[] = {
+    {CMD_CALI,           CMD_TO_AP,     "AT+GETFULLTESTNV", eng_linuxcmd_getfulltestnv},
+    {CMD_CALI,           CMD_TO_AP,     "AT+GETTESTNV",     eng_linuxcmd_gettestnv},
+    {CMD_CALI,           CMD_TO_AP,     "AT+HEADINFO",      eng_linuxcmd_headinfo},
+    {CMD_CALI,           CMD_TO_AP,     "AT+VERSNAME=1,2,0",eng_linuxcmd_versname},
+    {CMD_CALI,           CMD_TO_AP,     "AT+RTCCTEST",      eng_linuxcmd_rtctest},
+    {CMD_CALI,           CMD_TO_APCP,   "AT+SYSSLEEP",      eng_linuxcmd_fastsleep},
+    {CMD_CALI,           CMD_TO_AP,     "AT+TEMPTEST=1,0,0",eng_linuxcmd_temptest},
+    {CMD_CALI,           CMD_TO_AP,     "AT+TEMPTEST=1,1,0",eng_linuxcmd_temptest},
+    {CMD_CALI,           CMD_TO_AP,     "AT+GPSSTEST",      eng_linuxcmd_gpstest},
+    {CMD_CALI,           CMD_TO_AP,     "AT+BATTTEST",      eng_linuxcmd_batttest},
+    {CMD_CALI,           CMD_TO_AP,     "AT+DISPTEST",      eng_linuxcmd_disptest},
+    {CMD_CALI,           CMD_TO_AP,     "AT+POWRESET",      eng_linuxcmd_powreset2cal},
+    {CMD_CALI,           CMD_TO_AP,     "AT+SIMDETEC=1,4",  eng_linuxcmd_simdetec},
+}
+*/
 /** returns 1 if line starts with prefix, 0 if it does not */
 static int eng_cmdstartwith(const char *line, const char *prefix)
 {
@@ -216,7 +359,7 @@ int eng_linuxcmd_factoryreset(char *req, char *rsp)
     system("rm -r /cache/recovery");
 
     //mkdir ENG_RECOVERYDIR
-    if(mkdir(ENG_RECOVERYDIR, mode) == -1) {
+    if (mkdir(ENG_RECOVERYDIR, mode) == -1) {
         ret = 0;
         ENG_LOG("%s: mkdir %s fail [%s]\n",__FUNCTION__, ENG_RECOVERYDIR, strerror(errno));
         goto out;
@@ -225,12 +368,12 @@ int eng_linuxcmd_factoryreset(char *req, char *rsp)
     //create ENG_RECOVERYCMD
     fd = open(ENG_RECOVERYCMD, O_CREAT|O_RDWR, 0666);
 
-    if(fd < 0){
+    if (fd < 0) {
         ret = 0;
         ENG_LOG("%s: open %s fail [%s]\n",__FUNCTION__, ENG_RECOVERYCMD, strerror(errno));
         goto out;
     }
-    if(write(fd, cmd, strlen(cmd)) < 0) {
+    if (write(fd, cmd, strlen(cmd)) < 0) {
         ret = 0;
         ENG_LOG("%s: write %s fail [%s]\n",__FUNCTION__, ENG_RECOVERYCMD, strerror(errno));
         goto out;
@@ -266,30 +409,28 @@ int eng_linuxcmd_getfactoryreset(char *req, char *rsp)
     return 0;
 }
 
-
 int eng_linuxcmd_keypad(char *req, char *rsp)
 {
     int ret = 0, fd;
     char *keycode;
-    ENG_LOG("%s: req=%s\n",__FUNCTION__, req);
+    ENG_LOG("%s: req=%s\n", __FUNCTION__, req);
 
     keycode = strchr(req, '=');
 
-    if(keycode == NULL) {
+    if (keycode == NULL) {
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
         ret = -1;
     } else {
         keycode++;
-        ENG_LOG("%s: keycode = %s\n",__FUNCTION__, keycode);
+        ENG_LOG("%s: keycode = %s\n", __FUNCTION__, keycode);
         fd = open(ENG_KEYPAD_PATH, O_RDWR);
-        if(fd >= 0) {
-            ENG_LOG("%s: send keycode to emulator\n",__FUNCTION__);
+        if (fd >= 0) {
+            ENG_LOG("%s: send keycode to emulator\n", __FUNCTION__);
             write(fd, keycode, strlen(keycode));
-        } else {
-            ENG_LOG("%s: open %s fail [%s]\n",__FUNCTION__, ENG_KEYPAD_PATH, strerror(errno));
-        }
-        if(fd >= 0)
             close(fd);
+        } else {
+            ENG_LOG("%s: open %s fail [%s]\n", __FUNCTION__, ENG_KEYPAD_PATH, strerror(errno));
+        }
         sprintf(rsp, "%s%s", SPRDENG_OK, ENG_STREND);
         ret = 0;
     }
@@ -305,27 +446,27 @@ int eng_linuxcmd_vbat(char *req, char *rsp)
     char buffer[16];
 
     fd = open(ENG_BATVOL, O_RDONLY);
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s: open %s fail [%s]",__FUNCTION__, ENG_BATVOL, strerror(errno));
         ret = 0;
     }
 
-    if(ret==1) {
+    if (ret==1) {
         memset(buffer, 0, sizeof(buffer));
         len = read(fd, buffer, sizeof(buffer));
-        if(len > 0){
+        if (len > 0) {
             voltage = atoi(buffer);
             ENG_LOG("%s: buffer=%s; voltage=%d\n",__FUNCTION__, buffer, voltage);
             vol = ((float) voltage) * 0.001;
             sprintf(rsp, "%.3g%s%s%s", vol, ENG_STREND, SPRDENG_OK, ENG_STREND);
-        }else {
+        } else {
             sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
         }
     } else {
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     }
 
-    if(fd >= 0)
+    if (fd >= 0)
         close(fd);
 
     ENG_LOG("%s: rsp=%s\n",__FUNCTION__,rsp);
@@ -428,15 +569,15 @@ int eng_linuxcmd_stopchg(char *req, char *rsp)
 {
     int fd;
     int ret = 1;
-    char ok[]="1";
+    char ok[] = "1";
     fd = open(ENG_STOPCHG, O_WRONLY);
 
-    if(fd < 0){
-        ENG_LOG("%s: open %s fail [%s]",__FUNCTION__, ENG_BATVOL, strerror(errno));
+    if (fd < 0) {
+        ENG_LOG("%s: open %s fail [%s]", __FUNCTION__, ENG_BATVOL, strerror(errno));
         ret = 0;
     }
 
-    if(ret == 1) {
+    if (ret == 1) {
         ret=write(fd, ok, strlen(ok));
         if (ret < 0)
             sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
@@ -446,7 +587,7 @@ int eng_linuxcmd_stopchg(char *req, char *rsp)
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     }
 
-    if(fd >= 0)
+    if (fd >= 0)
         close(fd);
     ENG_LOG("%s: rsp=%s\n",__FUNCTION__,rsp);
     return 0;
@@ -492,7 +633,7 @@ int eng_linuxcmd_setbtaddr(char *req, char *rsp)
     ENG_LOG("%s: req=%s\n",__FUNCTION__, req);
 
     ptr = strchr(req, '"');
-    if(ptr == NULL){
+    if (ptr == NULL) {
         ENG_LOG("%s: req %s ERROR no start \"\n",__FUNCTION__, req);
         return -1;
     }
@@ -500,7 +641,7 @@ int eng_linuxcmd_setbtaddr(char *req, char *rsp)
     ptr++;
 
     endptr = strchr(ptr, '"');
-    if(endptr == NULL){
+    if (endptr == NULL) {
         ENG_LOG("%s: req %s ERROR no end \"\n",__FUNCTION__, req);
         return -1;
     }
@@ -525,7 +666,7 @@ int eng_linuxcmd_getbtaddr(char *req, char *rsp)
     int ret = 0;
 
     ret = eng_btwifimac_read(btaddr, ENG_BT_MAC);
-    if(ret < 0) {
+    if (ret < 0) {
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     } else {
         sprintf(rsp, "%s%s%s%s", btaddr, ENG_STREND, SPRDENG_OK, ENG_STREND);
@@ -584,13 +725,13 @@ int eng_linuxcmd_getwifiaddr(char *req, char *rsp)
     int ret = 0;
 
     ret = eng_btwifimac_read(wifiaddr, ENG_WIFI_MAC);
-    if(ret < 0) {
+    if (ret < 0) {
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     } else {
         sprintf(rsp, "%s%s%s%s", wifiaddr, ENG_STREND, SPRDENG_OK, ENG_STREND);
     }
 
-    ENG_LOG("%s: rsp=%s\n",__FUNCTION__, rsp);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
 
     return 0;
 }
@@ -603,10 +744,10 @@ int eng_linuxcmd_setwifiaddr(char *req, char *rsp)
     char *endptr=NULL;
     int length;
 
-    ENG_LOG("%s: req=%s\n",__FUNCTION__, req);
+    ENG_LOG("%s: req=%s\n", __FUNCTION__, req);
 
     ptr = strchr(req, '"');
-    if(ptr == NULL){
+    if (ptr == NULL) {
         ENG_LOG("%s: req %s ERROR no start \"\n",__FUNCTION__, req);
         return -1;
     }
@@ -614,7 +755,7 @@ int eng_linuxcmd_setwifiaddr(char *req, char *rsp)
     ptr++;
 
     endptr = strchr(ptr, '"');
-    if(endptr == NULL){
+    if (endptr == NULL) {
         ENG_LOG("%s: req %s ERROR no end \"\n",__FUNCTION__, req);
         return -1;
     }
@@ -624,7 +765,7 @@ int eng_linuxcmd_setwifiaddr(char *req, char *rsp)
     memset(address, 0, sizeof(address));
     snprintf(address, length, "%s", ptr);
 
-    ENG_LOG("%s: wifi address is %s; length=%d\n",__FUNCTION__, address, length);
+    ENG_LOG("%s: wifi address is %s; length=%d\n", __FUNCTION__, address, length);
 
     eng_btwifimac_read(btaddr, ENG_BT_MAC);
     eng_btwifimac_write(btaddr, address);
@@ -647,19 +788,19 @@ int eng_linuxcmd_getich(char *req, char *rsp)
     int len = 0;
 
     fd = open(ENG_CURRENT, O_RDONLY);
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s: open %s fail [%s]",__FUNCTION__, ENG_BATVOL, strerror(errno));
         ret = 0;
     }
 
-    if(ret==1) {
+    if (ret==1) {
         memset(buffer, 0, sizeof(buffer));
         len = read(fd, buffer, sizeof(buffer));
-        if(len > 0){
+        if (len > 0) {
             current = atoi(buffer);
             ENG_LOG("%s: buffer=%s; current=%d\n",__FUNCTION__, buffer, current);
             sprintf(rsp, "%dmA%s%s%s", current, ENG_STREND, SPRDENG_OK, ENG_STREND);
-        }else {
+        } else {
             ENG_LOG("%s: ERROR\n",__FUNCTION__);
             sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
         }
@@ -668,7 +809,7 @@ int eng_linuxcmd_getich(char *req, char *rsp)
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     }
 
-    if(fd >= 0)
+    if (fd >= 0)
         close(fd);
 
     ENG_LOG("%s: rsp=%s\n",__FUNCTION__,rsp);
@@ -715,19 +856,18 @@ static int eng_simtest_checksim_euicc(int type)
 #endif
     simstatus = cmd[0];
 
-    if(simstatus=='2') {
-        ret=0;
-    } else if((simstatus=='0')||(simstatus=='1')) {
+    if (simstatus == '2') {
+        ret = 0;
+    } else if ((simstatus == '0') || (simstatus == '1')) {
         ret = 1;
     }
 
     return ret;
 }
 
-
 int eng_linuxcmd_simchk(char *req, char *rsp)
 {
-    int sim1=0;
+    int sim1 = 0;
 
     sim1 = eng_simtest_checksim_euicc(0);
 
@@ -768,6 +908,7 @@ int eng_ascii2hex(char *inputdata, unsigned char *outputdata, int inputdatasize)
 
     return tmp_len;
 }
+
 int eng_linuxcmd_atdiag(char *req, char *rsp)
 {
     int len, ret;
@@ -777,17 +918,16 @@ int eng_linuxcmd_atdiag(char *req, char *rsp)
 
     ENG_LOG("Call %s", __FUNCTION__);
 
-    if (strstr(req, "DEVT"))
+    if (strstr(req, "DEVT")) {
         ret = test_dev(req, rsp);
-    else {
+    } else {
         memset(g_buffer, 0, sizeof(g_buffer));
         at_tok_start(&data);
         ret = at_tok_nextstr(&data, &ptr);
-		if(ret)
-			return ret;
+        if (ret)
+            return ret;
 
-
-	if(NULL==ptr){
+	if (NULL==ptr) {
             ENG_LOG("%s: ptr is NULL\n", __FUNCTION__);
             return 0;
         }
@@ -803,9 +943,9 @@ int eng_linuxcmd_bteutmode(char *req, char *rsp)
     int ret = -1;
     int len = 0;
 
-    ENG_LOG("%s(), cmd = %s", __func__,req);
+    ENG_LOG("%s(), cmd = %s", __func__, req);
 #if defined(ENGMODE_EUT_BCM) || defined(ENGMODE_EUT_SPRD)
-    ret = eng_atdiag_euthdlr(req,len,rsp,BT_MODULE_INDEX);
+    ret = eng_atdiag_euthdlr(req, len, rsp, BT_MODULE_INDEX);
 #endif
     return ret;
 }
@@ -822,26 +962,26 @@ static int eng_linuxcmd_bleeutmode(char *req, char *rsp)
     return ret;
 }
 
-int eng_linuxcmd_wifieutmode(char * req, char * rsp)
+int eng_linuxcmd_wifieutmode(char *req, char *rsp)
 {
     int ret = -1;
     int len = 0;
 
-    ENG_LOG("%s(), cmd = %s", __func__,req);
+    ENG_LOG("%s(), cmd = %s", __func__, req);
 #if defined(ENGMODE_EUT_BCM) || defined(ENGMODE_EUT_SPRD)
     ret = eng_atdiag_euthdlr(req, len, rsp, WIFI_MODULE_INDEX);
 #endif
     return ret;
 }
 
-int eng_linuxcmd_gpseutmode(char * req, char * rsp)
+int eng_linuxcmd_gpseutmode(char *req, char *rsp)
 {
     int ret = -1;
     int len = 0;
 
-    ENG_LOG("Call %s     Command is  %s",__FUNCTION__,req);
+    ENG_LOG("Call %s     Command is  %s", __FUNCTION__, req);
 #if defined(ENGMODE_EUT_BCM) || defined(ENGMODE_EUT_SPRD)
-    ret = eng_atdiag_euthdlr(req,len,rsp,GPS_MODULE_INDEX);
+    ret = eng_atdiag_euthdlr(req, len, rsp, GPS_MODULE_INDEX);
 #endif
     return ret;
 }
@@ -850,19 +990,20 @@ int eng_linuxcmd_infactorymode(char *req, char *rsp)
 {
     char *ptr;
     int status;
-    int length=strlen(req);
-    ENG_LOG("%s: req=%s\n",__FUNCTION__, req);
-    if((ptr=strchr(req, '?'))!= NULL){
+    int length = strlen(req);
+    ENG_LOG("%s: req=%s\n", __FUNCTION__, req);
+
+    if ((ptr=strchr(req, '?')) != NULL) {
         status = eng_sql_string2int_get(ENG_TESTMODE);
-        if(status==ENG_SQLSTR2INT_ERR)
+        if (status == ENG_SQLSTR2INT_ERR)
             status = 1;
-        sprintf(rsp, "%d%s%s%s", status, ENG_STREND,SPRDENG_OK,ENG_STREND);
-    } else if ((ptr=strchr(req, '='))!= NULL) {
+        sprintf(rsp, "%d%s%s%s", status, ENG_STREND, SPRDENG_OK, ENG_STREND);
+    } else if ((ptr=strchr(req, '=')) != NULL) {
         ptr++;
-        if(ptr <= (req+length)) {
+        if (ptr <= (req+length)) {
             status = atoi(ptr);
-            ENG_LOG("%s: status=%d\n",__FUNCTION__, status);
-            if(status==0||status==1) {
+            ENG_LOG("%s: status=%d\n", __FUNCTION__, status);
+            if (status == 0 || status == 1) {
                 eng_sql_string2int_set(ENG_TESTMODE, status);
                 eng_check_factorymode(0);
                 sprintf(rsp, "%s\r\n", SPRDENG_OK);
@@ -875,7 +1016,7 @@ int eng_linuxcmd_infactorymode(char *req, char *rsp)
     } else {
         sprintf(rsp, "%s\r\n", SPRDENG_ERROR);
     }
-    ENG_LOG("%s: rsp=%s\n",__FUNCTION__, rsp);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
 
     return 0;
 }
@@ -941,23 +1082,23 @@ int eng_linuxcmd_chargertest(char *req, char *rsp)
 {
     char *ptr;
     int status, fd;
-    int length=strlen(req);
+    int length = strlen(req);
 
     ENG_LOG("%s: req=%s\n",__FUNCTION__, req);
-    if ((ptr=strchr(req, '='))!= NULL) {
+    if ((ptr=strchr(req, '=')) != NULL) {
         ptr++;
-        if(ptr <= (req+length)) {
+        if (ptr <= (req+length)) {
             status = atoi(ptr);
-            ENG_LOG("%s: status=%d\n",__FUNCTION__, status);
-            if(status==1) {
-                ENG_LOG("%s: Create %s",__FUNCTION__,ENG_CHARGERTEST_FILE);
+            ENG_LOG("%s: status=%d\n", __FUNCTION__, status);
+            if (status==1) {
+                ENG_LOG("%s: Create %s", __FUNCTION__, ENG_CHARGERTEST_FILE);
                 fd=open(ENG_CHARGERTEST_FILE, O_RDWR|O_CREAT|O_TRUNC, 0666);
                 if(fd >= 0)
                     close(fd);
                 sprintf(rsp, "%s\r\n", SPRDENG_OK);
 
-            } else if(status==0){
-                ENG_LOG("%s: Delete %s",__FUNCTION__,ENG_CHARGERTEST_FILE);
+            } else if (status==0){
+                ENG_LOG("%s: Delete %s", __FUNCTION__, ENG_CHARGERTEST_FILE);
                 if (remove(ENG_CHARGERTEST_FILE) == 0) {
                     sprintf(rsp, "%s\r\n", SPRDENG_OK);
                 } else {
@@ -973,7 +1114,7 @@ int eng_linuxcmd_chargertest(char *req, char *rsp)
         sprintf(rsp, "%s\r\n", SPRDENG_ERROR);
     }
 
-    ENG_LOG("%s: rsp=%s\n",__FUNCTION__, rsp);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
 
     return 0;
 }
@@ -1202,6 +1343,7 @@ int eng_linuxcmd_rtctest(char *req,char *rsp)
 	return 0;
 }
 
+/*
 static int eng_diag_enter_iq_pb_mode(void)
 {
 	int fd = -1;
@@ -1291,6 +1433,7 @@ int eng_linuxcmd_setuartspeed(char *req,char *rsp)
     return -1;
 }
 
+
 int eng_linuxcmd_wiqpb(char *req, char *rsp)
 {
 	char ptr_parm1[1];
@@ -1306,4 +1449,109 @@ int eng_linuxcmd_wiqpb(char *req, char *rsp)
 		ENG_LOG("%s: AT+SPWIQ=%c is invaild value\n", __FUNCTION__, ptr_parm1[0]);
 	}
 	return 0;
+}
+*/
+
+int eng_linuxcmd_send2samsung(char *req, char *rsp)
+{
+    char* buf;
+
+    buf = SendRequestToATD(req, strlen(req));
+    if (buf)
+        strcpy(rsp, buf);
+    else
+        sprintf(rsp, "\r\nFailed to send command to ATD.\r\n%s%s", SPRDENG_ERROR, ENG_STREND);
+    ENG_LOG("%s: rsp=%s\n", "eng_linuxcmd_send2samsung_syssleep", __FUNCTION__, rsp);
+
+    return 0;
+}
+
+int eng_linuxcmd_send2samsung_syssleep(char *req, char *rsp)
+{
+    char* buf;
+
+    buf = SendRequestToATD(req, strlen(req));
+    if (buf)
+        strcpy(rsp, buf);
+    else
+        sprintf(rsp, "\r\nFailed to send command to ATD.\r\n%s%s", SPRDENG_ERROR, ENG_STREND);
+    ENG_LOG("%s: rsp=%s\n", "eng_linuxcmd_send2samsung_syssleep", __FUNCTION__, rsp);
+
+    return 0;
+}
+
+int eng_linuxcmd_batgetlevel(char *req, char *rsp)
+{
+    int fd;
+    int voltage = 0, voltread = 0, capacity = 0;
+    int level;
+    char fbuf[16];
+
+    fd = open(ENG_BATTVOL_NOW, O_RDONLY);
+    if (fd < 0) {
+        ENG_LOG("%s: open %s fail [%s]", __FUNCTION__, ENG_BATTVOL_NOW, strerror(errno));
+        sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
+    } else {
+        memset(fbuf, 0, 16);
+        read(fd, fbuf, 16);
+        voltage = atoi(fbuf);
+        voltread = 1;
+        ENG_LOG("%s: buffer=%s; voltage=%d\n", __FUNCTION__, fbuf, voltage);
+        close(fd);
+    }
+
+    fd = open(ENG_BATTCAPACITY, O_RDONLY);
+    if (fd < 0) {
+        ENG_LOG("%s: open %s fail [%s]", __FUNCTION__, ENG_BATTCAPACITY, strerror(errno));
+        sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
+    } else if (voltread) {
+        memset(fbuf, 0, 16);
+        read(fd, fbuf, 16);
+        capacity = atoi(fbuf);
+        ENG_LOG("%s: buffer=%s; capacity=%d\n", __FUNCTION__, fbuf, capacity);
+        close(fd);
+    }
+
+    if (capacity == 100) {
+        level = 100;
+    } else if (capacity > 90) {
+        level = 7;
+    } else if (capacity > 75) {
+        level = 6;
+    } else if (capacity > 60) {
+        level = 5;
+    } else if (capacity > 50) {
+        level = 4;
+    } else if (capacity > 35) {
+        level = 3;
+    } else if (capacity > 15) {
+        level = 2;
+    } else {
+        level = 1;
+    }
+
+    sprintf(rsp, "BATGETLEVEL=%d VOLT=%dmV\r\n%s%s%s", level, voltage/1000, ENG_STREND, SPRDENG_OK, ENG_STREND);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
+
+    return 0;
+}
+
+int eng_linuxcmd_e0(char *req, char *rsp)
+{
+    if (eng_atd_direct_write(0))
+        sprintf(rsp, "%s%s", SPRDENG_OK, ENG_STREND);
+    else
+        sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
+    direct_write(rsp);
+    return 0;
+}
+
+int eng_linuxcmd_e1(char *req, char *rsp)
+{
+    if (eng_atd_direct_write(1))
+        sprintf(rsp, "%s%s", SPRDENG_OK, ENG_STREND);
+    else
+        sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
+    direct_write(rsp);
+    return 0;
 }

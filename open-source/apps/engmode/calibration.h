@@ -9,21 +9,14 @@
 #define ADC_CHAN_FILE_PATH      "/sys/kernel/debug/sc2713-regulator/adc_chan"
 #define	FGU_CURRENT_ADC_FILE_PATH	"/sys/class/power_supply/sprdfgu/fgu_current_adc"
 #define	FGU_VOL_ADC_FILE_PATH	"/sys/class/power_supply/sprdfgu/fgu_vol_adc"
-#define	CHARGING_CURRENT_FILE_PATH   "sys/class/power_supply/battery/real_time_current" //charging current
-#define	BATTERY_CURRENT_FILE_PATH   "sys/class/power_supply/sprdfgu/fgu_current"      //battery current
+#define	CHARGING_CURRENT_FILE_PATH   "/sys/class/power_supply/battery/real_time_current" //charging current
+#define	BATTERY_CURRENT_FILE_PATH   "/sys/class/power_supply/sprdfgu/fgu_current"      //battery current
 #define	FGU_CURRENT_FILE_PATH	"/sys/class/power_supply/sprdfgu/fgu_current"
 #define	FGU_VOL_FILE_PATH	"/sys/class/power_supply/sprdfgu/fgu_vol"
 
-#ifdef CONFIG_NAND
-#define CALI_CTRL_FILE_PATH  "/dev/ubi0_miscdata"
-#else
-#define CALI_CTRL_FILE_PATH  "/dev/block/platform/sdio_emmc/by-name/miscdata"
-#endif
+#define CALI_CTRL_FILE_PATH  "/productinfo/adc.bin"
 #define	BATTER_CALI_CONFIG_FILE	CALI_CTRL_FILE_PATH
-#define ADC_MAGIC	(0x4144434D)//ADCM, header flag of adc data
-#define MISCDATA_BASE  (0)
-#define ADC_DATA_OFFSET  (512 * 1024)
-#define ADC_DATA_START	(MISCDATA_BASE + ADC_DATA_OFFSET)
+#define ADC_DATA_START	(0)
 #define MAX_SN_LEN 			(24)
 #define SP09_MAX_SN_LEN			MAX_SN_LEN
 #define SP09_MAX_STATION_NUM		   	    (15)

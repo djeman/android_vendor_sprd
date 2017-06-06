@@ -80,34 +80,33 @@ int	connect_vbus_charger(void)
     return 1;
 }
 
-void	initialize_ctrl_file(void)
+void initialize_ctrl_file(void)
 {
     CALI_INFO_DATA_T	cali_info;
     int ret;
-    unsigned int adc_magic = ADC_MAGIC;
 
     int fd = open(CALI_CTRL_FILE_PATH,O_RDWR);
 
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s open %s failed\n",__func__,CALI_CTRL_FILE_PATH);
         return;
     }
+
+    if (chmod("/productinfo/adc.bin", 436) < 0) {
+        ENG_LOG("chmod /productinfo/adc.bin failed. errno:%d, strerror(errno):%s\n",errno,strerror(errno));
+        return;
+    }
+
     sync();
 
-    ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
-        return;
-	}
-
     ret = read(fd,&cali_info,sizeof(cali_info));
-    if(ret < 0){
+    if (ret < 0) {
         ENG_LOG(" %s read failed...\n",__func__);
         close(fd);
         return;
     }
-    if(cali_info.magic!=CALI_MAGIC){
+
+    if (cali_info.magic != CALI_MAGIC) {
         memset(&cali_info,0xff,sizeof(cali_info));
         cali_info.adc_para.reserved[7] = 0;
         cali_info.magic = CALI_MAGIC;
@@ -120,43 +119,35 @@ void	initialize_ctrl_file(void)
 #endif
 
     ret = lseek(fd, ADC_DATA_START, SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
-		return;
-	}
+    if (ret < 0) {
+        ENG_LOG(" %s lseek failed...\n",__func__);
+        close(fd);
+        return;
+    }
 
 #ifdef CONFIG_NAND
     __s64 up_sz = sizeof(cali_info) + sizeof(unsigned int);
     ioctl(fd, UBI_IOCVOLUP, &up_sz);
 #endif
 
-    write(fd, &adc_magic, sizeof(unsigned int));
     write(fd, &cali_info, sizeof(cali_info));
     close(fd);
 }
 
-void	disable_calibration(void)
+void disable_calibration(void)
 {
     CALI_INFO_DATA_T        cali_info;
     int ret = 0;
 
     int fd = open(CALI_CTRL_FILE_PATH,O_RDWR);
 
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s open %s failed\n",__func__,CALI_CTRL_FILE_PATH);
         return;
     }
 
-    ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
-        return;
-	}
-
     ret = read(fd,&cali_info,sizeof(cali_info));
-    if(ret <= 0){
+    if (ret <= 0) {
         ENG_LOG(" %s read failed...\n",__func__);
         close(fd);
         return;
@@ -165,12 +156,12 @@ void	disable_calibration(void)
     cali_info.magic = CALI_MAGIC;
     cali_info.cali_flag = CALI_COMP;
 
-    ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
+    ret = lseek(fd, ADC_DATA_START, SEEK_SET);
+    if (ret < 0) {
+        ENG_LOG(" %s lseek failed...\n",__func__);
+        close(fd);
         return;
-	}
+    }
 
 #ifdef CONFIG_NAND
     __s64 up_sz = sizeof(cali_info);
@@ -181,27 +172,20 @@ void	disable_calibration(void)
     close(fd);
 }
 
-void	enable_calibration(void)
+void enable_calibration(void)
 {
     CALI_INFO_DATA_T        cali_info;
 
     int fd = open(CALI_CTRL_FILE_PATH,O_RDWR);
     int ret = 0;
 
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s open %s failed\n",__func__,CALI_CTRL_FILE_PATH);
         return;
     }
 
-    ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
-        return;
-	}
-
     ret = read(fd,&cali_info,sizeof(cali_info));
-    if(ret <= 0){
+    if (ret <= 0) {
         ENG_LOG(" %s read failed...\n",__func__);
         close(fd);
         return;
@@ -209,12 +193,12 @@ void	enable_calibration(void)
     cali_info.magic = 0xFFFFFFFF;
     cali_info.cali_flag = 0xFFFFFFFF;
 
-    ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-	if(ret < 0) {
-		ENG_LOG(" %s lseek failed...\n",__func__);
-		close(fd);
+    ret = lseek(fd, ADC_DATA_START, SEEK_SET);
+    if (ret < 0) {
+        ENG_LOG(" %s lseek failed...\n",__func__);
+        close(fd);
         return;
-	}
+    }
 
 #ifdef CONFIG_NAND
     __s64 up_sz = sizeof(cali_info);
@@ -229,7 +213,7 @@ void adc_get_result(char* chan)
 {
     int ret =0;
     int fd = open(ADC_CHAN_FILE_PATH,O_RDWR);
-    if(fd < 0){
+    if (fd < 0) {
         ENG_LOG("%s open %s failed\n",__func__,ADC_CHAN_FILE_PATH);
         return ;
     }
@@ -237,13 +221,14 @@ void adc_get_result(char* chan)
     lseek(fd, 0, SEEK_SET);
     memset(chan, 0, 8);
     ret = read(fd, chan , 8);
-    if(ret <= 0){
+    if (ret <= 0) {
         ENG_LOG(" %s read failed...\n",__func__);
         close(fd);
         return;
     }
     close(fd);
 }
+
 static int AccessADCDataFile(unsigned char flag, char *lpBuff, int size)
 {
     int fd = -1;
@@ -252,36 +237,30 @@ static int AccessADCDataFile(unsigned char flag, char *lpBuff, int size)
 
     fd = open(BATTER_CALI_CONFIG_FILE,O_RDWR);
 
-    if(flag == 1){
-        if(fd < 0){
+    if (flag == 1) {
+        if (fd < 0) {
             ENG_LOG("%s open %s failed\n",__func__,CALI_CTRL_FILE_PATH);
             return 0;
         }
 
-        ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);//skip 512k size and adc magic flag(ADC_MAGIC), read or write adc data
-		if(ret < 0) {
-			ENG_LOG(" %s lseek failed...\n",__func__);
-			close(fd);
-			return 0;
-		}
+        ret = read(fd,&cali_info,sizeof(cali_info));
+        if (ret < 0) {
+            ENG_LOG(" %s read failed...\n",__func__);
+            close(fd);
+            return 0;
+        }
 
-		ret = read(fd,&cali_info,sizeof(cali_info));
-		if(ret < 0) {
-			ENG_LOG(" %s read failed...\n",__func__);
-			close(fd);
-			return 0;
-		}
-
-        if(size < sizeof(cali_info.adc_para))
+        if (size < sizeof(cali_info.adc_para))
             memcpy(&cali_info.adc_para,lpBuff,size);
         else
             memcpy(&cali_info.adc_para,lpBuff,sizeof(cali_info.adc_para));
-        ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);//come back adc data header
-		if(ret < 0) {
-			ENG_LOG(" %s lseek failed...\n",__func__);
-			close(fd);
-			return 0;
-		}
+
+        ret = lseek(fd, ADC_DATA_START, SEEK_SET);//come back adc data header
+        if(ret < 0) {
+            ENG_LOG(" %s lseek failed...\n",__func__);
+            close(fd);
+            return 0;
+        }
 
         cali_info.magic = CALI_MAGIC;
 
@@ -294,26 +273,19 @@ static int AccessADCDataFile(unsigned char flag, char *lpBuff, int size)
         fsync(fd);
         sleep(1);
     } else {
-        if(fd < 0) {
+        if (fd < 0) {
             ENG_LOG("%s open %s failed\n",__func__,CALI_CTRL_FILE_PATH);
             return 0;
         }
 
-        ret = lseek(fd, ADC_DATA_START + sizeof(unsigned int), SEEK_SET);
-		if(ret < 0) {
-			ENG_LOG(" %s lseek failed...\n",__func__);
-			close(fd);
-			return 0;
-		}
-
         ret = read(fd,&cali_info,sizeof(cali_info));
-		if(ret < 0) {
-			ENG_LOG(" %s read failed...\n",__func__);
-			close(fd);
-			return 0;
-		}
+        if (ret < 0) {
+            ENG_LOG(" %s read failed...\n",__func__);
+            close(fd);
+            return 0;
+        }
 
-        if(size < sizeof(cali_info.adc_para))
+        if (size < sizeof(cali_info.adc_para))
             memcpy(lpBuff,&cali_info.adc_para,size);
         else
             memcpy(lpBuff,&cali_info.adc_para,sizeof(cali_info.adc_para));
@@ -323,6 +295,7 @@ static int AccessADCDataFile(unsigned char flag, char *lpBuff, int size)
 
     return ret;
 }
+
 static int get_battery_voltage(void)
 {
     int fd = -1;
@@ -332,14 +305,15 @@ static int get_battery_voltage(void)
 
     fd = open(BATTERY_VOL_PATH,O_RDONLY);
 
-    if(fd >= 0){
+    if (fd >= 0) {
         read_len = read(fd,buffer,sizeof(buffer));
-        if(read_len > 0)
+        if (read_len > 0)
             value = atoi(buffer);
         close(fd);
     }
     return value;
 }
+
 static int get_battery_adc_value(void)
 {
     int fd = -1;
@@ -350,7 +324,7 @@ static int get_battery_adc_value(void)
 
     fd = open(BATTERY_ADC_PATH,O_RDONLY);
 
-    if(fd >= 0){
+    if (fd >= 0) {
         read_len = read(fd,buffer,sizeof(buffer));
         if(read_len > 0)
             value = strtol(buffer,&endptr,0);
@@ -358,6 +332,7 @@ static int get_battery_adc_value(void)
     }
     return value;
 }
+
 static int get_fgu_current_adc(int *value)
 {
     int fd = -1;
@@ -367,18 +342,18 @@ static int get_fgu_current_adc(int *value)
 
     fd = open(FGU_CURRENT_ADC_FILE_PATH,O_RDONLY);
 
-    if(fd >= 0){
+    if (fd >= 0) {
         read_len = read(fd,buffer,sizeof(buffer));
         if(read_len > 0)
             *value = strtol(buffer,&endptr,0);
         close(fd);
         ENG_LOG("%s %s value = %d\n",__func__,FGU_VOL_ADC_FILE_PATH, *value);
-    }
-    else{
+    } else {
         ENG_LOG("%s open %s failed\n",__func__,FGU_CURRENT_ADC_FILE_PATH);
     }
     return read_len;
 }
+
 static int get_fgu_vol_adc(int *value)
 {
     int fd = -1;
@@ -388,14 +363,13 @@ static int get_fgu_vol_adc(int *value)
 
     fd = open(FGU_VOL_ADC_FILE_PATH,O_RDONLY);
 
-    if(fd >= 0){
+    if (fd >= 0) {
         read_len = read(fd,buffer,sizeof(buffer));
-        if(read_len > 0)
+        if (read_len > 0)
             *value = strtol(buffer,&endptr,0);
         close(fd);
         ENG_LOG("%s %s value = %d, read_len = %d \n",__func__,FGU_VOL_ADC_FILE_PATH, *value, read_len);
-    }
-    else{
+    } else {
         ENG_LOG("%s open %s failed\n",__func__,FGU_VOL_ADC_FILE_PATH);
     }
     return read_len;
@@ -403,15 +377,14 @@ static int get_fgu_vol_adc(int *value)
 
 static void ap_get_fgu_current_adc(MSG_AP_ADC_CNF *pMsgADC)
 {
-    int	current_adc = 0;
-    int      read_len = 0;
+    int current_adc = 0;
+    int read_len = 0;
 
     read_len = get_fgu_current_adc(&current_adc);
-    if(read_len>0){
+    if (read_len>0) {
         pMsgADC->ap_adc_req.parameters[0] = current_adc;
         pMsgADC->diag_ap_cnf.status = 0;
-    }
-    else{
+    } else {
         pMsgADC->diag_ap_cnf.status = 1;
     }
 }
@@ -419,14 +392,13 @@ static void ap_get_fgu_current_adc(MSG_AP_ADC_CNF *pMsgADC)
 static void ap_get_fgu_vol_adc(MSG_AP_ADC_CNF *pMsgADC)
 {
     int	vol_adc = 0;
-    int      read_len = 0;
+    int read_len = 0;
     read_len = get_fgu_vol_adc(&vol_adc);
 
-    if(read_len>0){
+    if (read_len>0) {
         pMsgADC->ap_adc_req.parameters[0] = vol_adc;
         pMsgADC->diag_ap_cnf.status = 0;
-    }
-    else{
+    } else {
         pMsgADC->diag_ap_cnf.status = 1;
     }
 }
@@ -661,6 +633,7 @@ static int ap_adc_save(TOOLS_AP_ADC_REQ_T *pADCReq, MSG_AP_ADC_CNF *pMsgADC)
 
     return ret;
 }
+
 static int ap_adc_load(MSG_AP_ADC_CNF *pMsgADC)
 {
     int ret = AccessADCDataFile(0, (char *)pMsgADC->ap_adc_req.parameters, sizeof(pMsgADC->ap_adc_req.parameters));
@@ -671,6 +644,7 @@ static int ap_adc_load(MSG_AP_ADC_CNF *pMsgADC)
 
     return ret;
 }
+
 static int ap_get_voltage(MSG_AP_ADC_CNF *pMsgADC)
 {
     int	voltage = 0;

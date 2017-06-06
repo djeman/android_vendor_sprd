@@ -57,36 +57,40 @@ typedef enum {
     ENG_AT_GETUPLMN                             = 50,
     ENG_AT_CGSMS                                = 51,
     ENG_AT_CAOC                                 = 52, //aoc active,and {Deactive see@ENG_AT_CAOCD} {Query see@ENG_AT_CAOCQ}
-        ENG_AT_CAMM                                 = 53,
-        ENG_AT_SETCOPS                              = 54,
-        ENG_AT_SADC                                 = 55,
-        ENG_AT_CFUN                                 = 56,
-        ENG_AT_CGMR                                 = 57,
-        ENG_AT_SETCAPLOG                            = 58,
-        ENG_AT_SETUPLMN                             = 59,
-        ENG_AT_GETUPLMNLEN                          = 60,
-        ENG_AT_GETDSPLOG                            = 61,   //
-        ENG_AT_SETDSPLOG                            = 62,  //
-        ENG_AT_SGMR                                 = 70,
-        ENG_AT_CAOCD                                = 80,//aoc deactive
-        ENG_AT_CAOCQ                                = 81,//aoc query
-        ENG_AT_CCED                                 =101,//net info of sim
-        ENG_AT_L1MON                                =103,
+    ENG_AT_CAMM                                 = 53,
+    ENG_AT_SETCOPS                              = 54,
+    ENG_AT_SADC                                 = 55,
+    ENG_AT_CFUN                                 = 56,
+    ENG_AT_CGMR                                 = 57,
+    ENG_AT_SETCAPLOG                            = 58,
+    ENG_AT_SETUPLMN                             = 59,
+    ENG_AT_GETUPLMNLEN                          = 60,
+    ENG_AT_GETDSPLOG                            = 61,   //
+    ENG_AT_SETDSPLOG                            = 62,  //
+    ENG_AT_SGMR                                 = 70,
+    ENG_AT_CAOCD                                = 80,//aoc deactive
+    ENG_AT_CAOCQ                                = 81,//aoc query
+    ENG_AT_CCED                                 = 101,//net info of sim
+    ENG_AT_L1MON                                = 103,
 
-        ENG_AT_GET_ASSERT_MODE          = 108,
-        ENG_AT_SET_ASSERT_MODE          = 109,
-        ENG_AT_SET_MANUAL_ASSERT        = 110,
-        ENG_AT_SFPL                     = 111,
-        ENG_AT_SEPL                     = 112,
+    ENG_AT_GET_ASSERT_MODE          		= 108,
+    ENG_AT_SET_ASSERT_MODE          		= 109,
+    ENG_AT_SET_MANUAL_ASSERT        		= 110,
+    ENG_AT_SFPL                     		= 111,
+    ENG_AT_SEPL                     		= 112,
 
-        ENG_AT_SPENGMD_QUERY            = 117,
-        ENG_AT_SPENGMD_OPEN             = 118,
-        ENG_AT_SPENGMD_CLOSE            = 119,
+    ENG_AT_SPENGMD_QUERY            		= 117,
+    ENG_AT_SPENGMD_OPEN             		= 118,
+    ENG_AT_SPENGMD_CLOSE            		= 119,
 
-        ENG_AT_SSMP                     = 200,
-        ENG_AT_CMD_END,
-}ENG_AT_CMD;
+    ENG_AT_SSMP                     		= 200,
+    ENG_AT_CMD_END,
+} ENG_AT_CMD;
 
 int eng_at_pcmodem(eng_dev_info_t* dev_info);
+
+char* SendRequestToATD(char* req, int reqlen);
+void direct_write(char* rsp);
+int eng_atd_direct_write(int chan);
 
 #endif /*__ENG_AT_H__*/

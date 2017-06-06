@@ -10,7 +10,13 @@
 
 static eng_dev_info_t* s_dev_info;
 static int at_mux_fd = -1;
-static int pc_fd=-1;
+static int pc_fd = -1;
+
+static eng_atril_samsung_t s_atril_samsung;
+static char at_smd_path[PATH_MAX];
+static int at_smd_fd = -1;
+static char g_atrilbuf[ENG_ATRIL_BUFFER_SIZE];
+static fd_set atrilfds;
 
 #ifdef CONFIG_BQBTEST
 #include <sys/socket.h>
@@ -122,14 +128,14 @@ static int start_gser(char* ser_path)
 {
     struct termios ser_settings;
 
-    if (pc_fd>=0){
+    if (pc_fd >= 0) {
         ENG_LOG("%s ERROR : %s\n", __FUNCTION__, strerror(errno));
         close(pc_fd);
     }
 
     ENG_LOG("open serial\n");
     pc_fd = open(ser_path,O_RDWR);
-    if(pc_fd < 0) {
+    if (pc_fd < 0) {
         ENG_LOG("cannot open vendor serial\n");
         return -1;
     }
@@ -356,20 +362,20 @@ static void *eng_readmodemat_thread(void *par)
     eng_dev_info_t* dev_info = (eng_dev_info_t*)par;
 
     for(;;){
-        ENG_LOG("%s: wait pcfd=%d\n",__func__,pc_fd);
+        ENG_LOG("%s: wait pcfd=%d\n", __func__, pc_fd);
         memset(engbuf, 0, ENG_BUFFER_SIZE);
         len = read(at_mux_fd, engbuf, ENG_BUFFER_SIZE);
-        ENG_LOG("muxfd =%d buf=%s,len=%d\n",at_mux_fd,engbuf,len);
+        ENG_LOG("muxfd =%d buf=%s,len=%d\n", at_mux_fd,engbuf,len);
         if (len <= 0) {
-            ENG_LOG("%s: read length error %s\n",__FUNCTION__,strerror(errno));
+            ENG_LOG("%s: read length error %s\n", __FUNCTION__, strerror(errno));
             sleep(1);
             continue;
-        }else{
+        } else {
 write_again:
             if (pc_fd>=0){
-                ret = write(pc_fd,engbuf,len);
+                ret = write(pc_fd, engbuf, len);
                 if (ret <= 0) {
-                    ENG_LOG("%s: write length error %s\n",__FUNCTION__,strerror(errno));
+                    ENG_LOG("%s: write length error %s\n", __FUNCTION__, strerror(errno));
                     sleep(1);
                     start_gser(dev_info->host_int.dev_at);
                     goto write_again;
@@ -382,26 +388,184 @@ write_again:
     return NULL;
 }
 
+void init_umts_router(char *path)
+{
+    char *name;
+    char fullpath[64];
+
+    memset(fullpath, 0, 64);
+    at_smd_fd = open("/dev/ptmx", 2);
+    grantpt(at_smd_fd);
+    unlockpt(at_smd_fd);
+    name = ptsname(at_smd_fd);
+    unlink(path);
+    ENG_LOG("[%d]%s --> %s\n", at_smd_fd, path, name);
+
+    chmod(name, 432);
+    chown(name, 1000, 1001);
+    snprintf(fullpath, 64, "%s  %s", name, path);
+
+    property_set("sys.symlink.umts_router", fullpath);
+    property_set("ctl.stop", "smd_symlink");
+    property_set("ctl.start", "smd_symlink");
+    strncpy(at_smd_path, name, PATH_MAX);
+}
+
+static void *ATRILClientListenFD()
+{
+    char atrilbuf[ENG_ATRIL_BUFFER_SIZE];
+    int nfds = 0;
+    int len = 0;
+    int writed = 0;
+
+    ENG_LOG("%s()", __FUNCTION__);
+    memset(atrilbuf, 0, ENG_ATRIL_BUFFER_SIZE);
+    memset(g_atrilbuf, 0, ENG_ATRIL_BUFFER_SIZE);
+
+    for (;;) {
+        do {
+            memset(&atrilfds, 0, sizeof(atrilfds));
+            if (s_atril_samsung.client_fd >= 0)
+                FD_SET(s_atril_samsung.client_fd, &atrilfds);
+            if ( s_atril_samsung.socket >= 0)
+                FD_SET(s_atril_samsung.socket, &atrilfds);
+            if (s_atril_samsung.client_fd >= 0 && nfds < s_atril_samsung.client_fd)
+                nfds = s_atril_samsung.client_fd;
+            if (s_atril_samsung.socket >= 0 && nfds < s_atril_samsung.socket)
+                nfds = s_atril_samsung.socket;
+        } while (select(nfds+1, &atrilfds, NULL, NULL, NULL) <= 0);
+
+        if (s_atril_samsung.socket >= 0 && FD_ISSET(s_atril_samsung.socket, &atrilfds)) {
+            s_atril_samsung.client_fd = accept(s_atril_samsung.socket, 0, 0);
+            ENG_LOG("%s: ATRILClient Communication: accept client_fd : %d", 
+                __FUNCTION__, s_atril_samsung.client_fd);
+        }
+
+        if (s_atril_samsung.client_fd >= 0 && FD_ISSET(s_atril_samsung.client_fd, &atrilfds)) {
+            memset(atrilbuf, 0, ENG_ATRIL_BUFFER_SIZE);
+            len = read(s_atril_samsung.client_fd, atrilbuf, ENG_ATRIL_BUFFER_SIZE-1);
+            ENG_LOG("%s: ATRILClient Communication: Received length : %d", 
+                __FUNCTION__, len);
+
+            if (len > 0) {
+                writed = write(s_atril_samsung.client_fd, atrilbuf, len);
+                if (writed <= 0)
+                    ENG_LOG("%s: ATRILClient Communication: writting failed to uart : %d", 
+                        __FUNCTION__, writed);
+            }
+        }
+    }
+
+    return NULL;
+}
+
+int InitATRILClient(int fd)
+{
+    pthread_t ptid;
+
+    s_atril_samsung.socket = -1;
+    s_atril_samsung.client_fd = -1;
+    s_atril_samsung.uart_fd = fd;
+    ENG_LOG("%s: ATRILClient Communication: uart_fd : %d", __FUNCTION__, fd);
+
+    s_atril_samsung.socket = socket_local_server("ATRILClient", 0, 1);
+    ENG_LOG("%s: ATRILClient Communication: Server_socket %d", __FUNCTION__, s_atril_samsung.socket);
+
+    if (s_atril_samsung.socket < 0) {
+        ENG_LOG("%s: ATRILClient Communication: Server_socket failed for ATRIL_CLIENT", __FUNCTION__);
+        return -1;
+    }
+
+    ENG_LOG("%s: ATRILClient Communication: Server_socket succeed for ATRIL_CLIENT", __FUNCTION__);
+    pthread_create(&ptid, NULL, (void*)ATRILClientListenFD, NULL);
+
+    return 1;
+}
+
 int eng_at_pcmodem(eng_dev_info_t* dev_info)
 {
     eng_thread_t t1,t2;
 
-    ENG_LOG("%s ",__func__);
+    ENG_LOG("%s ", __func__);
 
     start_gser(dev_info->host_int.dev_at);
 
+    init_umts_router("/dev/umts_router");
+    ENG_LOG("SAMSUNG : InitATRIlclient getting called");
+    InitATRILClient(pc_fd);
+    ENG_LOG("SAMSUNG : smdSlave : %s", at_smd_path);
+
     at_mux_fd = open(dev_info->modem_int.at_chan, O_RDWR);
     if(at_mux_fd < 0){
-        ENG_LOG("%s: open %s fail [%s]\n",__FUNCTION__, dev_info->modem_int.at_chan,strerror(errno));
+        ENG_LOG("%s: open %s fail [%s]\n", __FUNCTION__, dev_info->modem_int.at_chan, strerror(errno));
         return -1;
     }
 
-    if (0 != eng_thread_create( &t1, eng_readpcat_thread, (void*)dev_info)){
+    if (eng_thread_create(&t1, eng_readpcat_thread, (void*)dev_info) != 0) {
         ENG_LOG("read pcat thread start error");
     }
 
-    if (0 != eng_thread_create( &t2, eng_readmodemat_thread, (void*)dev_info)){
+    if (eng_thread_create(&t2, eng_readmodemat_thread, (void*)dev_info) != 0) {
         ENG_LOG("read modemat thread start error");
     }
+
     return 0;
+}
+
+char* SendRequestToATD(char* req, int reqlen)
+{
+    int writed;
+
+    ENG_LOG("%s: ATRILClient(UART : cmd=%s, length=%d)", __FUNCTION__, req, reqlen);
+    strcpy(g_atrilbuf, "ATDRESP");
+    strcat(req, ENG_STREND);
+    ENG_LOG("%s: client_fd : %d", __FUNCTION__, s_atril_samsung.client_fd);
+    ENG_LOG("%s: server_fd : %d", __FUNCTION__, s_atril_samsung.socket);
+    
+    if (s_atril_samsung.client_fd < 0) {
+        ENG_LOG("%s: ATRILClient Communication : Client Socket is not valid", __FUNCTION__);
+        return 0;
+    }
+
+    if (reqlen >= ENG_ATRIL_BUFFER_SIZE) {
+        ENG_LOG("%s: Buffer OverFlow", __FUNCTION__);
+        return 0;
+    }
+
+    writed = write(s_atril_samsung.client_fd, req, reqlen + 2);
+    if (writed > 0)
+        return g_atrilbuf;
+
+    ENG_LOG("%s: ATRILClient Communication: writting failed to ATD : %d", __FUNCTION__, writed);
+    return 0;
+}
+
+void direct_write(char* rsp)
+{
+    if (strncmp("ATDRESP", rsp, 7)) {
+        ENG_LOG("%s: eng response = %s\n", __FUNCTION__, rsp);
+        write(pc_fd, rsp, strlen(rsp));
+    } else {
+        ENG_LOG("%s: eng ATD response \n", __FUNCTION__);
+    }
+
+    return 0;
+}
+
+int eng_atd_direct_write(int chan)
+{
+    struct termios atd_settings;
+
+    if (tcgetattr(pc_fd, &atd_settings) < 0) {
+        ENG_LOG("tcgetattr");
+        return 0;
+    }
+
+    if (chan == 1)
+        atd_settings.c_lflag |= 8;
+    else
+        atd_settings.c_lflag &= ~8;
+    
+    tcsetattr(pc_fd, TCSAFLUSH, &atd_settings);
+    return 1;
 }

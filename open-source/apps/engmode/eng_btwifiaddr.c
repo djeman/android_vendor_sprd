@@ -21,7 +21,7 @@
 
 #define MAC_ERROR_EX			":::::"
 #define MAC_ERROR			"FF:FF:FF:FF:FF:FF"
-#define WIFI_MAC_FILE		"/productinfo/wifimac.txt"
+#define WIFI_MAC_FILE		"/efs/wifi/.mac.info"
 #define WIFI_ROOT_MAC_FILE	"/data/misc/wifi/wifimac.txt"
 #define BT_MAC_FILE		"/productinfo/btmac.txt"
 #define BT_ROOT_MAC_FILE	"/data/misc/bluedroid/btmac.txt"
@@ -86,15 +86,15 @@ static void mac_rand(char *btmac, char *wifimac)
     // realtek_add_start
     ALOGD("+%s+",__FUNCTION__);
     // realtek_add_end
-    if(access(MAC_RAND_FILE, F_OK) == 0) {
+    if (access(MAC_RAND_FILE, F_OK) == 0) {
         ALOGD("%s: %s exists",__FUNCTION__, MAC_RAND_FILE);
         fd = open(MAC_RAND_FILE, O_RDWR);
-        if(fd>=0) {
+        if (fd>=0) {
 	    ret = read(fd, buf, sizeof(buf)-1);
-	    if(ret > 0){
+	    if (ret > 0) {
 		ALOGD("%s: read %s %s",__FUNCTION__, MAC_RAND_FILE, buf);
 		ptr = strchr(buf, ';');
-		if(ptr != NULL) {
+		if (ptr != NULL) {
 
 		    if((strstr(wifimac, MAC_ERROR)!=NULL)||(strstr(wifimac, MAC_ERROR_EX)!=NULL)||(strlen(wifimac)==0))
 			strcpy(wifimac, ptr+1);
@@ -108,7 +108,7 @@ static void mac_rand(char *btmac, char *wifimac)
 		    close(fd);
 		    return;
 		}
-	    }else{
+	    } else {
 		ALOGD("%s: read failed",__FUNCTION__);
 	    }
             // realtek_add_start
@@ -167,12 +167,12 @@ static int write_mac2file(char *wifimac, char *btmac)
     //wifi mac
     fd = open(WIFI_MAC_FILE, O_CREAT|O_RDWR|O_TRUNC, 0666);
     ENG_LOG("%s: mac=%s, fd[%s]=%d,errno=%d, errstr=%s",__FUNCTION__, wifimac, WIFI_MAC_FILE, fd,errno, strerror(errno));
-    if(fd >= 0) {
+    if (fd >= 0) {
         if(-1 == chmod(WIFI_MAC_FILE, 0666))
 	    ENG_LOG("%s chmod failed",__FUNCTION__);
         ret = write(fd, wifimac, strlen(wifimac));
         close(fd);
-    }else{
+    } else {
         ret = -1;
         return ret;
     }
@@ -180,17 +180,17 @@ static int write_mac2file(char *wifimac, char *btmac)
     //bt mac
     fd = open(BT_MAC_FILE, O_CREAT|O_RDWR|O_TRUNC, 0666);
     ENG_LOG("%s: mac=%s, fd[%s]=%d,errno=%d, errstr=%s",__FUNCTION__, btmac, BT_MAC_FILE, fd,errno, strerror(errno));
-    if(fd >= 0) {
-        if(-1 == chmod(BT_MAC_FILE, 0666))
+    if (fd >= 0) {
+        if (-1 == chmod(BT_MAC_FILE, 0666))
 	    ENG_LOG("%s chmod failed",__FUNCTION__);
         ret = write(fd, btmac, strlen(btmac));
         close(fd);
-        if (0 == access(BT_ROOT_MAC_FILE,F_OK)){
+        if (0 == access(BT_ROOT_MAC_FILE,F_OK)) {
             if (-1 == remove(BT_ROOT_MAC_FILE)) {
                 ENG_LOG("%s remove  %s failed",__FUNCTION__,BT_ROOT_MAC_FILE);
             }
         }
-    }else{
+    } else {
         ret = -1;
     }
 
@@ -208,25 +208,25 @@ int eng_btwifimac_write(char* bt_mac, char* wifi_mac)
     ENG_LOG("set BT/WIFI mac");
 
     // If no bt_mac or wifi_mac, we can randomly generate them.
-    if(!bt_mac || !wifi_mac) {
+    if (!bt_mac || !wifi_mac) {
         mac_rand(bt_mac_rand, wifi_mac_rand);
-        if(!bt_mac){
+        if (!bt_mac) {
             eng_btwifimac_read(bt_mac_rand, ENG_BT_MAC);
             bt_mac = bt_mac_rand;
         }
-        if(!wifi_mac){
+        if (!wifi_mac) {
             eng_btwifimac_read(wifi_mac_rand, ENG_WIFI_MAC);
             wifi_mac = wifi_mac_rand;
         }
     }
 
-    ENG_LOG("property ro.mac.wifi=%s, ro.mac.bluetooth=%s",wifi_mac,bt_mac);
-    ret = write_mac2file(wifi_mac,bt_mac);
+    ENG_LOG("property ro.mac.wifi=%s, ro.mac.bluetooth=%s", wifi_mac, bt_mac);
+    ret = write_mac2file(wifi_mac, bt_mac);
 
-    if(ret > 0){
-        property_set("sys.mac.wifi" ,wifi_mac);
-        property_set("sys.mac.bluetooth",bt_mac);
-        property_set("sys.bt.bdaddr_path",BT_MAC_FILE);
+    if (ret > 0) {
+        property_set("sys.mac.wifi", wifi_mac);
+        property_set("sys.mac.bluetooth", bt_mac);
+        property_set("sys.bt.bdaddr_path", BT_MAC_FILE);
         property_set("ctl.start", "set_mac");
     }
 
@@ -238,40 +238,39 @@ int eng_btwifimac_read(char* mac, MacType type)
     int fd, rcount;
     int ret = 0;
 
-    if(!mac)
+    if (!mac)
         return -1;
 
-    if(ENG_WIFI_MAC == type) {
+    if (ENG_WIFI_MAC == type) {
         // read wifi mac
-        if(access(WIFI_MAC_FILE, F_OK) == 0) {
-            ENG_LOG("%s: %s exists",__FUNCTION__, WIFI_MAC_FILE);
+        if (access(WIFI_MAC_FILE, F_OK) == 0) {
+            ENG_LOG("%s: %s exists", __FUNCTION__, WIFI_MAC_FILE);
             fd = open(WIFI_MAC_FILE, O_RDONLY);
-        }else{
-            ENG_LOG("%s: %s not exists,read %s",__FUNCTION__, WIFI_MAC_FILE,WIFI_ROOT_MAC_FILE);
+        } else {
+            ENG_LOG("%s: %s not exists,read %s", __FUNCTION__, WIFI_MAC_FILE, WIFI_ROOT_MAC_FILE);
             fd = open(WIFI_ROOT_MAC_FILE, O_RDONLY);
         }
-    }
-    else {
+    } else {
         // read bt mac
-        if(access(BT_MAC_FILE, F_OK) == 0) {
-            ENG_LOG("%s: %s exists",__FUNCTION__, BT_MAC_FILE);
+        if (access(BT_MAC_FILE, F_OK) == 0) {
+            ENG_LOG("%s: %s exists", __FUNCTION__, BT_MAC_FILE);
             fd = open(BT_MAC_FILE, O_RDONLY);
         }else{
-            ENG_LOG("%s: %s not exists,read %s",__FUNCTION__, BT_MAC_FILE,BT_ROOT_MAC_FILE);
+            ENG_LOG("%s: %s not exists,read %s", __FUNCTION__, BT_MAC_FILE, BT_ROOT_MAC_FILE);
             fd = open(BT_ROOT_MAC_FILE, O_RDONLY);
         }
     }
 
-    if(fd >= 0) {
+    if (fd >= 0) {
         rcount = read(fd, mac, 31);
-        if(rcount <= 0)
+        if (rcount <= 0)
         {
             ret = -1;
         }
 
         ENG_LOG("%s: mac=%s, fd[%s]=%d",__FUNCTION__, mac, WIFI_MAC_FILE, fd);
         close(fd);
-    }else{
+    } else {
         ENG_LOG("%s: fd=%d,errno=%d, strerror(errno)=%s",__FUNCTION__, fd, errno, strerror(errno));
         ret = -1;
     }

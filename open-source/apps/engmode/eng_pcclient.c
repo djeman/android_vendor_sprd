@@ -27,8 +27,9 @@
 sem_t g_armlog_sem;
 eng_dev_info_t *g_dev_info = 0;
 int g_ap_cali_flag = 0;
+
 extern int g_armlog_enable;
-extern int	disconnect_vbus_charger(void);
+extern int disconnect_vbus_charger(void);
 extern int turnoff_calibration_backlight(void);
 static int eng_iqfeed_start(int num);
 static void eng_check_whether_iqfeed(void);
@@ -456,6 +457,7 @@ int main (int argc, char** argv)
 
     eng_get_usb_int(argc, argv, dev_info.host_int.dev_at,
             dev_info.host_int.dev_diag, dev_info.host_int.dev_log,run_type);
+    strcpy(dev_info.host_int.dev_at, "/dev/ttyS1");
     ENG_LOG("engpcclient runtype:%s, atPath:%s, diagPath:%s, logPath:%s, type: %d\n", run_type,
             dev_info.host_int.dev_at, dev_info.host_int.dev_diag,
             dev_info.host_int.dev_log, dev_info.host_int.dev_type);
@@ -463,20 +465,18 @@ int main (int argc, char** argv)
     // Get the status of calibration mode & device type.
     eng_parse_cmdline(&cmdparam);
     // Correct diag path and run type by cmdline.
-    if(1 == cmdparam.califlag){
-        strcpy(run_type,cmdparam.cp_type);
+    if (cmdparam.califlag == 1) {
+        strcpy(run_type, cmdparam.cp_type);
         dev_info.host_int.cali_flag = cmdparam.califlag;
         dev_info.host_int.dev_type = cmdparam.connect_type;
-        if(CONNECT_UART == cmdparam.connect_type){
+        if (CONNECT_UART == cmdparam.connect_type) {
             strcpy(dev_info.host_int.dev_diag, "/dev/ttyS1");
             dev_info.host_int.dev_type = CONNECT_UART;
         }
-        if(CONNECT_USB == cmdparam.connect_type && g_ap_cali_flag){
+        if (CONNECT_USB == cmdparam.connect_type && g_ap_cali_flag) {
 	    eng_usb_enable();
 	}
-    }
-    else
-    {
+    } else {
         ENG_LOG("cmdparam.connect_type=%d\n", cmdparam.connect_type);
         dev_info.host_int.dev_type = cmdparam.connect_type;
     }
@@ -491,58 +491,58 @@ int main (int argc, char** argv)
     // Semaphore & log state initialization
     sem_init(&g_armlog_sem, 0, 0);
 
-    if(0 != strcmp(run_type, "wcn")){
+    if (strcmp(run_type, "wcn") != 0) {
         fd = eng_file_lock();
-        if(fd >= 0){
+        if (fd >= 0) {
             property_get("sys.onemodem.start.enable", get_propvalue, "not_find");
             ENG_LOG("sys.onemodem.start.enable = %s",get_propvalue);
-            if(0 == strcmp(get_propvalue, "not_find") || 0 != strcmp(get_propvalue, set_propvalue)){
+            if (strcmp(get_propvalue, "not_find") == 0 || strcmp(get_propvalue, set_propvalue) != 0){
                 property_set("sys.onemodem.start.enable", set_propvalue);
                 eng_file_unlock(fd);
                 eng_init_test_file();
                 eng_sqlite_create();
-                if(cmdparam.califlag != 1){
-                    if(cmdparam.normal_cali){
-                    //Change gser port
-                    memcpy(dev_info.host_int.dev_diag, "/dev/vser", sizeof("/dev/vser"));
-                }
-                // Check factory mode and switch device mode.
-                eng_check_factorymode(cmdparam.normal_cali);
-                if(cmdparam.normal_cali)
-                    eng_autotestStart();
-                }else{
+                if (cmdparam.califlag != 1) {
+                    if (cmdparam.normal_cali) {
+                        //Change gser port
+                        memcpy(dev_info.host_int.dev_diag, "/dev/vser", sizeof("/dev/vser"));
+                    }
+                    // Check factory mode and switch device mode.
+                    eng_check_factorymode(cmdparam.normal_cali);
+                    if (cmdparam.normal_cali)
+                        eng_autotestStart();
+                } else {
                     // Initialize file for ADC
                     initialize_ctrl_file();
                 }
-                if(1 == cmdparam.califlag) {
-                    if(0 != eng_thread_create(&t4, eng_printlog_thread, NULL)){
+                if (1 == cmdparam.califlag) {
+                    if (0 != eng_thread_create(&t4, eng_printlog_thread, NULL)) {
                         ENG_LOG("printlog thread start error");
                     }
                 }
-            }else{
+            } else {
                 eng_file_unlock(fd);
             }
         }
     }
 
-	/* Check whether the iqfeed shall be started. */
-	eng_check_whether_iqfeed();
-    if(0 != eng_thread_create(&t0, eng_uevt_thread, NULL)){
+    /* Check whether the iqfeed shall be started. */
+    eng_check_whether_iqfeed();
+    if (eng_thread_create(&t0, eng_uevt_thread, NULL) != 0){
         ENG_LOG("uevent thread start error");
     }
 
     // Create vlog thread for reading diag data from modem and send it to PC.
-    if (0 != eng_thread_create( &t1, eng_vlog_thread, &dev_info)){
+    if (eng_thread_create(&t1, eng_vlog_thread, &dev_info) != 0){
         ENG_LOG("vlog thread start error");
     }
 
     // Create vdiag thread for reading diag data from PC, some data will be
     // processed by ENG/AP, and some will be pass to modem transparently.
-    if (0 != eng_thread_create( &t2, eng_vdiag_wthread, &dev_info)){
+    if (eng_thread_create(&t2, eng_vdiag_wthread, &dev_info) != 0){
         ENG_LOG("vdiag wthread start error");
     }
 
-    if (0 != eng_thread_create( &t3, eng_vdiag_rthread, &dev_info)){
+    if (eng_thread_create(&t3, eng_vdiag_rthread, &dev_info) != 0){
         ENG_LOG("vdiag rthread start error");
     }
 
@@ -550,7 +550,7 @@ int main (int argc, char** argv)
         eng_at_pcmodem(&dev_info);
     }
 
-    while(1){
+    while(1) {
         sleep(10000);
     }
 

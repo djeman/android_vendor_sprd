@@ -77,7 +77,7 @@ int eng_autotestStart( void )
 
 	s_running = 1;
 
-    pthread_t      ptid;
+    pthread_t ptid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
