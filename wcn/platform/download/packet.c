@@ -311,7 +311,7 @@ int setup_packet(CMD_TYPE msg,char *buffer,int offset,int data_size,int flag,int
 **  Author:         jiayong.yang
 **  parameter:      none
 ******************************************************************************/
-int  send_connect_message(int fd,int flag)
+int send_connect_message(int fd, int flag)
 {
 	char raw_buffer[32] = {0};
 	int size;
@@ -322,63 +322,60 @@ int  send_connect_message(int fd,int flag)
 	struct pkt_header_tag head;
 	struct timespec begin, end;
 
-	size = setup_packet(BSL_CMD_CONNECT,raw_buffer,8,0,flag,0);
-	if(flag ==0)//uart
-	{
-		translated_size = translate_packet((char *)send_buffer,(char *)&raw_buffer[4],size);
+	size = setup_packet(BSL_CMD_CONNECT, raw_buffer, 8, 0, flag, 0);
+	if (flag == 0) { //uart
+		translated_size = translate_packet((char *)send_buffer, (char *)&raw_buffer[4], size);
 		WRITE_START(begin, end);
-		do{
-			retval = write(fd,send_buffer,translated_size);
-			if(retval > 0)
+		do {
+			retval = write(fd, send_buffer, translated_size);
+			if (retval > 0) {
 				translated_size -= retval;
-			else
-			{
+			} else {
 				DOWNLOAD_LOGD("warning: write errno=%d,try again\n", errno);
 				usleep(300);
 			}
 			WRITE_END(begin, end);
-		}while(translated_size> 0);
+		} while (translated_size > 0);
 		if (translated_size <= 0)
 			DOWNLOAD_LOGD("send connect message ok\n");
-	}
-	else//sdio
-	{
-		retval = write(fd,raw_buffer,size);
+	} else { //sdio
+		retval = write(fd,raw_buffer, size);
 		DOWNLOAD_LOGD("send_connect_message write retval = %d\n", retval);
 	}
-	if(retval > 0)
-	{
-		WAIT_ACK_START(begin,end);
-		if(flag == 0)
+
+	if (retval > 0) {
+		WAIT_ACK_START(begin, end);
+		if (flag == 0)
 			size = 8;
 		else
 			size = 6;
 		offset = 0;
-		do{
-			retval = read(fd,&raw_buffer[offset],size);
-			if(retval > 0)
-			{
+		do {
+			retval = read(fd,&raw_buffer[offset], size);
+			if (retval > 0) {
 				offset += retval;
 				size -= retval;
 			}
-			WAIT_ACK_END(begin,end);
-		}while(size!=0);
+			WAIT_ACK_END(begin, end);
+		} while (size!=0);
 	}
-	if(retval > 0){
-		if(flag == 0) {
-			untranslate_packet((char *)send_buffer,(char *)raw_buffer,offset);
+
+	if (retval > 0) {
+		if (flag == 0) {
+			untranslate_packet((char *)send_buffer, (char *)raw_buffer, offset);
 			data = (char *)send_buffer;
 		} else {
 			data = (char *)raw_buffer;
 		}
 		head.type = (data[0]<<8)|data[1];
-		if(head.type == BSL_REP_ACK)
-		{
+		if (head.type == BSL_REP_ACK) {
 			DOWNLOAD_LOGD(">>>>>>>ACK CMD_CONNECT\n");
 			return 0;
 		}
 	}
-	DOWNLOAD_LOGD("CONNECT_NACK:%x %x %x %x %x %x %x %x\n",raw_buffer[0],raw_buffer[1],raw_buffer[2],raw_buffer[3],raw_buffer[4],raw_buffer[5],raw_buffer[6],raw_buffer[7]);
+
+	DOWNLOAD_LOGD("CONNECT_NACK:%x %x %x %x %x %x %x %x\n", raw_buffer[0], raw_buffer[1],
+		raw_buffer[2], raw_buffer[3], raw_buffer[4], raw_buffer[5], raw_buffer[6], raw_buffer[7]);
 	return -1;
 }
 /******************************************************************************
@@ -387,7 +384,7 @@ int  send_connect_message(int fd,int flag)
 **  parameter:      size : size of image to be sent
 **                  addr : address where image to be saved in MODEM
 ******************************************************************************/
-int  send_start_message(int fd,int size,unsigned long addr,int flag)
+int send_start_message(int fd,int size,unsigned long addr,int flag)
 {
 	char raw_buffer[32] = {0};
 	char *data = raw_buffer;
@@ -463,7 +460,7 @@ int  send_start_message(int fd,int size,unsigned long addr,int flag)
 **  Author:         jiayong.yang
 **  parameter:      none
 ******************************************************************************/
-int  send_end_message(int fd,int flag)
+int send_end_message(int fd,int flag)
 {
 	char raw_buffer[32] = {0};
 	char *data = raw_buffer;
@@ -553,66 +550,66 @@ unsigned int send_getchipid_message(int fd,int flag)
 	int retval;
 	struct pkt_header_tag head;
 	struct timespec begin, end;
-	unsigned int chip_id=0;
+	unsigned int chip_id = 0;
 
-	DOWNLOAD_LOGD("send_getchipid_message enter,flag=%d \n",flag);
+	DOWNLOAD_LOGD("send_getchipid_message enter,flag=%d \n", flag);
 
-	size = setup_packet(BSL_CMD_READ_CHIPID,raw_buffer,8,0,flag,0);
-	if(flag ==0)
-	{	translated_size = translate_packet((char *)send_buffer,(char *)&raw_buffer[4],size);
+	size = setup_packet(BSL_CMD_READ_CHIPID, raw_buffer, 8, 0, flag, 0);
+	if (flag ==0) {	
+		translated_size = translate_packet((char *)send_buffer, (char *)&raw_buffer[4], size);
 		WRITE_START(begin, end);
-		do{
-			retval = write(fd,send_buffer,translated_size);
-			if(retval > 0)
+		do {
+			retval = write(fd,send_buffer, translated_size);
+			if (retval > 0) {
 				translated_size -= retval;
-			else
-			{
+			} else {
 				DOWNLOAD_LOGD("[tingle]: warning: write errno=%d,try again\n", errno);
 				usleep(300);
 			}
-			WRITE_END(begin,end);
-		}while(translated_size> 0);
+			WRITE_END(begin, end);
+		} while (translated_size> 0);
 		if (translated_size <= 0)
 			DOWNLOAD_LOGD("send message ok\n");
-	}
-	else
-	{
+	} else {
 		retval = write(fd,raw_buffer,size);
 		DOWNLOAD_LOGD("[Tingle]: send_getchipid_message write retval = %d\n", retval);
 	}
-	if(retval >0)
-	{
-		WAIT_ACK_START(begin,end);
-		if(flag == 0)
+
+	if (retval >0) {
+		WAIT_ACK_START(begin, end);
+		if (flag == 0)
 			size = 8;
 		else
 			size = 6;
 		offset = 0;
-		do{
-			retval = read(fd,&raw_buffer[offset],size);
-			if(retval > 0)
-			{
-				DOWNLOAD_LOGE("[Tingle]:  read retval=%d \n",retval);
+		do {
+			retval = read(fd,&raw_buffer[offset], size);
+			if (retval > 0) {
+				DOWNLOAD_LOGE("[Tingle]:  read retval=%d \n", retval);
 				offset += retval;
 				size -= retval;
 			}
-			WAIT_ACK_END(begin,end);
-		}while(size!=0);
+			WAIT_ACK_END(begin, end);
+		} while (size!=0);
 	}
-	if(retval > 0){
-		if(flag == 0) {
-			untranslate_packet((char *)send_buffer,(char *)raw_buffer,offset);
+
+	if (retval > 0) {
+		if (flag == 0) {
+			untranslate_packet((char *)send_buffer, (char *)raw_buffer,offset);
 			data = (char *)send_buffer;
 		} else {
 			data = (char *)raw_buffer;
 		}
-		DOWNLOAD_LOGE("[Tingle]: %x %x %x %x %x %x %x %x\n",raw_buffer[0],raw_buffer[1],raw_buffer[2],raw_buffer[3],raw_buffer[4],raw_buffer[5],raw_buffer[6],raw_buffer[7]);
+		DOWNLOAD_LOGE("[Tingle]: %x %x %x %x %x %x %x %x\n", raw_buffer[0], raw_buffer[1],
+			raw_buffer[2], raw_buffer[3], raw_buffer[4], raw_buffer[5], raw_buffer[6], raw_buffer[7]);
 
-		chip_id= ((data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]));
+		chip_id = ((data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]));
 		DOWNLOAD_LOGE("[Tingle]: chip_id=0x%04x \n",chip_id);
 		return chip_id;
 	}
-	DOWNLOAD_LOGD("[Tingle]: END_NACK:%x %x %x %x %x %x %x %x\n",raw_buffer[0],raw_buffer[1],raw_buffer[2],raw_buffer[3],raw_buffer[4],raw_buffer[5],raw_buffer[6],raw_buffer[7]);
+
+	DOWNLOAD_LOGD("[Tingle]: END_NACK:%x %x %x %x %x %x %x %x\n", raw_buffer[0], raw_buffer[1],
+		raw_buffer[2], raw_buffer[3], raw_buffer[4], raw_buffer[5], raw_buffer[6], raw_buffer[7]);
 	return 0;
 }
 #endif
@@ -622,7 +619,7 @@ unsigned int send_getchipid_message(int fd,int flag)
 **  Author:         jiayong.yang
 **  parameter:      none
 ******************************************************************************/
-int  send_data_message(int fd,char *buffer,int data_size,int flag,int image_size,int image_fd)
+int send_data_message(int fd,char *buffer,int data_size,int flag,int image_size,int image_fd)
 {
 	char raw_buffer[32] = {0};
         char    uart_buffer[1500]={0};
@@ -708,7 +705,7 @@ int  send_data_message(int fd,char *buffer,int data_size,int flag,int image_size
 **  Author:         jiayong.yang
 **  parameter:      addr: address MODEM start to run.
 ******************************************************************************/
-int  send_exec_message(int fd,unsigned long addr,int flag)
+int send_exec_message(int fd,unsigned long addr,int flag)
 {
 	char raw_buffer[32] = {0};
 	char *data = raw_buffer;

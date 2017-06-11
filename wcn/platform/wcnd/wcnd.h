@@ -6,7 +6,7 @@
 
 #define WCND_DEBUG
 #define WCND_WIFI_CONFIG_FILE_PATH "/data/misc/wifi/wifimac.txt"
-#define WCND_WIFI_FACTORY_CONFIG_FILE_PATH "/productinfo/wifimac.txt"
+#define WCND_WIFI_FACTORY_CONFIG_FILE_PATH "/efs/wifi/.mac.info"
 #define WCND_BT_CONFIG_FILE_PATH "/data/misc/bluedroid/btmac.txt"
 #define WCND_BT_FACTORY_CONFIG_FILE_PATH "/productinfo/btmac.txt"
 #define MAC_LEN 6

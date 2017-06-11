@@ -121,10 +121,10 @@ char test_buffer[HS_PACKET_SIZE+128]={0};
 static char *uart_dev = UART_DEVICE_NAME;
 static int fdl_cp_poweron_delay = FDL_CP_PWRON_DLY;
 
-int speed_arr[] = {B921600,B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300,
-                   B921600,B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300, };
-int name_arr[] = {921600,115200,38400,  19200, 9600,  4800,  2400,  1200,  300,
-        921600, 115200,38400,  19200,  9600, 4800, 2400, 1200,  300, };
+int speed_arr[] = { B921600, B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300,
+                    B921600, B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300 };
+int name_arr[] = { 921600, 115200, 38400, 19200, 9600, 4800, 2400, 1200, 300,
+                   921600, 115200, 38400, 19200, 9600, 4800, 2400, 1200, 300 };
 
 
 struct wifi_calibration
@@ -189,11 +189,10 @@ void set_raw_data_speed(int fd, int speed)
 
     tcflush(fd,TCIOFLUSH);
     tcgetattr(fd, &Opt);
-    for ( i= 0;  i  < sizeof(speed_arr) / sizeof(int);  i++){
-        if  (speed == name_arr[i])
-        {
+    for (i=0; i < sizeof(speed_arr)/sizeof(int); i++) {
+        if (speed == name_arr[i]) {
 	    //set raw data mode
-           // Opt.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+            // Opt.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
             Opt.c_oflag &= ~OPOST;
             Opt.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
             Opt.c_cflag &= ~(CSIZE | PARENB | CRTSCTS);
@@ -206,7 +205,7 @@ void set_raw_data_speed(int fd, int speed)
             cfsetispeed(&Opt, speed_arr[i]);
             cfsetospeed(&Opt, speed_arr[i]);
             status = tcsetattr(fd, TCSANOW, &Opt);
-            if  (status != 0)
+            if (status != 0)
                 perror("tcsetattr fd1");
             return;
         }
@@ -214,16 +213,16 @@ void set_raw_data_speed(int fd, int speed)
 }
 
 
-int open_uart_device(int polling_mode,int speed)
+int open_uart_device(int polling_mode, int speed)
 {
-    int fd;
-    if(polling_mode == 1)
-	fd = open(uart_dev, O_RDWR|O_NONBLOCK );
-    else
-	fd = open(uart_dev, O_RDWR);
-    if(fd >= 0)
-	    set_raw_data_speed(fd,speed);
-    return fd;
+	int fd;
+	if (polling_mode == 1)
+		fd = open(uart_dev, O_RDWR|O_NONBLOCK );
+	else
+		fd = open(uart_dev, O_RDWR);
+	if (fd >= 0)
+		set_raw_data_speed(fd,speed);
+	return fd;
 }
 
 static int try_to_connect_device(int uart_fd)
@@ -240,13 +239,13 @@ static int try_to_connect_device(int uart_fd)
 
 	DOWNLOAD_LOGD("try to connect device......uart_fd = %d \n", uart_fd);
 
-	if(-1 == clock_gettime(CLOCK_MONOTONIC, &tm_begin)){
+	if (clock_gettime(CLOCK_MONOTONIC, &tm_begin) == -1) {
 		DOWNLOAD_LOGE("get tm_begin error \n");
 		return -1;
 	}
 
-	for(;;){
-		if(-1 == clock_gettime(CLOCK_MONOTONIC, &tm_end)){
+	for (;;) {
+		if (clock_gettime(CLOCK_MONOTONIC, &tm_end) == -1) {
 			DOWNLOAD_LOGE("get tm_end error \n");
 			return -1;
 		}
@@ -281,41 +280,41 @@ static int try_to_connect_device(int uart_fd)
 		write(uart_fd,&hand_shake,3);
 		data = version_string;
 		ret = read(uart_fd,version_string,1);
-		if(ret == 1){
-			DOWNLOAD_LOGD("end %d 0x%x\n",ret,version_string[0]);
-			if(version_string[0]==0x7E){
+		if (ret == 1) {
+			DOWNLOAD_LOGD("end %d 0x%x\n", ret, version_string[0]);
+			if (version_string[0] == 0x7E) {
 				data++;
-				do{
-					ret = read(uart_fd,data,1);
-					if(ret == 1){
-				 		if(*data == 0x7E){
+				do {
+					ret = read(uart_fd, data, 1);
+					if (ret == 1) {
+				 		if (*data == 0x7E) {
 							status = 1;
 							DOWNLOAD_LOGD("Version string received:");
 
-							i=0;
-							do{
+							i = 0;
+							do {
 								DOWNLOAD_LOGD("0x%02x",version_string[i]);
 								i++;
-							}while(data > &version_string[i]);
-							DOWNLOAD_LOGD("0x%02x",version_string[i]);
+							} while(data > &version_string[i]);
+							DOWNLOAD_LOGD("0x%02x", version_string[i]);
 							DOWNLOAD_LOGD("\n");
 							break;
 						}
 						data++;
-						if ( (data - version_string) >= sizeof(buffer)) {
+						if ((data - version_string) >= sizeof(buffer)) {
 							DOWNLOAD_LOGD("invalid version: rubbish data in driver");
 							break;
 						}
-					}  else {
-						if(-1 == clock_gettime(CLOCK_MONOTONIC, &tm_end)){
+					} else {
+						if (clock_gettime(CLOCK_MONOTONIC, &tm_end) == -1) {
 							DOWNLOAD_LOGE("get tm_end error \n");
 							return -1;
 						}
 					}
-				}while(delta_miliseconds(&tm_begin, &tm_end) < FDL_CP_UART_TIMEOUT);
+				} while (delta_miliseconds(&tm_begin, &tm_end) < FDL_CP_UART_TIMEOUT);
 			}
 		}
-		if(status == 1)
+		if (status == 1)
 			return uart_fd;
 	}
 }
@@ -462,9 +461,9 @@ int parse_wcnimg_info(struct image_info *info,int chiptype)
 }
 #endif
 
-int download_image(int channel_fd,struct image_info *info)
+int download_image(int channel_fd, struct image_info *info)
 {
-	int packet_size,trans_size=HS_PACKET_SIZE;
+	int packet_size, trans_size = HS_PACKET_SIZE;
 	int image_fd;
 	int read_len;
 	char *buffer;
@@ -475,9 +474,9 @@ int download_image(int channel_fd,struct image_info *info)
 	int ret=DL_SUCCESS;
 	unsigned int chip_id=0;
 
-        if(info->image_path == NULL)
+        if (info->image_path == NULL)
                 return DL_SUCCESS;
-        if(info->image_size < HS_PACKET_SIZE)
+        if (info->image_size < HS_PACKET_SIZE)
                 trans_size = LS_PACKET_SIZE;
 
 
@@ -510,61 +509,67 @@ int download_image(int channel_fd,struct image_info *info)
 #endif
 	image_fd = open(info->image_path, O_RDONLY,0);
 
-        if(image_fd < 0){
-                DOWNLOAD_LOGE("open file: %s error = %d\n", info->image_path,errno);
+        if (image_fd < 0) {
+                DOWNLOAD_LOGE("open file: %s error = %d\n", info->image_path, errno);
 		return DL_SUCCESS;
-       }
+	}
 	image_size = info->image_size;
 #ifdef GET_MARLIN_CHIPID
         DOWNLOAD_LOGD("info->address = %d\n",info->address);
-        DOWNLOAD_LOGD("info->image_size = %d,marlin_img_flag.is_combine_flag=%d \n",image_size,marlin_img_flag.is_combine_flag);
-        if(marlin_img_flag.is_combine_flag == 1){
-                DOWNLOAD_LOGD("marlin_imginfo.offset = %d,AA=0x%x,BA=0x%x\n",marlin_imginfo.offset,BSL_REP_IS_2331_AA,BSL_REP_IS_2331_BA);
-                if((marlin_img_flag.which_img_flag == BSL_REP_IS_2331_AA)||(marlin_img_flag.which_img_flag == BSL_REP_IS_2331_BA)){
+        DOWNLOAD_LOGD("info->image_size = %d,marlin_img_flag.is_combine_flag=%d \n",
+		image_size, marlin_img_flag.is_combine_flag);
+        if (marlin_img_flag.is_combine_flag == 1) {
+                DOWNLOAD_LOGD("marlin_imginfo.offset = %d,AA=0x%x,BA=0x%x\n",
+			marlin_imginfo.offset, BSL_REP_IS_2331_AA, BSL_REP_IS_2331_BA);
+                if ((marlin_img_flag.which_img_flag == BSL_REP_IS_2331_AA) ||
+			(marlin_img_flag.which_img_flag == BSL_REP_IS_2331_BA)) {
                         lseek(image_fd,marlin_imginfo.offset,SEEK_SET);
 
                         image_size = marlin_imginfo.size;
                         DOWNLOAD_LOGD("marlin_imginfo.size = %d \n",marlin_imginfo.size);
                 }
                 else{
-                        DOWNLOAD_LOGD("marlin_img_flag.which_img_flag = %x \n",marlin_img_flag.which_img_flag);
+                        DOWNLOAD_LOGD("marlin_img_flag.which_img_flag = %x \n",
+				marlin_img_flag.which_img_flag);
                         DOWNLOAD_LOGD("the image is combine ,but is not the AA or BA !!!exit!!\n");
-						close(image_fd);
+			close(image_fd);
                         return -1;
                 }
         }
-		count = (image_size+trans_size-1)/trans_size;
-		DOWNLOAD_LOGD("=====image_size = %d, count=%d,trans_size=%d address=%d =====\n",image_size,count,trans_size,info->address);
+
+	count = (image_size+trans_size-1)/trans_size;
+	DOWNLOAD_LOGD("=====image_size = %d, count=%d,trans_size=%d address=%d =====\n",
+		image_size, count, trans_size, info->address);
 #endif
 	count = (image_size+trans_size-1)/trans_size;
 	ret = send_start_message(channel_fd,count*trans_size,info->address,1);
-	if (ret != DL_SUCCESS){
+	if (ret != DL_SUCCESS) {
 		close(image_fd);
 		return DL_FAILURE;
 	}
-	for(i=0;i<count;i++){
+	for (i=0;i<count;i++) {
 		packet_size = trans_size;
 		buffer = (char *)&test_buffer[8];
-		do{
-			read_len = read(image_fd,buffer,packet_size);
-			if(read_len > 0){
+		do {
+			read_len = read(image_fd, buffer, packet_size);
+			if (read_len > 0) {
 				packet_size -= read_len;
 				buffer += read_len;
-			  }else{
-			  	break;
-			  }
-		}while(packet_size > 0);
+			} else {
+				break;
+			}
+		} while (packet_size > 0);
 		
-		if(image_size < trans_size){
+		if (image_size < trans_size) {
 			for(i=image_size;i<trans_size;i++)
 				test_buffer[i+8] = 0xFF;
 			image_size = 0;
-		}else{
+		} else {
 			image_size -= trans_size;
 		}
 		
-		ret = send_data_message(channel_fd,test_buffer,trans_size,1,trans_size,image_fd);
-		if(ret != DL_SUCCESS){
+		ret = send_data_message(channel_fd, test_buffer, trans_size, 1, trans_size, image_fd);
+		if (ret != DL_SUCCESS) {
 			close(image_fd);
 			return DL_FAILURE;
 		}
@@ -578,17 +583,17 @@ int download_image(int channel_fd,struct image_info *info)
 int download_images(int channel_fd)
 {
 	struct image_info *info;
-	int i ,ret=DL_SUCCESS;
+	int i, ret = DL_SUCCESS;
 	int image_count = download_images_count - 1;
 
 	info = &download_image_info[1];
-	for(i=0;i<image_count;i++){
-		ret = download_image(channel_fd,info);
-		if(ret != DL_SUCCESS)
+	for (i=0;i<image_count;i++) {
+		ret = download_image(channel_fd, info);
+		if (ret != DL_SUCCESS)
 			return DL_FAILURE;
 		info++;
 	}
-	ret = send_exec_message(channel_fd,download_image_info[1].address,1);
+	ret = send_exec_message(channel_fd, download_image_info[1].address, 1);
 	return ret;
 }
 
@@ -604,37 +609,37 @@ void * load_fdl2memory(int *length)
 
 	info = &download_image_info[0];
 	fdl_fd = open(info->image_path, O_RDONLY,0);
-	if(fdl_fd < 0){
+	if (fdl_fd < 0) {
 		DOWNLOAD_LOGE("open file %s error = %d\n", info->image_path, errno);
 		return NULL;
 	}
 
 	read_len = read(fdl_fd,nvbuf, 512);
 	nv_head = (nv_header_t*) nvbuf;
-	if(nv_head->magic != NV_HEAD_MAGIC)
-	{
+	if (nv_head->magic != NV_HEAD_MAGIC) {
 		lseek(fdl_fd,SEEK_SET,0);
 	}
-	DOWNLOAD_LOGD("nvbuf.magic  0x%x \n",nv_head->magic);
+	DOWNLOAD_LOGD("nvbuf.magic  0x%x \n", nv_head->magic);
 
 	size = info->image_size;
         buffer = malloc(size+4);
-        if(buffer == NULL){
+        if (buffer == NULL) {
                 close(fdl_fd);
                 DOWNLOAD_LOGE("no memory\n");
                 return NULL;
         }
         ret_val = buffer;
-	do{
-		read_len = read(fdl_fd,buffer,size);
-		if(read_len > 0)
-		{
+	do {
+		read_len = read(fdl_fd, buffer, size);
+		if (read_len > 0) {
 			size -= read_len;
 			buffer += read_len;
+		} else {
+			break;
 		}
-	}while(size > 0);
+	} while (size > 0);
 	close(fdl_fd);
-	if(length)
+	if (length)
 		*length = info->image_size;
 	return ret_val;
 }
@@ -650,18 +655,18 @@ static int download_fdl(int uart_fd)
 	char test_buffer1[256]={0};
 
 	buffer = load_fdl2memory(&size);
-	DOWNLOAD_LOGD("fdl image info : address %p size %x\n",buffer,size);
-	if(buffer == NULL)
+	DOWNLOAD_LOGD("fdl image info : address %p size %x\n", buffer, size);
+	if (buffer == NULL)
 		return DL_FAILURE;
 	ret_val = buffer;
-	ret = send_start_message(uart_fd,size,download_image_info[0].address,0);
-	if(ret == DL_FAILURE){
+	ret = send_start_message(uart_fd, size, download_image_info[0].address, 0);
+	if (ret == DL_FAILURE) {
                 free(ret_val);
                 return ret;
         }
-	while(size){
-		ret = send_data_message(uart_fd,buffer,FDL_PACKET_SIZE,0,0,0);
-		if(ret == DL_FAILURE){
+	while (size) {
+		ret = send_data_message(uart_fd, buffer, FDL_PACKET_SIZE, 0, 0, 0);
+		if (ret == DL_FAILURE) {
 			free(ret_val);
 			return ret;
 		}
@@ -670,12 +675,12 @@ static int download_fdl(int uart_fd)
 	}
 	DOWNLOAD_LOGD("send_end_message\n");
 	ret = send_end_message(uart_fd,0);
-	if(ret == DL_FAILURE){
+	if (ret == DL_FAILURE) {
 		free(ret_val);
 		return ret;
 	}
 	DOWNLOAD_LOGD("send_exec_message\n");
-	ret = send_exec_message(uart_fd,download_image_info[0].address,0);
+	ret = send_exec_message(uart_fd, download_image_info[0].address, 0);
 	free(ret_val);
 	return ret;
 }
@@ -684,13 +689,10 @@ static void download_power_on(bool enable)
 {
 	int fd;
 	fd = open(POWER_CTL, O_RDWR);
-	if(enable)
-	{
-		ioctl(fd,DOWNLOAD_POWER_ON,NULL);
-	}
-	else
-	{
-		ioctl(fd,DOWNLOAD_POWER_OFF,NULL);
+	if (enable) {
+		ioctl(fd,DOWNLOAD_POWER_ON, NULL);
+	} else {
+		ioctl(fd,DOWNLOAD_POWER_OFF, NULL);
 	}
 	close(fd);
 }
@@ -699,7 +701,7 @@ static void download_hw_rst(void)
 {
 	int fd;
 	fd = open(POWER_CTL, O_RDWR);
-	ioctl(fd,DOWNLOAD_POWER_RST,NULL);
+	ioctl(fd, DOWNLOAD_POWER_RST, NULL);
 	close(fd);
 }
 
@@ -709,7 +711,7 @@ static void download_set_marlin_version(void)
 
 	DOWNLOAD_LOGD("download_set_marlin_version\n");
 	fd = open(POWER_CTL, O_RDWR);
-	ioctl(fd,MARLIN_SET_VERSION,NULL);
+	ioctl(fd, MARLIN_SET_VERSION, NULL);
 	close(fd);
 }
 
@@ -726,29 +728,29 @@ static void download_wifi_calibration(int download_fd)
 	/* start calibration*/
 	get_connectivity_rf_param(&wifi_data.wifi_rf_cali);
 	ret = write(download_fd,&wifi_data.wifi_rf_cali,sizeof(wifi_data.wifi_rf_cali));
-	#ifndef WCN_EXTEN_15C
-	do{
-                ret = read(download_fd,&wifi_data.wifi_cali_cp,sizeof(wifi_data.wifi_cali_cp));
+#ifndef WCN_EXTEN_15C
+	do {
+		ret = read(download_fd, &wifi_data.wifi_cali_cp, sizeof(wifi_data.wifi_cali_cp));
                 usleep(1000);
                 retry_cnt++;
-        }while((ret <= 0) && (retry_cnt <= 2000));
+        } while ((ret <= 0) && (retry_cnt <= 2000));
 
-	if(ret <= 0)
+	if (ret <= 0)
                 DOWNLOAD_LOGD("wait cali fail!!!!\n");
 
-	if(!wifi_data.wifi_rf_cali.wifi_cali.cali_config.is_calibrated){
+	if (!wifi_data.wifi_rf_cali.wifi_cali.cali_config.is_calibrated) {
 		wlan_save_cali_data_to_file(&wifi_data.wifi_cali_cp);
 	}
-	#else
-	if(!wifi_data.wifi_rf_cali.wifi_cali.cali_config.is_calibrated){
+#else
+	if (!wifi_data.wifi_rf_cali.wifi_cali.cali_config.is_calibrated) {
 		do{
-        	        ret = read(download_fd,&wifi_data.wifi_cali_cp,sizeof(wifi_data.wifi_cali_cp));
-                	usleep(1000);
-                	retry_cnt++;
-        	}while((ret <= 0) && (retry_cnt <= 2000));
+			ret = read(download_fd, &wifi_data.wifi_cali_cp, sizeof(wifi_data.wifi_cali_cp));
+			usleep(1000);
+			retry_cnt++;
+		} while((ret <= 0) && (retry_cnt <= 2000));
         
 		if(ret <= 0)
-                	DOWNLOAD_LOGD("wait cali fail!!!!\n");
+			DOWNLOAD_LOGD("wait cali fail!!!!\n");
 
 		wlan_save_cali_data_to_file(&wifi_data.wifi_cali_cp);
 	}
@@ -803,13 +805,13 @@ static int send_notify_to_client(pmanager_t *pmanager, char *info_str,int type)
 static int send_msg_to_mdbg(char *str)
 {
 	int loop_fd = -1;
-	int ret=0;
+	int ret = 0;
 
 	loop_fd = open(LOOP_DEV, O_RDWR|O_NONBLOCK);
 	ret = write(loop_fd, str, strlen(str));
-	if(ret < 0)
-	{
-		DOWNLOAD_LOGE("write %s failed, error:%s loop_fd:%d",LOOP_DEV, strerror(errno),loop_fd);
+	if (ret < 0) {
+		DOWNLOAD_LOGE("write %s failed, error:%s loop_fd:%d", 
+			LOOP_DEV, strerror(errno), loop_fd);
 		close(loop_fd);
 		return -1;
 	}
@@ -828,50 +830,47 @@ int download_entry(void)
 
 	DOWNLOAD_LOGD("download_entry\n");
 
-	if(pmanager.flag_stop){
-		#ifdef ENABLE_POWER_CTL
+	if (pmanager.flag_stop) {
+#ifdef ENABLE_POWER_CTL
 		download_power_on(0);
-		#endif
-		ret = send_notify_to_client(&pmanager, WCN_RESP_STOP_WCN,WCN_SOCKET_TYPE_WCND);
+#endif
+		ret = send_notify_to_client(&pmanager, WCN_RESP_STOP_WCN, WCN_SOCKET_TYPE_WCND);
 		pmanager.flag_stop = 0;
 		return 0;
 	}
-	#ifndef ENABLE_POWER_CTL
-	if(pmanager.flag_start){
+#ifndef ENABLE_POWER_CTL
+	if (pmanager.flag_start) {
 		send_msg_to_mdbg(WCN_CMD_START_WCN);
-		ret = send_notify_to_client(&pmanager, WCN_RESP_START_WCN,WCN_SOCKET_TYPE_WCND);
+		ret = send_notify_to_client(&pmanager, WCN_RESP_START_WCN, WCN_SOCKET_TYPE_WCND);
 		pmanager.flag_start = 0;
 		return 0;
 	}
-	#endif
-	if(pmanager.flag_reboot){
+#endif
+	if (pmanager.flag_reboot) {
 		download_power_on(0);
 	}
 
 reboot_device:
-	if (reboot)
-	{
+	if (reboot) {
 		download_power_on(0);
-		if (!(retry--))
-		{
+		if (!(retry--)) {
 			DOWNLOAD_LOGE("failed to power up marlin, max retry reached\n");
 			return -1;
 		}
 		usleep(30000);
 		reboot=false;
 	}
+
 	download_power_on(1);
 	download_hw_rst();
-    uart_fd = open_uart_device(1,115200);
-    if(uart_fd < 0)
-    {
+
+	uart_fd = open_uart_device(1,115200);
+	if (uart_fd < 0) {
 		DOWNLOAD_LOGE("open_uart_device fail %s\n",strerror(errno));
 		reboot = true;
 		goto reboot_device;
-    }
-    //download_hw_rst();
-	
-	//uart_fd = ret;
+	}
+
 	if (DL_FAILURE == try_to_connect_device(uart_fd)
 		|| DL_FAILURE == send_connect_message(uart_fd,0)
 		|| DL_FAILURE == download_fdl(uart_fd))
@@ -882,12 +881,12 @@ reboot_device:
 	}
 
 	fsync(uart_fd);
-    close(uart_fd);
+	close(uart_fd);
 
-    download_fd = open(DLOADER_PATH, O_RDWR);
-    DOWNLOAD_LOGD("open dloader device successfully ... \n");
+	download_fd = open(DLOADER_PATH, O_RDWR);
+	DOWNLOAD_LOGD("open dloader device successfully ... \n");
 
-	if(pmanager.flag_dump){
+	if (pmanager.flag_dump) {
 		/*send dump cmmd and do dump*/
 		DOWNLOAD_LOGD("start dump mem\n");
 		send_msg_to_mdbg(WCN_CMD_DUMP_WCN);
@@ -896,57 +895,56 @@ reboot_device:
 		send_dump_mem_message(download_fd,0,0,1);
 		close(download_fd);
 
-		while (1)
-		{
+		while (1) {
 			sleep(1);
-			if (property_get(WCN_DUMP_LOG_COMPLETE, value, NULL))
-			{
-				if (strcmp(value, "1") == 0)
-				{
+			if (property_get(WCN_DUMP_LOG_COMPLETE, value, NULL)) {
+				if (strcmp(value, "1") == 0) {
 					break;
 				}
 			}
 		}
 		DOWNLOAD_LOGD("end dump mem\n");
-	}else{
-	    ret = download_images(download_fd);
-	    if (ret == DL_FAILURE){
-		    close(download_fd);
-		    sleep(1);
-		    reboot = true;
-		    goto reboot_device;
-	    }
-	    DOWNLOAD_LOGD("download finished ......\n");
+	} else {
+		ret = download_images(download_fd);
+		if (ret == DL_FAILURE) {
+			close(download_fd);
+			sleep(1);
+			reboot = true;
+			goto reboot_device;
+		}
+		DOWNLOAD_LOGD("download finished ......\n");
 
-	    download_wifi_calibration(download_fd);
-	    close(download_fd);
+		download_wifi_calibration(download_fd);
+		close(download_fd);
 	}
 
 
-	if(pmanager.flag_dump){
-		ret = send_notify_to_client(&pmanager, WCN_RESP_DUMP_WCN,WCN_SOCKET_TYPE_WCND);
+	if (pmanager.flag_dump) {
+		ret = send_notify_to_client(&pmanager, WCN_RESP_DUMP_WCN, WCN_SOCKET_TYPE_WCND);
 		pmanager.flag_dump = 0;
 	}
 
-	if(pmanager.flag_reboot){
-		ret = send_notify_to_client(&pmanager, WCN_RESP_REBOOT_WCN,WCN_SOCKET_TYPE_WCND);
+	if (pmanager.flag_reboot) {
+		ret = send_notify_to_client(&pmanager, WCN_RESP_REBOOT_WCN, WCN_SOCKET_TYPE_WCND);
 		pmanager.flag_reboot = 0;
 	}
 
-	if(pmanager.flag_start){
-		#ifdef ENABLE_POWER_CTL
+	if (pmanager.flag_start) {
+#ifdef ENABLE_POWER_CTL
 		send_msg_to_mdbg(WCN_CMD_START_WCN);
-		#endif
-		ret = send_notify_to_client(&pmanager, WCN_RESP_START_WCN,WCN_SOCKET_TYPE_WCND);
+#endif
+		ret = send_notify_to_client(&pmanager, WCN_RESP_START_WCN, WCN_SOCKET_TYPE_WCND);
 		pmanager.flag_start = 0;
 	}
+
 	#if 0
-	if(pmanager.flag_connect){
-		ret = send_notify_to_client(&pmanager, EXTERNAL_WCN_ALIVE,WCN_SOCKET_TYPE_SLOG);
+	if (pmanager.flag_connect) {
+		ret = send_notify_to_client(&pmanager, EXTERNAL_WCN_ALIVE, WCN_SOCKET_TYPE_SLOG);
 		pmanager.flag_connect = 0;
 	}
 	#endif
-    return 0;
+
+	return 0;
 }
 
 static void store_client_fd(WcnClient client_fds[], int fd,int type)
@@ -993,7 +991,7 @@ static void *client_listen_thread(void *arg)
 {
 	pmanager_t *pmanager = (pmanager_t *)arg;
 
-	if(!pmanager)
+	if (!pmanager)
 	{
 		DOWNLOAD_LOGE("%s: unexcept NULL pmanager", __FUNCTION__);
 		exit(-1);
@@ -1017,23 +1015,23 @@ static void *client_listen_thread(void *arg)
 		if (pmanager->listen_slog_fd > max)
 			max = pmanager->listen_slog_fd;
 
-		if ((rc = select(max + 1, &read_fds, NULL, NULL, NULL)) < 0){
+		if ((rc = select(max + 1, &read_fds, NULL, NULL, NULL)) < 0) {
 			if (errno == EINTR)
 				continue;
 
 			sleep(1);
 			continue;
-		}else if (!rc)
+		} else if (!rc)
 			continue;
 
-		if (FD_ISSET(pmanager->listen_slog_fd, &read_fds)){
+		if (FD_ISSET(pmanager->listen_slog_fd, &read_fds)) {
 			do {
 				alen = sizeof(addr);
 				c = accept(pmanager->listen_slog_fd, &addr, &alen);
 				DOWNLOAD_LOGD("%s got %d from accept", WCN_SOCKET_SLOG_NAME, c);
 			} while (c < 0 && errno == EINTR);
 
-			if (c < 0){
+			if (c < 0) {
 				DOWNLOAD_LOGE("accept %s failed (%s)", WCN_SOCKET_SLOG_NAME,strerror(errno));
 				sleep(1);
 				continue;
@@ -1041,14 +1039,14 @@ static void *client_listen_thread(void *arg)
 
 			store_client_fd(pmanager->client_fds, c,WCN_SOCKET_TYPE_SLOG);
 			pmanager->flag_connect = 1;
-		}else if(FD_ISSET(pmanager->listen_fd, &read_fds)) {
+		} else if(FD_ISSET(pmanager->listen_fd, &read_fds)) {
 			do {
 				alen = sizeof(addr);
 				c = accept(pmanager->listen_fd, &addr, &alen);
 				DOWNLOAD_LOGD("%s got %d from accept", WCN_SOCKET_NAME, c);
 			} while (c < 0 && errno == EINTR);
 
-			if (c < 0){
+			if (c < 0) {
 				DOWNLOAD_LOGE("accept %s failed (%s)", WCN_SOCKET_NAME,strerror(errno));
 				sleep(1);
 				continue;
@@ -1069,13 +1067,13 @@ static void *wcn_exception_listen(void *arg)
 	struct timeval timeout;
 	pmanager_t *pmanager = (pmanager_t *)arg;
 
-	if(!pmanager)
+	if (!pmanager)
 	{
 		DOWNLOAD_LOGE("%s: unexcept NULL pmanager", __FUNCTION__);
 		exit(-1);
 	}
 
-	while(1){
+	while (1) {
 		timeout.tv_sec = 3;
 		timeout.tv_usec = 0;
 		FD_ZERO(&readset);
@@ -1083,18 +1081,18 @@ static void *wcn_exception_listen(void *arg)
 		FD_SET(pmanager->selfcmd_sockets[1], &readset);
 		max = pmanager->selfcmd_sockets[1];
 
-		for(i = 0; i < WCN_MAX_CLIENT_NUM; i++){
-			if((pmanager->client_fds[i].sockfd >= 0) && (pmanager->client_fds[i].type == WCN_SOCKET_TYPE_WCND)){
+		for (i = 0; i < WCN_MAX_CLIENT_NUM; i++) {
+			if ((pmanager->client_fds[i].sockfd >= 0) && (pmanager->client_fds[i].type == WCN_SOCKET_TYPE_WCND)) {
 				max = pmanager->client_fds[i].sockfd> max ? pmanager->client_fds[i].sockfd : max;
 				FD_SET(pmanager->client_fds[i].sockfd, &readset);
 			}
 		}
 
 		result = select(max + 1, &readset, NULL, NULL, NULL/*&timeout*/);
-		if(result == 0)
+		if (result == 0)
 			continue;
 
-		if(result < 0){
+		if (result < 0) {
 			sleep(1);
 			continue;
 		}
@@ -1107,22 +1105,22 @@ static void *wcn_exception_listen(void *arg)
 			continue;
 		}
 
-		for(i = 0; i < WCN_MAX_CLIENT_NUM; i++){
-			if((pmanager->client_fds[i].sockfd >= 0) && FD_ISSET(pmanager->client_fds[i].sockfd, &readset)){
-				if(pmanager->client_fds[i].type == WCN_SOCKET_TYPE_WCND){
+		for (i = 0; i < WCN_MAX_CLIENT_NUM; i++) {
+			if ((pmanager->client_fds[i].sockfd >= 0) && FD_ISSET(pmanager->client_fds[i].sockfd, &readset)) {
+				if (pmanager->client_fds[i].type == WCN_SOCKET_TYPE_WCND) {
 					ret = read(pmanager->client_fds[i].sockfd, buffer, SOCKET_BUFFER_SIZE);
 					//DOWNLOAD_LOGD("sockfd get %d %d bytes %s", pmanager->client_fds[i].sockfd,ret, buffer);
-					if(strcmp(buffer,WCN_CMD_REBOOT_WCN) == 0){
+					if (strcmp(buffer, WCN_CMD_REBOOT_WCN) == 0) {
 						pmanager->flag_reboot = 1;
 						//download_state = DOWNLOAD_START;
 						download_entry();
-					}else if(strcmp(buffer,WCN_CMD_DUMP_WCN) == 0){
+					} else if(strcmp(buffer, WCN_CMD_DUMP_WCN) == 0) {
 						pmanager->flag_dump = 1;
 						//download_state = DOWNLOAD_START;
 						download_entry();
-					}else if(strcmp(buffer,WCN_CMD_START_WCN) == 0){
+					} else if(strcmp(buffer, WCN_CMD_START_WCN) == 0) {
 						#ifndef ENABLE_POWER_CTL
-						while(download_state != DOWNLOAD_BOOTCOMP) {
+						while (download_state != DOWNLOAD_BOOTCOMP) {
 							DOWNLOAD_LOGD("sleep 100ms to wait for download complete.\n");
 							usleep(100*1000);
 						}
@@ -1130,7 +1128,7 @@ static void *wcn_exception_listen(void *arg)
 						pmanager->flag_start = 1;
 						//download_state = DOWNLOAD_START;
 						download_entry();
-					}else if(strcmp(buffer,WCN_CMD_STOP_WCN) == 0){
+					} else if(strcmp(buffer, WCN_CMD_STOP_WCN) == 0) {
 						pmanager->flag_stop = 1;
 						download_entry();
 					}
@@ -1150,26 +1148,25 @@ static int socket_init(pmanager_t *pmanager)
 
 	memset(pmanager, 0, sizeof(struct pmanager));
 
-	for(i=0; i<WCN_MAX_CLIENT_NUM; i++)
+	for (i=0; i<WCN_MAX_CLIENT_NUM; i++)
 		pmanager->client_fds[i].sockfd = -1;
 
 	pmanager->listen_fd = socket_local_server(WCN_SOCKET_NAME, ANDROID_SOCKET_NAMESPACE_ABSTRACT, SOCK_STREAM);
-	if(pmanager->listen_fd < 0) {
+	if (pmanager->listen_fd < 0) {
 		DOWNLOAD_LOGE("%s: cannot create local socket server", __FUNCTION__);
 		return -1;
 	}
 
 	pmanager->listen_slog_fd = socket_local_server(WCN_SOCKET_SLOG_NAME, ANDROID_SOCKET_NAMESPACE_ABSTRACT, SOCK_STREAM);
-	if(pmanager->listen_slog_fd < 0) {
+	if (pmanager->listen_slog_fd < 0) {
 		DOWNLOAD_LOGE("%s: cannot create local socket server", __FUNCTION__);
 		return -1;
 	}
 
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, pmanager->selfcmd_sockets) == -1) {
-
-        DOWNLOAD_LOGE("%s: cannot create socketpair for self cmd socket", __FUNCTION__);
-        return -1;
-    }
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pmanager->selfcmd_sockets) == -1) {
+		DOWNLOAD_LOGE("%s: cannot create socketpair for self cmd socket", __FUNCTION__);
+		return -1;
+	}
 
 	if (pthread_create(&thread_client_id, NULL, client_listen_thread, pmanager))
 	{
@@ -1209,24 +1206,24 @@ int main(void)
 
 	ret = socket_init(&pmanager);
 
-	#ifndef ENABLE_POWER_CTL
+#ifndef ENABLE_POWER_CTL
 	download_state = DOWNLOAD_START;
-	#endif
+#endif
 
-	#ifdef WCN_EXTEN_15C
-	download_set_marlin_version();
-	#endif
+#ifdef WCN_EXTEN_15C
+	// download_set_marlin_version();
+#endif
 
-	do{
-		#ifndef ENABLE_POWER_CTL
-		if(download_state == DOWNLOAD_START){
-			if(download_entry() == 0){
+	do {
+#ifndef ENABLE_POWER_CTL
+		if (download_state == DOWNLOAD_START) {
+			if (download_entry() == 0) {
 				download_state = DOWNLOAD_BOOTCOMP;
 			}
 		}
-		#endif
+#endif
 		sleep(1000);
-	}while(1);
+	} while(1);
 
 	return 0;
 }

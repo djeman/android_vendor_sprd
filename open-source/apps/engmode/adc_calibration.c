@@ -29,32 +29,32 @@
 static int vbus_charger_disconnect = 0;
 static int get_other_ch_adc_value(int channel, int scale);
 
-int	disconnect_vbus_charger(void)
+int disconnect_vbus_charger(void)
 {
     int fd;
     int ret = -1;
 
-    if(vbus_charger_disconnect == 0){
-
-	fd = open(CHARGER_STOP_PATH,O_WRONLY);
-	if(fd >= 0){
-	    ret = write(fd,"1",2);
-	    if(ret < 0){
-		ENG_LOG("%s write %s failed! \n",__func__,CHARGER_STOP_PATH);
+    if (vbus_charger_disconnect == 0) {
+	fd = open(CHARGER_STOP_PATH, O_WRONLY);
+	if (fd >= 0) {
+	    ret = write(fd, "1", 2);
+	    if (ret < 0) {
+		ENG_LOG("%s write %s failed! \n", __func__, CHARGER_STOP_PATH);
 		close(fd);
 		return 0;
 	    }
             close(fd);
             sleep(1);
             vbus_charger_disconnect = 1;
-        }else{
-	    ENG_LOG("%s open %s failed! \n",__func__,CHARGER_STOP_PATH);
+        } else {
+	    ENG_LOG("%s open %s failed! \n", __func__, CHARGER_STOP_PATH);
 	    return 0;
 	}
     }
     return 1;
 }
-int	connect_vbus_charger(void)
+
+int connect_vbus_charger(void)
 {
     int fd;
     int ret = -1;

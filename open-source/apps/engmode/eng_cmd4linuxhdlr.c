@@ -66,7 +66,6 @@ static int eng_linuxcmd_gsnr(char *req, char *rsp);
 static int eng_linuxcmd_gsnw(char *req, char *rsp);
 static int eng_linuxcmd_getwifiaddr(char *req, char *rsp);
 static int eng_linuxcmd_setwifiaddr(char *req, char *rsp);
-static int eng_linuxcmd_writeimei(char *req, char *rsp);
 static int eng_linuxcmd_getich(char *req, char *rsp);
 static int eng_linuxcmd_simchk(char *req, char *rsp);
 static int eng_linuxcmd_atdiag(char *req, char *rsp);
@@ -80,16 +79,23 @@ static int eng_linuxcmd_gpseutmode(char *req,char *rsp);
 static int eng_linuxcmd_batttest(char *req,char *rsp);
 static int eng_linuxcmd_temptest(char *req,char *rsp);
 static int eng_linuxcmd_rtctest(char *req,char *rsp);
-// static int eng_linuxcmd_setuartspeed(char* req, char* rsp);
-// static int eng_linuxcmd_wiqpb(char* req, char* rsp);
 static int eng_linuxcmd_send2samsung(char* req, char* rsp);
 static int eng_linuxcmd_send2samsung_syssleep(char* req, char* rsp);
 static int eng_linuxcmd_batgetlevel(char *req, char *rsp);
 static int eng_linuxcmd_e0(char *req, char *rsp);
 static int eng_linuxcmd_e1(char *req, char *rsp);
+static int eng_linuxcmd_settestnv(char *req, char *rsp);
+static int eng_linuxcmd_getfulltestnv(char *req, char *rsp);
+static int eng_linuxcmd_gettestnv(char *req, char *rsp);
+static int eng_linuxcmd_headinfo(char *req, char *rsp);
+static int eng_linuxcmd_versname(char *req, char *rsp);
+static int eng_linuxcmd_gpstest(char *req, char *rsp);
+static int eng_linuxcmd_disptest(char *req, char *rsp);
+static int eng_linuxcmd_powreset2cal(char *req, char *rsp);
+static int eng_linuxcmd_simdetec(char *req, char *rsp);
 
 
-static struct eng_linuxcmd_str eng_linuxcmd[] = {
+static struct eng_linuxcmd_str eng_linuxcmd_normal[] = {
     {CMD_SENDKEY,        CMD_TO_AP,     "AT+SENDKEY",       eng_linuxcmd_keypad},
     {CMD_GETICH,         CMD_TO_AP,     "AT+GETICH?",       eng_linuxcmd_getich},
     {CMD_ETSRESET,       CMD_TO_AP,     "AT+ETSRESET",      eng_linuxcmd_factoryreset},
@@ -239,14 +245,15 @@ static struct eng_linuxcmd_str eng_linuxcmd[] = {
     {CMD_BACKUPCHK,      CMD_TO_AP,     "AT+BAKUPCHK",      eng_linuxcmd_send2samsung},
     {CMD_REACTIVE,       CMD_TO_AP,     "AT+REACTIVE",      eng_linuxcmd_send2samsung},
 };
-/*
+
 static struct eng_linuxcmd_str eng_linuxcmd_cali[] = {
+    {CMD_CALI,           CMD_TO_AP,     "AT+SETTESTNV",     eng_linuxcmd_settestnv},
     {CMD_CALI,           CMD_TO_AP,     "AT+GETFULLTESTNV", eng_linuxcmd_getfulltestnv},
     {CMD_CALI,           CMD_TO_AP,     "AT+GETTESTNV",     eng_linuxcmd_gettestnv},
     {CMD_CALI,           CMD_TO_AP,     "AT+HEADINFO",      eng_linuxcmd_headinfo},
     {CMD_CALI,           CMD_TO_AP,     "AT+VERSNAME=1,2,0",eng_linuxcmd_versname},
     {CMD_CALI,           CMD_TO_AP,     "AT+RTCCTEST",      eng_linuxcmd_rtctest},
-    {CMD_CALI,           CMD_TO_APCP,   "AT+SYSSLEEP",      eng_linuxcmd_fastsleep},
+    {CMD_CALI,           CMD_TO_APCP,   "AT+SYSSLEEP",      eng_linuxcmd_fastdeepsleep},
     {CMD_CALI,           CMD_TO_AP,     "AT+TEMPTEST=1,0,0",eng_linuxcmd_temptest},
     {CMD_CALI,           CMD_TO_AP,     "AT+TEMPTEST=1,1,0",eng_linuxcmd_temptest},
     {CMD_CALI,           CMD_TO_AP,     "AT+GPSSTEST",      eng_linuxcmd_gpstest},
@@ -254,8 +261,10 @@ static struct eng_linuxcmd_str eng_linuxcmd_cali[] = {
     {CMD_CALI,           CMD_TO_AP,     "AT+DISPTEST",      eng_linuxcmd_disptest},
     {CMD_CALI,           CMD_TO_AP,     "AT+POWRESET",      eng_linuxcmd_powreset2cal},
     {CMD_CALI,           CMD_TO_AP,     "AT+SIMDETEC=1,4",  eng_linuxcmd_simdetec},
-}
-*/
+};
+
+static struct eng_linuxcmd_str *eng_linuxcmd = eng_linuxcmd_normal;
+
 /** returns 1 if line starts with prefix, 0 if it does not */
 static int eng_cmdstartwith(const char *line, const char *prefix)
 {
@@ -267,19 +276,23 @@ static int eng_cmdstartwith(const char *line, const char *prefix)
     return *prefix == '\0';
 }
 
+void eng_set_linuxcmd(int califlag)
+{
+    if (califlag == 1)
+        eng_linuxcmd = eng_linuxcmd_cali;
+    else
+        eng_linuxcmd = eng_linuxcmd_normal;
+}
+
 int eng_at2linux(char *buf)
 {
     int ret=-1;
     int i;
 
-    for (i = 0 ; i < (int)NUM_ELEMS(eng_linuxcmd) ; i++) {
-        if (strcasestr(buf, eng_linuxcmd[i].name)!=NULL) {
-            ENG_LOG("eng_at2linux %s",eng_linuxcmd[i].name);
-			if((strcasestr(buf,"AT+TEMPTEST")) && ((strcasestr(buf, "AT+TEMPTEST=1,0,1"))||(strcasestr(buf, "AT+TEMPTEST=1,1,1"))
-						||(strcasestr(buf, "AT+TEMPTEST=1,0,4"))||(strcasestr(buf, "AT+TEMPTEST=1,1,4"))))
-				return -1;
-			else
-				return i;
+    for (i = 0 ; i < (int)NUM_ELEMS(eng_linuxcmd); i++) {
+        if (strcasestr(buf, eng_linuxcmd[i].name) != NULL) {
+            ENG_LOG("eng_at2linux %s", eng_linuxcmd[i].name);
+            return i;
         }
     }
 
@@ -296,8 +309,8 @@ eng_cmd_type eng_cmd_get_type(int cmd)
 
 int eng_linuxcmd_hdlr(int cmd, char *req, char* rsp)
 {
-    if(cmd >= (int)NUM_ELEMS(eng_linuxcmd)) {
-        ENG_LOG("%s: no handler for cmd%d",__FUNCTION__, cmd);
+    if (cmd >= (int)NUM_ELEMS(eng_linuxcmd)) {
+        ENG_LOG("%s: no handler for cmd%d", __FUNCTION__, cmd);
         return -1;
     }
     return eng_linuxcmd[cmd].cmd_hdlr(req, rsp);
@@ -775,10 +788,12 @@ int eng_linuxcmd_setwifiaddr(char *req, char *rsp)
     return 0;
 }
 
+/*
 int eng_linuxcmd_writeimei(char *req, char *rsp)
 {
     return eng_diag_writeimei(req,rsp);
 }
+*/
 
 int eng_linuxcmd_getich(char *req, char *rsp)
 {
@@ -1343,115 +1358,6 @@ int eng_linuxcmd_rtctest(char *req,char *rsp)
 	return 0;
 }
 
-/*
-static int eng_diag_enter_iq_pb_mode(void)
-{
-	int fd = -1;
-	fd = open(IQMODE_FLAG_PATH, O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO);
-	if(fd < 0) {
-		ENG_LOG("%s: create %s fail, %s\n", __FUNCTION__, IQMODE_FLAG_PATH, strerror(errno));
-		return -1;
-	}
-	close(fd);
-
-	//android_reboot(ANDROID_RB_RESTART2, 0, "iqmode");
-	property_set(ANDROID_RB_PROPERTY, "reboot,iqmode");
-	return 0;
-}
-
-static int eng_diag_iq_pb_stop(void)
-{
-	int fd = -1;
-
-	//android_reboot(ANDROID_RB_RESTART, 0, 0);//will trigger framework systemdump
-	property_set(ANDROID_RB_PROPERTY, "reboot");
-	return 0;
-
-}
-
-int send_rsp2pc(char *buf, int buf_len, int fd)
-{
-    int ret = -1;
-    char tmp[128] = {0};
-    int tmp_len;
-    char rsp[256] = {0};
-    int rsp_len;
-    MSG_HEAD_T head;
-    head.len = sizeof(MSG_HEAD_T) + buf_len;
-    ENG_LOG("%s: head.len=%d\n",__FUNCTION__, head.len);
-    head.seq_num = 0;
-    head.type = 0x9c;
-    head.subtype = 0x00;
-    memcpy(tmp, &head, sizeof(MSG_HEAD_T));
-    memcpy(tmp + sizeof(MSG_HEAD_T), buf , buf_len);
-    rsp_len = translate_packet(rsp, (unsigned char*)tmp, head.len);
-    ret = eng_diag_write2pc(rsp, rsp_len, fd);
-    if (ret <= 0) {
-        ENG_LOG("%s: eng_diag_write2pc ret=%d !\n", __FUNCTION__, ret);
-        return -1;
-    }
-    return 0;
-}
-
-int eng_linuxcmd_setuartspeed(char *req,char *rsp)
-{
-    int speed;
-    char *ptr = NULL;
-    char buf[64] = {0};
-
-    if (NULL == g_dev_info) {
-        ENG_LOG("%s: g_dev_info is NULL", __FUNCTION__);
-        return -1;
-    }
-
-    ptr = strchr(req, '=');
-    if (NULL == ptr) {
-        ENG_LOG("%s: format error\n", __FUNCTION__);
-        return -1;
-    }
-    ptr++;
-    speed = atoi(ptr);
-    ENG_LOG("%s: dev_diag=%s\n", __FUNCTION__, g_dev_info->host_int.dev_diag);
-
-    if (g_dev_info->host_int.dev_type == CONNECT_UART) {
-        int ser_fd = get_ser_diag_fd();
-
-        sprintf(buf, "%s%s%s", ENG_STREND, SPRDENG_OK, ENG_STREND);
-        if (send_rsp2pc(buf, strlen(buf), ser_fd) <0) {
-            return -1;
-        } else {
-            usleep(200*1000);
-        }
-
-        set_raw_data_speed(ser_fd, speed);
-        ENG_LOG("%s: set speed=%d success\n", __FUNCTION__, speed);
-
-        g_setuart_ok = 1;
-        return 0;
-    }
-    ENG_LOG("%s: set speed=%d fail\n", __FUNCTION__, speed);
-    return -1;
-}
-
-
-int eng_linuxcmd_wiqpb(char *req, char *rsp)
-{
-	char ptr_parm1[1];
-	req = strchr(req, '=');
-	req++;
-	ptr_parm1[0]=*req;
-	ENG_LOG("%s: AT+SPWIQ=%c\n", __FUNCTION__, ptr_parm1[0]);
-	if(ptr_parm1[0]=='1') {
-		eng_diag_iq_pb_stop();
-	} else if(ptr_parm1[0]=='2') {
-		eng_diag_enter_iq_pb_mode();
-	} else {
-		ENG_LOG("%s: AT+SPWIQ=%c is invaild value\n", __FUNCTION__, ptr_parm1[0]);
-	}
-	return 0;
-}
-*/
-
 int eng_linuxcmd_send2samsung(char *req, char *rsp)
 {
     char* buf;
@@ -1461,7 +1367,7 @@ int eng_linuxcmd_send2samsung(char *req, char *rsp)
         strcpy(rsp, buf);
     else
         sprintf(rsp, "\r\nFailed to send command to ATD.\r\n%s%s", SPRDENG_ERROR, ENG_STREND);
-    ENG_LOG("%s: rsp=%s\n", "eng_linuxcmd_send2samsung_syssleep", __FUNCTION__, rsp);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
 
     return 0;
 }
@@ -1475,7 +1381,7 @@ int eng_linuxcmd_send2samsung_syssleep(char *req, char *rsp)
         strcpy(rsp, buf);
     else
         sprintf(rsp, "\r\nFailed to send command to ATD.\r\n%s%s", SPRDENG_ERROR, ENG_STREND);
-    ENG_LOG("%s: rsp=%s\n", "eng_linuxcmd_send2samsung_syssleep", __FUNCTION__, rsp);
+    ENG_LOG("%s: rsp=%s\n", __FUNCTION__, rsp);
 
     return 0;
 }
@@ -1553,5 +1459,59 @@ int eng_linuxcmd_e1(char *req, char *rsp)
     else
         sprintf(rsp, "%s%s", SPRDENG_ERROR, ENG_STREND);
     direct_write(rsp);
+    return 0;
+}
+
+int eng_linuxcmd_settestnv(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_getfulltestnv(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_gettestnv(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_headinfo(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_versname(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_gpstest(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_disptest(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_powreset2cal(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
+    return 0;
+}
+
+int eng_linuxcmd_simdetec(char *req, char *rsp)
+{
+    ENG_LOG("%s: not implanted\n", __FUNCTION__);
     return 0;
 }

@@ -56,7 +56,7 @@ typedef struct eng_dev_info {
 }eng_dev_info_t;
 
 typedef struct eng_atril_samsung {
-    int socket;
+    int server_fd;
     int client_fd;
     int uart_fd;
 }eng_atril_samsung_t;

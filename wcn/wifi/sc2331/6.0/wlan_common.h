@@ -334,7 +334,7 @@ extern void mdbg_at_cmd_read(void);
 extern void mdbg_loopcheck_read(void);
 extern void mdbg_assert_read(void);
 extern void mdbg_assert_interface(void);
-extern void fm_read(void);
+//extern void fm_read(void);
 
 
 extern void mdbg_sdio_read(void);
@@ -355,7 +355,7 @@ extern int wlan_tx_buf_decode(unsigned char *buf, unsigned int max_len);
 extern void seq_point(unsigned char *frame, unsigned int len);
 extern void ack_timeout_point(unsigned char *frame, unsigned int len);
 extern void tcp_session_cfg(int cmd, int value);
-extern bool sprd_get_marlin_version(void);
+//extern bool sprd_get_marlin_version(void);
 extern void wlan_rx_malformed_handler(void);
 extern int wlan_cmd_send_common_data(wlan_vif_t *vif, u8 *data, int data_len);
 extern int wlan_cmd_set_softap_max_connections(wlan_vif_t *vif, u8 max);

@@ -31,6 +31,7 @@ int g_ap_cali_flag = 0;
 extern int g_armlog_enable;
 extern int disconnect_vbus_charger(void);
 extern int turnoff_calibration_backlight(void);
+extern void eng_set_linuxcmd(int califlag);
 static int eng_iqfeed_start(int num);
 static void eng_check_whether_iqfeed(void);
 
@@ -72,9 +73,9 @@ static int cali_parse_one_para(char * buf, char gap, int* value)
     char *ch = NULL;
     char str[10] = {0};
 
-    if(buf != NULL && value  != NULL){
+    if (buf != NULL && value  != NULL) {
         ch = strchr(buf, gap);
-        if(ch != NULL){
+        if (ch != NULL) {
             len = ch - buf ;
             strncpy(str, buf, len);
             *value = atoi(str);
@@ -251,9 +252,6 @@ static int eng_parse_cmdline(struct eng_param * cmdvalue)
 			else if(0 == strcmp(ssda_mode, "csfb")){
                             strcpy(cmdvalue->cp_type,"l");
                     }
-
-
-
 
                     /*Device[4:6] : device that AP uses;  0: UART 1:USB  2:SPIPE*/
                     cmdvalue->connect_type = (device >> 4) & 0x3;
@@ -465,15 +463,16 @@ int main (int argc, char** argv)
     // Get the status of calibration mode & device type.
     eng_parse_cmdline(&cmdparam);
     // Correct diag path and run type by cmdline.
+    eng_set_linuxcmd(cmdparam.califlag);
     if (cmdparam.califlag == 1) {
         strcpy(run_type, cmdparam.cp_type);
         dev_info.host_int.cali_flag = cmdparam.califlag;
         dev_info.host_int.dev_type = cmdparam.connect_type;
-        if (CONNECT_UART == cmdparam.connect_type) {
+        if (cmdparam.connect_type == CONNECT_UART) {
             strcpy(dev_info.host_int.dev_diag, "/dev/ttyS1");
             dev_info.host_int.dev_type = CONNECT_UART;
         }
-        if (CONNECT_USB == cmdparam.connect_type && g_ap_cali_flag) {
+        if (cmdparam.connect_type == CONNECT_USB && g_ap_cali_flag) {
 	    eng_usb_enable();
 	}
     } else {

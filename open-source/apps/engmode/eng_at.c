@@ -427,16 +427,16 @@ static void *ATRILClientListenFD()
             memset(&atrilfds, 0, sizeof(atrilfds));
             if (s_atril_samsung.client_fd >= 0)
                 FD_SET(s_atril_samsung.client_fd, &atrilfds);
-            if ( s_atril_samsung.socket >= 0)
-                FD_SET(s_atril_samsung.socket, &atrilfds);
+            if ( s_atril_samsung.server_fd >= 0)
+                FD_SET(s_atril_samsung.server_fd, &atrilfds);
             if (s_atril_samsung.client_fd >= 0 && nfds < s_atril_samsung.client_fd)
                 nfds = s_atril_samsung.client_fd;
-            if (s_atril_samsung.socket >= 0 && nfds < s_atril_samsung.socket)
-                nfds = s_atril_samsung.socket;
+            if (s_atril_samsung.server_fd >= 0 && nfds < s_atril_samsung.server_fd)
+                nfds = s_atril_samsung.server_fd;
         } while (select(nfds+1, &atrilfds, NULL, NULL, NULL) <= 0);
 
-        if (s_atril_samsung.socket >= 0 && FD_ISSET(s_atril_samsung.socket, &atrilfds)) {
-            s_atril_samsung.client_fd = accept(s_atril_samsung.socket, 0, 0);
+        if (s_atril_samsung.server_fd >= 0 && FD_ISSET(s_atril_samsung.server_fd, &atrilfds)) {
+            s_atril_samsung.client_fd = accept(s_atril_samsung.server_fd, 0, 0);
             ENG_LOG("%s: ATRILClient Communication: accept client_fd : %d", 
                 __FUNCTION__, s_atril_samsung.client_fd);
         }
@@ -463,15 +463,15 @@ int InitATRILClient(int fd)
 {
     pthread_t ptid;
 
-    s_atril_samsung.socket = -1;
+    s_atril_samsung.server_fd = -1;
     s_atril_samsung.client_fd = -1;
     s_atril_samsung.uart_fd = fd;
     ENG_LOG("%s: ATRILClient Communication: uart_fd : %d", __FUNCTION__, fd);
 
-    s_atril_samsung.socket = socket_local_server("ATRILClient", 0, 1);
-    ENG_LOG("%s: ATRILClient Communication: Server_socket %d", __FUNCTION__, s_atril_samsung.socket);
+    s_atril_samsung.server_fd = socket_local_server("ATRILClient", 0, 1);
+    ENG_LOG("%s: ATRILClient Communication: Server_socket %d", __FUNCTION__, s_atril_samsung.server_fd);
 
-    if (s_atril_samsung.socket < 0) {
+    if (s_atril_samsung.server_fd < 0) {
         ENG_LOG("%s: ATRILClient Communication: Server_socket failed for ATRIL_CLIENT", __FUNCTION__);
         return -1;
     }
@@ -520,7 +520,7 @@ char* SendRequestToATD(char* req, int reqlen)
     strcpy(g_atrilbuf, "ATDRESP");
     strcat(req, ENG_STREND);
     ENG_LOG("%s: client_fd : %d", __FUNCTION__, s_atril_samsung.client_fd);
-    ENG_LOG("%s: server_fd : %d", __FUNCTION__, s_atril_samsung.socket);
+    ENG_LOG("%s: server_fd : %d", __FUNCTION__, s_atril_samsung.server_fd);
     
     if (s_atril_samsung.client_fd < 0) {
         ENG_LOG("%s: ATRILClient Communication : Client Socket is not valid", __FUNCTION__);

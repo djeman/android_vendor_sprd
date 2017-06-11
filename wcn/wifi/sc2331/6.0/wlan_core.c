@@ -1389,11 +1389,11 @@ RX_SLEEP:
 		{
 			rx_chn->timeout_flag = false;
 		}
-		if(10 == index)
+		/*if(10 == index)
 		{
 			fm_read();
 			goto TX;
-		}
+		}*/
 		if(11 == index)
 		{
 			mdbg_at_cmd_read();
@@ -1832,13 +1832,13 @@ int wlan_module_init(struct device *dev)
 	//marlin_pa_enable(true);
 	memset((unsigned char *)(&g_wlan), 0, sizeof(wlan_info_t));
 
-	if (sprd_get_marlin_version()) {
+	/*if (sprd_get_marlin_version()) {
 		g_wlan.is_marlin_15c = true;
 		printke("Marlin Version is 15C\n");
-	} else {
+	} else {*/
 		g_wlan.is_marlin_15c = false;
 		printke("Marlin Version is 15A\n");
-	}
+	//}
 
 	g_wlan.dev = dev;
 	g_wlan.netif[NETIF_0_ID].id= NETIF_0_ID;
