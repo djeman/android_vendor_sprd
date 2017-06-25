@@ -155,10 +155,10 @@ uint32_t dither_open(uint32_t w, uint32_t h)
 
 		memset(dither, 0, sizeof(struct dither_info));
 
-		fp = fopen("/sys/module/mali/parameters/gpu_cur_freq", "r");
+		fp = fopen("/sys/module/mali/parameters/gpu_freq_cur", "r");
 		if(fp == NULL)
 		{
-			AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
+			AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
 			free (dither);
 			dither = NULL;
 			return 0;
@@ -210,16 +210,28 @@ void dither_close(uint32_t handle)
 
 static int fb_set_swap_interval(struct framebuffer_device_t *dev, int interval)
 {
-	if (interval < dev->minSwapInterval)
-	{
+	if (interval < dev->minSwapInterval) {
 		interval = dev->minSwapInterval;
-	}
-	else if (interval > dev->maxSwapInterval)
-	{
+	} else if (interval > dev->maxSwapInterval) {
 		interval = dev->maxSwapInterval;
 	}
 
 	swapInterval = interval;
+
+	return 0;
+}
+
+static int fb_setUpdateRect(struct framebuffer_device_t* dev,
+        int l, int t, int w, int h)
+{
+	if (((w|h) <= 0) || ((l|t)<0))
+		return -EINVAL;
+
+	private_module_t* m = reinterpret_cast<private_module_t*>(
+		dev->common.module);
+	m->info.reserved[0] = 0x6f766572; // "UPDT";
+	m->info.reserved[1] = (uint16_t)l | ((uint32_t)t << 16);
+	m->info.reserved[2] = (uint16_t)w | ((uint32_t)h << 16);
 
 	return 0;
 }
@@ -279,7 +291,7 @@ static bool fb_is_dither_enable(struct dither_info *dither, private_handle_t con
 
 	if(fp == NULL)
 	{
-		AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
+		AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
 	}
 	else
 	{
@@ -287,8 +299,8 @@ static bool fb_is_dither_enable(struct dither_info *dither, private_handle_t con
 		fread(buf, 1, 8, dither->fp);
 	}
 
-	int gpu_cur_freq = atoi(buf);
-	if(gpu_cur_freq <= 256000) {
+	int gpu_freq_cur = atoi(buf);
+	if(gpu_freq_cur <= 256000) {
 		if(hnd->flags & private_handle_t::PRIV_FLAGS_SPRD_DITHER) {
 			return true;
 		}
@@ -708,7 +720,7 @@ int init_frame_buffer_locked(struct private_module_t *module)
 	if (vaddr == MAP_FAILED)
 	{
 		close(fd);
-		AERR( "Error mapping the framebuffer (%s)", strerror(errno) );
+		AERR("Error mapping the framebuffer (%s)", strerror(errno));
 		return -errno;
 	}
 
@@ -794,6 +806,7 @@ int framebuffer_device_open(hw_module_t const *module, const char *name, hw_devi
 	int status = -EINVAL;
 
 	alloc_device_t *gralloc_device;
+	MALI_IGNORE(name);
 	status = gralloc_open(module, &gralloc_device);
 
 	if (status < 0)
@@ -821,6 +834,7 @@ int framebuffer_device_open(hw_module_t const *module, const char *name, hw_devi
 	dev->common.close = fb_close;
 	dev->setSwapInterval = fb_set_swap_interval;
 	dev->post = fb_post;
+	dev->setUpdateRect = 0;
 	dev->compositionComplete = &compositionComplete;
 
 	int stride = m->finfo.line_length / (m->info.bits_per_pixel >> 3);
@@ -857,6 +871,5 @@ int framebuffer_device_open(hw_module_t const *module, const char *name, hw_devi
 	//}
 
 	status = 0;
-	MALI_IGNORE(name);
 	return status;
 }

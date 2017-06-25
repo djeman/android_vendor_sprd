@@ -100,20 +100,26 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 	{
 		private_module_t *m = reinterpret_cast<private_module_t *>(dev->common.module);
 		ion_user_handle_t ion_hnd;
-		void *cpu_ptr = MAP_FAILED;
+		unsigned char *cpu_ptr;
 		int shared_fd;
 		int ret;
 		int ion_heap_mask = 0;
 		int ion_flag = 0;
-		private_handle_t *hnd = NULL;
-
-		if (usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER))
+		if (usage & GRALLOC_USAGE_SPRD_PRIVATE)
 		{
-			ion_heap_mask = ION_HEAP_ID_MASK_MM;
-		}
-		else if(usage & GRALLOC_USAGE_OVERLAY_BUFFER)
-		{
-			ion_heap_mask = ION_HEAP_ID_MASK_OVERLAY;
+			usage = usage & ~GRALLOC_USAGE_SPRD_PRIVATE;
+			if (usage & GRALLOC_USAGE_OVERLAY_BUFFER)
+			{
+				ion_heap_mask = ION_HEAP_ID_MASK_OVERLAY;
+			}
+			else if (usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER))
+			{
+				ion_heap_mask = ION_HEAP_ID_MASK_MM;
+			}
+			else
+			{
+				ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
+			}
 		}
 		else
 		{
@@ -125,7 +131,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 			ion_flag = ION_FLAG_CACHED | ION_FLAG_CACHED_NEEDS_SYNC;
 		}
 
-		ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
+		ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &(ion_hnd));
 
 		if (ret != 0)
 		{
@@ -147,7 +153,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 			return -1;
 		}
 
-		cpu_ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, shared_fd, 0);
+		cpu_ptr = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, shared_fd, 0);
 
 		if (MAP_FAILED == cpu_ptr)
 		{
@@ -163,14 +169,13 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 		}
 
 
-		hnd = new private_handle_t( private_handle_t::PRIV_FLAGS_USES_ION, usage, size, cpu_ptr, private_handle_t::LOCK_STATE_MAPPED );
+		private_handle_t *hnd = new private_handle_t(private_handle_t::PRIV_FLAGS_USES_ION, usage, size, cpu_ptr, private_handle_t::LOCK_STATE_MAPPED);
 		if (NULL != hnd)
 		{
 			if(ion_heap_mask == ION_HEAP_CARVEOUT_MASK || ion_heap_mask == ION_HEAP_ID_MASK_OVERLAY)
 			{
 				hnd->flags=(private_handle_t::PRIV_FLAGS_USES_ION)|(private_handle_t::PRIV_FLAGS_USES_PHY);
 			}
-			ALOGD_IF(mDebug>0,"get vadress:0x%x size:0x%x ion_hnd:%p",(int)cpu_ptr,size,hnd->ion_hnd);
 			hnd->share_fd = shared_fd;
 			hnd->ion_hnd = ion_hnd;
 			*pHandle = hnd;
@@ -187,7 +192,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 
 		if (0 != ret)
 		{
-			AERR("munmap failed for base:%p size: %d", cpu_ptr, size);
+			AERR("munmap failed for base:%p size: %lu", cpu_ptr, (unsigned long)size);
 		}
 
 		ret = ion_free(m->ion_client, ion_hnd);
@@ -202,6 +207,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 #endif
 
 #if GRALLOC_ARM_UMP_MODULE
+	MALI_IGNORE(dev);
 	{
 		ump_handle ump_mem_handle;
 		void *cpu_ptr;
@@ -391,11 +397,12 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 	size_t size;
 	size_t stride;
 
-	ALOGD_IF(mDebug>0,"alloc buffer start w:%d h:%d format:0x%x usage:0x%x",w,h,format,usage);
-	if (format == HAL_PIXEL_FORMAT_YCbCr_420_888 || format == HAL_PIXEL_FORMAT_YCrCb_420_SP || 
-		format == HAL_PIXEL_FORMAT_YV12 || format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED 
+	ALOGD_IF(mDebug,"alloc buffer start w:%d h:%d format:0x%x usage:0x%x",w,h,format,usage);
+
+	if (format == HAL_PIXEL_FORMAT_YCbCr_420_888 || format == HAL_PIXEL_FORMAT_YCrCb_420_SP || format == HAL_PIXEL_FORMAT_YV12
+		|| format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED
 	/* HAL_PIXEL_FORMAT_YCbCr_420_SP, HAL_PIXEL_FORMAT_YCbCr_420_P, HAL_PIXEL_FORMAT_YCbCr_422_I are not defined in Android.
- 	 * To enable Mali DDK EGLImage support for those formfats, firstly, you have to add them in Android system/core/include/system/graphics.h.
+ 	 * To enable Mali DDK EGLImage support for those formats, firstly, you have to add them in Android system/core/include/system/graphics.h.
  	 * Then, define SUPPORT_LEGACY_FORMAT in the same header file(Mali DDK will also check this definition).
 	 */
 		|| format == HAL_PIXEL_FORMAT_YCbCr_420_SP || format == HAL_PIXEL_FORMAT_YCbCr_420_P || format == HAL_PIXEL_FORMAT_YCbCr_422_I
@@ -403,8 +410,11 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 	{
 		switch (format)
 		{
-			case HAL_PIXEL_FORMAT_YCrCb_420_SP:
 			case HAL_PIXEL_FORMAT_YCbCr_420_SP:
+				stride = GRALLOC_ALIGN(w, 16);
+				size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
+				break;
+			case HAL_PIXEL_FORMAT_YCrCb_420_SP:
 				stride = GRALLOC_ALIGN(w, 16);
 				size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
 				break;
@@ -420,12 +430,17 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 				size = GRALLOC_ALIGN(h * stride, 64) + GRALLOC_ALIGN(h/2 * GRALLOC_ALIGN(stride/2,16), 64) + h/2 * GRALLOC_ALIGN(stride/2,16);
 				break;
 			case HAL_PIXEL_FORMAT_YV12:
-				stride = GRALLOC_ALIGN(w, 16);
+				stride = GRALLOC_ALIGN(w, 128);
 				// mali GPU hardware requires u/v-plane 64byte-alignment
-				size = GRALLOC_ALIGN(h * stride, 64) + GRALLOC_ALIGN(h/2 * GRALLOC_ALIGN(stride/2,16), 64) + h/2 * GRALLOC_ALIGN(stride/2,16);
+				size = GRALLOC_ALIGN(h * stride, 128) + GRALLOC_ALIGN(h/2 * GRALLOC_ALIGN(stride/2,128), 128) + h/2 * GRALLOC_ALIGN(stride/2,128);
 				break;
+
+			case HAL_PIXEL_FORMAT_YCbCr_422_I:
+				stride = GRALLOC_ALIGN(w, 16);
+				size = h * stride * 2;
+				break;
+
 			default:
-				ALOGE("alloc_device_alloc find not support format: 0x%x", format);
 				return -EINVAL;
 		}
 	}
@@ -436,7 +451,6 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 	}
 	else
 	{
-		int align = 8;
 		int bpp = 0;
 
 		switch (format)
@@ -464,13 +478,15 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 		size_t bpr = GRALLOC_ALIGN(w * bpp, 8);
 		size = bpr * h;
 		stride = bpr / bpp;
+
+		usage &= ~GRALLOC_USAGE_HW_TILE_ALIGN;
 	}
 
 	int err;
 
 #ifndef MALI_600
 
-	if ((usage & GRALLOC_USAGE_HW_FB) && w != 1 && h != 1)
+	if ((usage & GRALLOC_USAGE_HW_FB) && (w != 1 && h != 1))
 	{
 		err = gralloc_alloc_framebuffer(dev, size, usage, pHandle);
 	}
@@ -479,13 +495,13 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 
 	{
 		err = gralloc_alloc_buffer(dev, size, usage, pHandle);
-		 if(err>=0){
+		if(err>=0){
 			const native_handle_t *p_nativeh  = *pHandle;
 			private_handle_t *hnd = (private_handle_t*)p_nativeh;
 			hnd->format = format;
 			hnd->width = stride;
 			hnd->height = h;
-			ALOGD_IF(mDebug>0,"alloc buffer end handle:%p ion_hnd:%p",pHandle,hnd->ion_hnd);
+			ALOGD_IF(mDebug,"alloc buffer end handle:%p ion_hnd:0x%x",pHandle,hnd->ion_hnd);
 		}
 	}
 
@@ -544,8 +560,8 @@ static int alloc_device_free(alloc_device_t *dev, buffer_handle_t handle)
 	}
 
 	private_handle_t const *hnd = reinterpret_cast<private_handle_t const *>(handle);
-	ALOGD_IF(mDebug>0,"free buffer start handle:%p ion_hnd:%p flag:0x%x",handle,hnd->ion_hnd,hnd->flags);
-		//LOGD("unmapping from %p, size=%d", base, size);
+	
+	ALOGD_IF(mDebug,"free buffer start handle:%p ion_hnd:0x%x",handle,hnd->ion_hnd);
 
 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
 	{
@@ -587,7 +603,6 @@ static int alloc_device_free(alloc_device_t *dev, buffer_handle_t handle)
 		/* Buffer might be unregistered so we need to check for invalid ump handle*/
 		if (0 != hnd->base)
 		{
-			ALOGD_IF(mDebug>0,"free vaddress:0x%x size:0x%x ion_hnd:%p",(uintptr_t)hnd->base,hnd->size,hnd->ion_hnd);
 			if (0 != munmap((void *)hnd->base, hnd->size))
 			{
 				AERR("Failed to munmap handle 0x%p", hnd);
@@ -608,7 +623,7 @@ static int alloc_device_free(alloc_device_t *dev, buffer_handle_t handle)
 
 	}
 
-	ALOGD_IF(mDebug>0,"free buffer end handle:%p",handle);
+	ALOGD_IF(mDebug,"free buffer end handle:%p",handle);
 	delete hnd;
 
 	return 0;
@@ -621,13 +636,14 @@ static int alloc_device_close(struct hw_device_t *device)
 	if (dev)
 	{
 #if GRALLOC_ARM_DMA_BUF_MODULE
-		private_module_t *m = reinterpret_cast<private_module_t *>(device->module);
+		private_module_t *m = reinterpret_cast<private_module_t *>(device);
 
 		if (0 != ion_close(m->ion_client))
 		{
 			AERR("Failed to close ion_client: %d", m->ion_client);
 		}
 
+		close(m->ion_client);
 #endif
 		delete dev;
 #if GRALLOC_ARM_UMP_MODULE

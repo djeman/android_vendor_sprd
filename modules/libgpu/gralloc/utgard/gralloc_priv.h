@@ -69,7 +69,7 @@ typedef int ion_user_handle_t;
 
 #endif
 
-static int mDebug=1;
+static int mDebug=0;
 
 /* the max string size of GRALLOC_HARDWARE_GPU0 & GRALLOC_HARDWARE_FB0
  * 8 is big enough for "gpu0" & "fb0" currently

@@ -42,7 +42,7 @@ static int s_ump_is_open = 0;
 
 static pthread_mutex_t s_map_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int gralloc_device_open(const hw_module_t* module, const char* name, hw_device_t** device)
+static int gralloc_device_open(const hw_module_t *module, const char *name, hw_device_t **device)
 {
 	int status = -EINVAL;
 
@@ -70,7 +70,7 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 	// if this handle was created in this process, then we keep it as is.
 	private_handle_t *hnd = (private_handle_t *)handle;
 
-	ALOGD_IF(mDebug>1,"register buffer  handle:%p ion_hnd:0x%p",handle,hnd->ion_hnd);
+	ALOGD_IF(mDebug,"register buffer  handle:%p ion_hnd:0x%x",handle,hnd->ion_hnd);
 
 	int retval = -EINVAL;
 
@@ -141,21 +141,9 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 		unsigned char *mappedAddress;
 		size_t size = hnd->size;
 		hw_module_t *pmodule = NULL;
-		private_module_t *m = NULL;
-#if 1
-		m = (private_module_t*)module;
-#else
-		if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **)&pmodule) == 0)
-		{
-			m = reinterpret_cast<private_module_t *>(pmodule);
-		}
-		else
-		{
-			AERR("Could not get gralloc module for handle: 0x%p", hnd);
-			retval = -errno;
-			goto cleanup;
-		}
-#endif
+
+		private_module_t *m = (private_module_t*)module;
+
 		/* the test condition is set to m->ion_client <= 0 here, because:
 		 * 1) module structure are initialized to 0 if no initial value is applied
 		 * 2) a second user process should get a ion fd greater than 0.
@@ -200,6 +188,7 @@ cleanup:
 static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_handle_t handle)
 {
 	MALI_IGNORE(module);
+
 	if (private_handle_t::validate(handle) < 0)
 	{
 		AERR("unregistering invalid buffer 0x%p, returning error", handle);
@@ -208,9 +197,9 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
 
 	private_handle_t *hnd = (private_handle_t *)handle;
 
-	ALOGD_IF(mDebug>1,"unregister buffer  handle:%p ion_hnd:0x%p",handle,hnd->ion_hnd);
+	ALOGD_IF(mDebug,"unregister buffer  handle:%p ion_hnd:0x%x",handle,hnd->ion_hnd);
 
-	AERR_IF(hnd->lockState & private_handle_t::LOCK_STATE_READ_MASK, "[unregister] handle %p still locked (state=%08x)", hnd, hnd->lockState);
+	AERR_IF(hnd->lockState & private_handle_t::LOCK_STATE_READ_MASK, "[unregister] handle %p still locked (state=%08x),ion_hnd=0x%x", hnd, hnd->lockState,hnd->ion_hnd);
 
 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
 	{
@@ -251,7 +240,6 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
 		{
 			AERR("Unregistering unknown buffer is not supported. Flags = %d", hnd->flags);
 		}
-
 		hnd->base = 0;
 		hnd->lockState  = 0;
 		hnd->writeOwner = 0;
@@ -305,6 +293,8 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
             int l, int t, int w, int h,
             struct android_ycbcr *ycbcr)
 {
+	MALI_IGNORE(module);
+
 	if (private_handle_t::validate(handle) < 0)
 	{
 		AERR("Locking invalid buffer 0x%p, returning error", handle );
@@ -315,8 +305,10 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 	int err=0;
 
 	switch (hnd->format) {
-		case HAL_PIXEL_FORMAT_YCbCr_420_888:
 		case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+		case HAL_PIXEL_FORMAT_YCbCr_420_888:
+		/*HAL_PIXEL_FORMAT_YCbCr_420_888 is a flexible yuv format and sprd treat
+		 * it as YCrCb 420 sp(be used in DCAM HAL)*/
 			ystride = GRALLOC_ALIGN(hnd->width, 16);
 			ycbcr->y  = (void*)hnd->base;
 			ycbcr->cr = (void*)((uintptr_t)hnd->base + ystride * hnd->height);
@@ -325,6 +317,16 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 			ycbcr->cstride = ystride;
 			ycbcr->chroma_step = 2;
 			memset(ycbcr->reserved, 0, sizeof(ycbcr->reserved));
+			break;
+                case HAL_PIXEL_FORMAT_YV12:
+                        ystride = GRALLOC_ALIGN(hnd->width, 128);
+                        ycbcr->y  = (void*)hnd->base;
+                        ycbcr->cr = (void*)((uintptr_t)hnd->base + ystride * hnd->height);
+                        ycbcr->cb = (void*)((uintptr_t)hnd->base + ystride * hnd->height + GRALLOC_ALIGN(ystride/2, 16) * (hnd->height/2));
+                        ycbcr->ystride = ystride;
+                        ycbcr->cstride = GRALLOC_ALIGN(ystride/2, 16);
+                        ycbcr->chroma_step = 1;
+                        memset(ycbcr->reserved, 0, sizeof(ycbcr->reserved));
 			break;
 		case HAL_PIXEL_FORMAT_YCbCr_420_SP:
 			ystride = GRALLOC_ALIGN(hnd->width, 16);
@@ -342,7 +344,6 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 			err = -EINVAL;
 	}
 
-	MALI_IGNORE(module);
 	MALI_IGNORE(usage);
 	MALI_IGNORE(l);
 	MALI_IGNORE(t);
