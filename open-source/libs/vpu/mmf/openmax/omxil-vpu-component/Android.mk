@@ -62,7 +62,7 @@ endif
 LOCAL_C_INCLUDES += $(TOP)/external/libyuv/files/include				
 # needed for #include <gralloc_priv.h> to use getAndroidNativeBufferHandleInfo in android_support.h
 # SHOULD change your libgralloc path
-LOCAL_C_INCLUDES += $(TOP)/hardware/qcom/display/msm8974/libgralloc
+#LOCAL_C_INCLUDES += $(TOP)/hardware/qcom/display/msm8974/libgralloc
 
 LOCAL_COPY_HEADERS_TO := ./bellagio
 LOCAL_COPY_HEADERS := src/OMX_VPU_Index.h			\
