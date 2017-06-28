@@ -37,8 +37,8 @@
 #define MAX_COLS 64
 #define MAX_ROWS 32
 
-#define CHAR_WIDTH 10
-#define CHAR_HEIGHT 18
+#define CHAR_WIDTH 23
+#define CHAR_HEIGHT 41
 
 static pthread_mutex_t gUpdateMutex = PTHREAD_MUTEX_INITIALIZER;
 static gr_surface gBackgroundIcon[NUM_BACKGROUND_ICONS];
@@ -156,7 +156,7 @@ static void draw_progress_locked(int level)
 		}
 	}
 	sprintf(bat, "%d%%%c", level, '\0');
-	draw_text_xy((dy + height), (gr_fb_width()/2 - 20), bat);
+	draw_text_xy((dy + height), ((gr_fb_width()/2) - ((strlen(bat) * CHAR_WIDTH)/2)), bat);
 
 	if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL) {
 		frame = level * (PROGRESSBAR_INDETERMINATE_STATES - 1) / 100;
@@ -357,7 +357,8 @@ void backlight_off(void);
 int set_screen_state(int);
 // Reads input events, handles special hot keys, and adds to the key queue.
 
-#define BACKLIGHT_ON_MS 3000
+#define BACKLIGHT_ON_MS 5000
+#define BACKLIGHT_ON_PREOFF 2000
 void *input_thread(void *write_fd)
 {
 	int fake_key = 0;
@@ -385,9 +386,15 @@ void *input_thread(void *write_fd)
 		time_left = BACKLIGHT_ON_MS;
 first_key_check:
 		while(gettimeofday(&start_time, (struct timezone *)0)<0);
-		if(time_left > 0){
+		if (time_left > BACKLIGHT_ON_PREOFF) {
+			ret = ev_get(&ev, time_left - BACKLIGHT_ON_PREOFF);
+			if (ret == -1) {
+				backlight_preoff();
+				ret = ev_get(&ev, time_left);
+			}
+		} else if (time_left > 0) {
 			ret = ev_get(&ev, time_left);
-		}else{
+		} else {
 			ret = -1;
 		}
 		LOGD(" %s: %d, ret:%d, ev.type:%d, ev.code:%d, ev.value:%d\n", __func__, \
@@ -404,13 +411,16 @@ first_key_check:
 			time_diff_temp = (time_diff_temp + 1000)/1000;
 			time_left = time_left - time_diff_temp;
 			LOGD(" %s: %d time_left: %d\n", __func__, __LINE__, time_left);
-			if(time_left <= 0){
+			if (time_left > BACKLIGHT_ON_PREOFF) {
+				backlight_on();
+			} else if (time_left > 0) {
+				backlight_preoff();
+			} else {
 				backlight_off();
 				set_screen_state(0);
 				continue;
-			}else{
-				goto first_key_check;
 			}
+			goto first_key_check;
 		}
 		LOGD(" %s: %d\n", __func__, __LINE__);
 		if(ev.value != 1){
@@ -433,14 +443,16 @@ first_key_check:
 				time_diff_temp = (time_diff_temp + 1000)/1000;
 				time_left = time_left - time_diff_temp;
 				LOGD(" %s: %d time_left: %d\n", __func__, __LINE__, time_left);
-				if(time_left <= 0){
+				if (time_left > BACKLIGHT_ON_PREOFF) {
+					backlight_on();
+				} else if (time_left > 0) {
+					backlight_preoff();
+				} else {
 					backlight_off();
 					set_screen_state(0);
 					continue;
-				}else{
-					goto first_key_check;
 				}
-
+				goto first_key_check;
 			}
 		}
 

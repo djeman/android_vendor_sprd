@@ -16,7 +16,14 @@ LOCAL_MODULE := libliteui
 # ordinary characters in this context).  Strip double-quotes from the
 # value so that either will work.
 
+ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),ABGR_8888)
+  # LOCAL_CFLAGS += -DRECOVERY_ABGR
+  LOCAL_CFLAGS += -DRECOVERY_RGBX
+endif
 ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),RGBX_8888)
+  LOCAL_CFLAGS += -DRECOVERY_RGBX
+endif
+ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),RGBA_8888)
   LOCAL_CFLAGS += -DRECOVERY_RGBX
 endif
 ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),BGRA_8888)
