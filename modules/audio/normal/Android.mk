@@ -33,7 +33,7 @@ LOCAL_CFLAGS += -DAUDIO_SPIPE_TD
 LOCAL_CFLAGS += -D_LPA_IRAM
 endif
 
-LOCAL_CFLAGS += -DAUDIO_DEBUG
+#LOCAL_CFLAGS += -DAUDIO_DEBUG
 
 ifneq ($(filter scx35_sc9620referphone scx35_sc9620openphone scx35_sc9620openphone_zt, $(TARGET_BOARD)),)
 LOCAL_CFLAGS += -DVB_CONTROL_PARAMETER_V2
@@ -73,7 +73,8 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/skd \
 	$(LOCAL_PATH)/resample_api\
         $(LOCAL_PATH)/custom_mmi \
-	vendor/sprd/modules/resampler
+	vendor/sprd/modules/resampler \
+	$(LOCAL_PATH)/libaudioril
 
 ifneq ($(filter $(strip $(PLATFORM_VERSION)),5.0 5.1),)
 LOCAL_C_INCLUDES += \
@@ -150,6 +151,11 @@ endif
 LOCAL_32_BIT_ONLY := true
 LOCAL_LDFLAGS += -Wl,--no-warn-shared-textrel
 LOCAL_STATIC_LIBRARIES := libSprdRecordNrProcess
+
+# Samsung/sprd audio ril
+LOCAL_STATIC_LIBRARIES += libaudioril
+LOCAL_SHARED_LIBRARIES += libaudio-ril
+
 
 ifeq ($(strip $(AUDIO_SMART_PA_TYPE)), NXP)
 LOCAL_SHARED_LIBRARIES += libnxppa	\
