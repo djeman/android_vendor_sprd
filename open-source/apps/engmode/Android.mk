@@ -91,7 +91,7 @@ endif
 ifneq (,$(filter true,$(BOARD_SPRD_WCNBT_MARLIN) $(BOARD_SPRD_WCNBT_SR2351)))
 LOCAL_CFLAGS += -DENGMODE_EUT_SPRD
 
-ifeq ($(HUAWEI_BT_ENGMODE),true)
+ifneq ($(SPRD_BT_ENGMODE),true)
 LOCAL_CFLAGS += -DHUAWEI_BT_ENGMODE
 else
 LOCAL_SRC_FILES += bt_eut_sprd.c
@@ -111,11 +111,13 @@ LOCAL_SHARED_LIBRARIES += libengbt
 LOCAL_C_INCLUDES    +=  vendor/sprd/open-source/apps/engmode/bt/
 ### bt bqb
 ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
+ifeq ($(SPRD_BT_ENGMODE),true)
 LOCAL_STATIC_LIBRARIES += \
     libbt-bqb
 LOCAL_CFLAGS += -DCONFIG_BQBTEST
 LOCAL_SHARED_LIBRARIES  += libbt-vendor
 	LOCAL_SRC_FILES     += eng_controllerbqbtest.c
+endif
 endif
 endif
 endif

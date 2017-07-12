@@ -1,4 +1,4 @@
-ifeq ($(HUAWEI_BT_ENGMODE),true)
+ifneq ($(SPRD_BT_ENGMODE),true)
 
 ifneq (,$(filter true,$(BOARD_SPRD_WCNBT_MARLIN) $(BOARD_SPRD_WCNBT_SR2351)))
 LOCAL_PATH:= $(call my-dir)
