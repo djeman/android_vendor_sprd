@@ -26,14 +26,14 @@ LOCAL_SHARED_LIBRARIES := \
 
 
 ## Special configuration ##
-ifeq ($(BOARD_SPRD_WCNBT_MARLIN), true)
-    ifneq ($(strip $(WCN_EXTENSION)),true)
-        LIBBT_CFLAGS += -DSPRD_WCNBT_MARLIN_15A
-    else
-        LIBBT_CFLAGS += -DGET_MARLIN_CHIPID
-    endif
-endif
-LOCAL_CFLAGS := $(LIBBT_CFLAGS)
+##ifeq ($(BOARD_SPRD_WCNBT_MARLIN), true)
+#    ifneq ($(strip $(WCN_EXTENSION)),true)
+#        LIBBT_CFLAGS += -DSPRD_WCNBT_MARLIN_15A
+#    else
+#        LIBBT_CFLAGS += -DGET_MARLIN_CHIPID
+#    endif
+#endif
+#LOCAL_CFLAGS := $(LIBBT_CFLAGS)
 
 
 LOCAL_MODULE := libbt-vendor
