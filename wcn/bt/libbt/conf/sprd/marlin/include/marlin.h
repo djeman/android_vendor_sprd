@@ -22,7 +22,7 @@
 #include "bt_vendor_sprd.h"
 
 #define PSKEY_PRELOAD_SIZE 0x04
-#define PSKEY_PREAMBLE_SIZE 0xD8
+#define PSKEY_PREAMBLE_SIZE 0xC4
 #define HCI_PSKEY 0xFCA0
 #define HCI_VSC_ENABLE_COMMMAND 0xFCA1
 #define START_STOP_CMD_SIZE 3
@@ -97,8 +97,8 @@ typedef struct {
     uint16_t  br_edr_diff_reserved;
     uint32_t  g_aBRChannelpwrvalue[8];
     uint32_t  g_aEDRChannelpwrvalue[8];
-    uint32_t  g_aLEPowerControlFlag;
-    uint16_t  g_aLEChannelpwrvalue[8];
+    /*uint32_t  g_aLEPowerControlFlag;
+    uint16_t  g_aLEChannelpwrvalue[8];*/
 } pskey_config_t;
 
 const bt_adapter_module_t *get_adapter_module(void);

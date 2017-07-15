@@ -287,6 +287,8 @@ void hw_epilog_process(void)
     }
 }
 
+#endif  // (HW_END_WITH_HCI_RESET == TRUE)
+
 int hw_preload_pskey(void *arg)
 {
     const bt_adapter_module_t *adapter_module = get_adapter_module();
@@ -299,4 +301,3 @@ int hw_preload_pskey(void *arg)
 #endif
 }
 
-#endif  // (HW_END_WITH_HCI_RESET == TRUE)

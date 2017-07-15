@@ -26,7 +26,60 @@
 #include "upio.h"
 
 // pskey file structure default value
-static pskey_config_t marlin_pskey = {0};
+static pskey_config_t marlin_pskey ={
+    .pskey_cmd = 0x001C0101,
+
+    .g_dbg_source_sink_syn_test_data = 0,
+    .g_sys_sleep_in_standby_supported = 1,
+    .g_sys_sleep_master_supported = 1,
+    .g_sys_sleep_slave_supported = 1,
+
+    .default_ahb_clk = 26000000,
+    .device_class = 0x001F00,
+    .win_ext = 30,
+
+    .g_aGainValue = {0x0000F600, 0x0000D000, 0x0000AA00, 0x00008400, 0x00004400, 0x00000A00},
+    .g_aPowerValue = {0x0FC80000, 0x0FF80000, 0x0FDA0000, 0x0FCC0000, 0x0FFC0000},
+
+    .feature_set = {0xFF, 0xFF, 0x8D, 0xFE, 0xDB, 0x7D, 0x7B, 0x83, 0xFF, 0xA7, 0xFF, 0x7F, 0x00, 0xE0, 0xF7, 0x3E},
+    .device_addr = {0x6D, 0x6D, 0x8E, 0x8E, 0x8F, 0x8F},
+
+    .g_sys_sco_transmit_mode = 0, //true tramsmit by uart, otherwise by share memory
+    .g_sys_uart0_communication_supported = 1, //true use uart0, otherwise use uart1 for debug
+    .edr_tx_edr_delay = 5,
+    .edr_rx_edr_delay = 14,
+
+    .g_wbs_nv_117 = 0x007C,
+
+    .is_wdg_supported = 0,
+
+    .share_memo_rx_base_addr = 0,
+
+    .g_wbs_nv_118 = 0x0066,
+    .g_nbv_nv_117 = 0x10F9,
+
+    .share_memo_tx_packet_num_addr = 1,
+    .share_memo_tx_data_base_addr = 0,
+
+    .g_PrintLevel = 0xFFFFFFFF,
+
+    .share_memo_tx_block_length = 0,
+    .share_memo_rx_block_length = 0,
+    .share_memo_tx_water_mark = 0,
+
+    .g_nbv_nv_118 = 0x0A45,
+
+    .uart_rx_watermark = 48,
+    .uart_flow_control_thld = 63,
+    .comp_id = 0,
+    .pcm_clk_divd = 0x26,
+
+    .br_edr_diff_reserved = 0xFFFF,
+    .g_aBRChannelpwrvalue = {0x1A7C0000, 0x197C0000, 0x197C0000, 0x197C0000, 
+                             0x187C0000, 0x187C0000, 0x197C0000, 0x197C0000},
+    .g_aEDRChannelpwrvalue = {0x17FC0000, 0x15FC0000, 0x16FC0000, 0x16FC0000, 
+                             0x0FFC0000, 0x0FFC0000, 0x167C0000, 0x167C0000},
+};
 
 static const conf_entry_t marlin_table[] = {
     {"pskey_cmd", 0, 0, 0, 0},
@@ -76,11 +129,12 @@ static const conf_entry_t marlin_table[] = {
 
     CONF_ITEM_TABLE(comp_id, 0, marlin_pskey, 1),
     CONF_ITEM_TABLE(pcm_clk_divd, 0, marlin_pskey, 1),
+
     CONF_ITEM_TABLE(br_edr_diff_reserved, 0, marlin_pskey, 1),
     CONF_ITEM_TABLE(g_aBRChannelpwrvalue, 0, marlin_pskey, 8),
     CONF_ITEM_TABLE(g_aEDRChannelpwrvalue, 0, marlin_pskey, 8),
-    CONF_ITEM_TABLE(g_aLEPowerControlFlag, 0, marlin_pskey, 1),
-    CONF_ITEM_TABLE(g_aLEChannelpwrvalue, 0, marlin_pskey, 8)
+    /*CONF_ITEM_TABLE(g_aLEPowerControlFlag, 0, marlin_pskey, 1),
+    CONF_ITEM_TABLE(g_aLEChannelpwrvalue, 0, marlin_pskey, 8)*/
 };
 
 static void marlin_pskey_dump(void *arg)
@@ -162,10 +216,10 @@ static void marlin_pskey_dump(void *arg)
     ALOGI("g_aEDRChannelpwrvalue:0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X",
         p->g_aEDRChannelpwrvalue[0], p->g_aEDRChannelpwrvalue[1], p->g_aEDRChannelpwrvalue[2], p->g_aEDRChannelpwrvalue[3],
         p->g_aEDRChannelpwrvalue[4], p->g_aEDRChannelpwrvalue[5], p->g_aEDRChannelpwrvalue[6], p->g_aEDRChannelpwrvalue[7]);
-    ALOGI("g_aLEPowerControlFlag : 0x%08X", p->g_aLEPowerControlFlag);
+    /*ALOGI("g_aLEPowerControlFlag : 0x%08X", p->g_aLEPowerControlFlag);
     ALOGI("g_aLEChannelpwrvalue:0x%04X, 0x%04X, 0x%04X, 0x%04X, 0x%04X, 0x%04X, 0x%04X, 0x%04X",
         p->g_aLEChannelpwrvalue[0], p->g_aLEChannelpwrvalue[1], p->g_aLEChannelpwrvalue[2], p->g_aLEChannelpwrvalue[3],
-        p->g_aLEChannelpwrvalue[4], p->g_aLEChannelpwrvalue[5], p->g_aLEChannelpwrvalue[6], p->g_aLEChannelpwrvalue[7]);
+        p->g_aLEChannelpwrvalue[4], p->g_aLEChannelpwrvalue[5], p->g_aLEChannelpwrvalue[6], p->g_aLEChannelpwrvalue[7]);*/
 }
 
 static int get_pskey_size(void)
@@ -377,10 +431,10 @@ static int marlin_pskey_preload(void *arg)
         for (i = 0; i < 8; i++) {
             UINT32_TO_STREAM(p, marlin_pskey.g_aEDRChannelpwrvalue[i]);
         }
-        UINT32_TO_STREAM(p, marlin_pskey.g_aLEPowerControlFlag);
+        /*UINT32_TO_STREAM(p, marlin_pskey.g_aLEPowerControlFlag);
         for (i = 0; i < 8; i++) {
             UINT16_TO_STREAM(p, marlin_pskey.g_aLEChannelpwrvalue[i]);
-        }
+        }*/
 
         upio_set(UPIO_BT_WAKE, UPIO_ASSERT, 0);
 
