@@ -40,8 +40,11 @@
 #if GRALLOC_ARM_DMA_BUF_MODULE
 #include <linux/ion.h>
 #include <ion/ion.h>
-#include <video/ion_sprd.h>
 #endif
+
+#include <video/ion_sprd.h>
+
+int g_useTileAlign = 0;
 
 #if GRALLOC_SIMULATE_FAILURES
 #include <cutils/properties.h>
@@ -49,6 +52,7 @@
 /* system property keys for controlling simulated UMP allocation failures */
 #define PROP_MALI_TEST_GRALLOC_FAIL_FIRST     "mali.test.gralloc.fail_first"
 #define PROP_MALI_TEST_GRALLOC_FAIL_INTERVAL  "mali.test.gralloc.fail_interval"
+
 
 static int __ump_alloc_should_fail()
 {
@@ -119,13 +123,23 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 			else
 			{
 				ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
-			}
+			}	
 		}
 		else
 		{
+#ifdef TARGET_SUPPORT_ADF_DISPLAY
+			if (usage & GRALLOC_USAGE_HW_FB)
+			{
+				ion_heap_mask = ION_HEAP_ID_MASK_FB;
+			}
+			else
+			{
+				ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
+			}
+#else
 			ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
+#endif
 		}
-
 		if (usage & (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK))
 		{
 			ion_flag = ION_FLAG_CACHED | ION_FLAG_CACHED_NEEDS_SYNC;
@@ -168,8 +182,8 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 			return -1;
 		}
 
-
 		private_handle_t *hnd = new private_handle_t(private_handle_t::PRIV_FLAGS_USES_ION, usage, size, cpu_ptr, private_handle_t::LOCK_STATE_MAPPED);
+
 		if (NULL != hnd)
 		{
 			if(ion_heap_mask == ION_HEAP_CARVEOUT_MASK || ion_heap_mask == ION_HEAP_ID_MASK_OVERLAY)
@@ -226,6 +240,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 		}
 
 #ifdef GRALLOC_SIMULATE_FAILURES
+
 		/* if the failure condition matches, fail this iteration */
 		if (__ump_alloc_should_fail())
 		{
@@ -247,7 +262,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 					if (UMP_INVALID_SECURE_ID != ump_id)
 					{
 						private_handle_t *hnd = new private_handle_t(private_handle_t::PRIV_FLAGS_USES_UMP, usage, size, cpu_ptr,
-						private_handle_t::LOCK_STATE_MAPPED, ump_id, ump_mem_handle);
+						        private_handle_t::LOCK_STATE_MAPPED, ump_id, ump_mem_handle);
 
 						if (NULL != hnd)
 						{
@@ -278,12 +293,14 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 				AERR("gralloc_alloc_buffer() failed to allocate UMP memory. size:%d constraints: %d", size, constraints);
 			}
 		}
+
 		return -1;
 	}
 #endif
 
 }
 
+#ifndef TARGET_SUPPORT_ADF_DISPLAY
 static int gralloc_alloc_framebuffer_locked(alloc_device_t *dev, size_t size, int usage, buffer_handle_t *pHandle)
 {
 	private_module_t *m = reinterpret_cast<private_module_t *>(dev->common.module);
@@ -382,6 +399,8 @@ static int gralloc_alloc_framebuffer(alloc_device_t *dev, size_t size, int usage
 	return err;
 }
 
+#endif
+
 static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int usage, buffer_handle_t *pHandle, int *pStride)
 {
 	if (!pHandle || !pStride)
@@ -406,18 +425,18 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
  	 * Then, define SUPPORT_LEGACY_FORMAT in the same header file(Mali DDK will also check this definition).
 	 */
 		|| format == HAL_PIXEL_FORMAT_YCbCr_420_SP || format == HAL_PIXEL_FORMAT_YCbCr_420_P || format == HAL_PIXEL_FORMAT_YCbCr_422_I
-	)
+	   )
 	{
 		switch (format)
 		{
 			case HAL_PIXEL_FORMAT_YCbCr_420_SP:
-				stride = GRALLOC_ALIGN(w, 16);
-				size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
-				break;
+                            stride = GRALLOC_ALIGN(w, 16);
+                            size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
+                            break;
 			case HAL_PIXEL_FORMAT_YCrCb_420_SP:
-				stride = GRALLOC_ALIGN(w, 16);
-				size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
-				break;
+                            stride = GRALLOC_ALIGN(w, 16);
+                            size = GRALLOC_ALIGN(h, 16) * (stride + GRALLOC_ALIGN(stride / 2, 16));
+                            break;
 			case HAL_PIXEL_FORMAT_YCbCr_420_888:
 			case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
 				stride = w;
@@ -429,6 +448,8 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 				// mali GPU hardware requires u/v-plane 64byte-alignment
 				size = GRALLOC_ALIGN(h * stride, 64) + GRALLOC_ALIGN(h/2 * GRALLOC_ALIGN(stride/2,16), 64) + h/2 * GRALLOC_ALIGN(stride/2,16);
 				break;
+
+
 			case HAL_PIXEL_FORMAT_YV12:
 				stride = GRALLOC_ALIGN(w, 128);
 				// mali GPU hardware requires u/v-plane 64byte-alignment
@@ -461,14 +482,16 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 				bpp = 4;
 				break;
 
-			case HAL_PIXEL_FORMAT_RGB_565:
-			/*case HAL_PIXEL_FORMAT_RGBA_5551:
-			case HAL_PIXEL_FORMAT_RGBA_4444:*/
-				bpp = 2;
-				break;
-
 			case HAL_PIXEL_FORMAT_RGB_888:
 				bpp = 3;
+				break;
+
+			case HAL_PIXEL_FORMAT_RGB_565:
+#if PLATFORM_SDK_VERSION < 19
+			case HAL_PIXEL_FORMAT_RGBA_5551:
+			case HAL_PIXEL_FORMAT_RGBA_4444:
+#endif
+				bpp = 2;
 				break;
 
 			default:
@@ -479,11 +502,28 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 		size = bpr * h;
 		stride = bpr / bpp;
 
-		usage &= ~GRALLOC_USAGE_HW_TILE_ALIGN;
+#ifdef GPU_USE_TILE_ALIGN
+                /*
+                 *  Aligned tile need 16 * 16 pixel aligned, for GPU read/write.
+                 *  If CPU access buffer, should disable tile alignment feature.
+                 * */
+                if ((g_useTileAlign > 0) && (usage & GRALLOC_USAGE_HW_TILE_ALIGN) &&
+                    (((usage & GRALLOC_USAGE_SW_READ_OFTEN) != GRALLOC_USAGE_SW_READ_OFTEN) &&
+                     ((usage & GRALLOC_USAGE_SW_WRITE_OFTEN) != GRALLOC_USAGE_SW_WRITE_OFTEN)) &&
+                    (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_2D)))
+                {
+                    stride = GRALLOC_ALIGN(w, 16);
+                    size = GRALLOC_ALIGN(h, 16) * stride * bpp;
+                }
+                else
+#endif
+                {
+                    usage &= ~GRALLOC_USAGE_HW_TILE_ALIGN;
+                }
 	}
 
 	int err;
-
+#ifndef TARGET_SUPPORT_ADF_DISPLAY
 #ifndef MALI_600
 
 	if ((usage & GRALLOC_USAGE_HW_FB) && (w != 1 && h != 1))
@@ -492,10 +532,11 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 	}
 	else
 #endif
-
+#endif
 	{
 		err = gralloc_alloc_buffer(dev, size, usage, pHandle);
-		if(err>=0){
+		if(err>=0)
+		{
 			const native_handle_t *p_nativeh  = *pHandle;
 			private_handle_t *hnd = (private_handle_t*)p_nativeh;
 			hnd->format = format;
@@ -560,7 +601,7 @@ static int alloc_device_free(alloc_device_t *dev, buffer_handle_t handle)
 	}
 
 	private_handle_t const *hnd = reinterpret_cast<private_handle_t const *>(handle);
-	
+
 	ALOGD_IF(mDebug,"free buffer start handle:%p ion_hnd:0x%x",handle,hnd->ion_hnd);
 
 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
@@ -584,6 +625,7 @@ static int alloc_device_free(alloc_device_t *dev, buffer_handle_t handle)
 	else if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_UMP)
 	{
 #if GRALLOC_ARM_UMP_MODULE
+
 		/* Buffer might be unregistered so we need to check for invalid ump handle*/
 		if ((int)UMP_INVALID_MEMORY_HANDLE != hnd->ump_mem_handle)
 		{

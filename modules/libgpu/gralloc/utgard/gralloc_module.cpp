@@ -61,6 +61,7 @@ static int gralloc_device_open(const hw_module_t *module, const char *name, hw_d
 static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle_t handle)
 {
 	MALI_IGNORE(module);
+
 	if (private_handle_t::validate(handle) < 0)
 	{
 		AERR("Registering invalid buffer 0x%p, returning error", handle);
@@ -111,10 +112,9 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 
 			if (0 != hnd->base)
 			{
-				hnd->lockState = private_handle_t::LOCK_STATE_MAPPED;
 				hnd->writeOwner = 0;
-				hnd->lockState = 0;
-
+				hnd->lockState &= ~(private_handle_t::LOCK_STATE_UNREGISTERED);
+				
 				pthread_mutex_unlock(&s_map_lock);
 				return 0;
 			}
@@ -141,7 +141,6 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 		unsigned char *mappedAddress;
 		size_t size = hnd->size;
 		hw_module_t *pmodule = NULL;
-
 		private_module_t *m = (private_module_t*)module;
 
 		/* the test condition is set to m->ion_client <= 0 here, because:
@@ -171,6 +170,8 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 		}
 
 		hnd->base = mappedAddress + hnd->offset;
+		hnd->lockState &= ~(private_handle_t::LOCK_STATE_UNREGISTERED);
+		
 		pthread_mutex_unlock(&s_map_lock);
 		return 0;
 #endif
@@ -183,6 +184,44 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
 cleanup:
 	pthread_mutex_unlock(&s_map_lock);
 	return retval;
+}
+
+static void unmap_buffer(private_handle_t *hnd)
+{
+	if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_UMP)
+	{
+#if GRALLOC_ARM_UMP_MODULE
+		ump_mapped_pointer_release((ump_handle)hnd->ump_mem_handle);
+		ump_reference_release((ump_handle)hnd->ump_mem_handle);
+		hnd->ump_mem_handle = (int)UMP_INVALID_MEMORY_HANDLE;
+#else
+		AERR("Can't unregister UMP buffer for handle 0x%p. Not supported", hnd);
+#endif
+	}
+	else if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
+	{
+#if GRALLOC_ARM_DMA_BUF_MODULE
+		void *base = (void *)hnd->base;
+		size_t size = hnd->size;
+
+		if (munmap(base, size) < 0)
+		{
+			AERR("Could not munmap base:0x%p size:%lu '%s'", base, (unsigned long)size, strerror(errno));
+		}
+
+#else
+		AERR("Can't unregister DMA_BUF buffer for hnd %p. Not supported", hnd);
+#endif
+
+	}
+	else
+	{
+		AERR("Unregistering unknown buffer is not supported. Flags = %d", hnd->flags);
+	}
+
+	hnd->base = 0;
+	hnd->lockState = 0;
+	hnd->writeOwner = 0;
 }
 
 static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_handle_t handle)
@@ -209,40 +248,15 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
 	{
 		pthread_mutex_lock(&s_map_lock);
 
-		if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_UMP)
-		{
-#if GRALLOC_ARM_UMP_MODULE
-			ump_mapped_pointer_release((ump_handle)hnd->ump_mem_handle);
-			hnd->base = 0;
-			ump_reference_release((ump_handle)hnd->ump_mem_handle);
-			hnd->ump_mem_handle = (int)UMP_INVALID_MEMORY_HANDLE;
-#else
-			AERR("Can't unregister UMP buffer for handle 0x%p. Not supported", handle);
-#endif
-		}
-		else if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
-		{
-#if GRALLOC_ARM_DMA_BUF_MODULE
-			void *base = (void *)hnd->base;
-			size_t size = hnd->size;
+		hnd->lockState &= ~(private_handle_t::LOCK_STATE_MAPPED);
 
-			if (munmap(base, size) < 0)
-			{
-				AERR("Could not munmap base:0x%p size:%d '%s'", base, size, strerror(errno));
-			}
-
-#else
-			AERR("Can't unregister DMA_BUF buffer for hnd %p. Not supported", hnd);
-#endif
-
-		}
-		else
+		/* if handle is still locked, the unmapping would not happen until unlocked*/
+		if (!(hnd->lockState & private_handle_t::LOCK_STATE_WRITE))
 		{
-			AERR("Unregistering unknown buffer is not supported. Flags = %d", hnd->flags);
+			unmap_buffer(hnd);
 		}
-		hnd->base = 0;
-		hnd->lockState  = 0;
-		hnd->writeOwner = 0;
+
+		hnd->lockState |= private_handle_t::LOCK_STATE_UNREGISTERED;
 
 		pthread_mutex_unlock(&s_map_lock);
 	}
@@ -264,10 +278,23 @@ static int gralloc_lock(gralloc_module_t const *module, buffer_handle_t handle, 
 
 	private_handle_t *hnd = (private_handle_t *)handle;
 
+	pthread_mutex_lock(&s_map_lock);
+	
+	if (hnd->lockState & private_handle_t::LOCK_STATE_UNREGISTERED)
+	{
+		AERR("Locking on an unregistered buffer 0x%p, returning error", hnd);
+		pthread_mutex_unlock(&s_map_lock);
+		return -EINVAL;
+	}
+
 	if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_UMP || hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
 	{
 		hnd->writeOwner = usage & GRALLOC_USAGE_SW_WRITE_MASK;
 	}
+
+	hnd->lockState |= private_handle_t::LOCK_STATE_WRITE;
+
+	pthread_mutex_unlock(&s_map_lock);
 
 	if (usage & (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK))
 	{
@@ -289,9 +316,9 @@ static int gralloc_lock(gralloc_module_t const *module, buffer_handle_t handle, 
 
 
 static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
-            buffer_handle_t handle, int usage,
-            int l, int t, int w, int h,
-            struct android_ycbcr *ycbcr)
+		buffer_handle_t handle, int usage,
+		int l, int t, int w, int h,
+		struct android_ycbcr *ycbcr)
 {
 	MALI_IGNORE(module);
 
@@ -340,10 +367,9 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 			break;
 		default:
 			ALOGD("%s: Invalid format passed: 0x%x", __FUNCTION__,
-			       hnd->format);
+				  hnd->format);
 			err = -EINVAL;
 	}
-
 	MALI_IGNORE(usage);
 	MALI_IGNORE(l);
 	MALI_IGNORE(t);
@@ -357,6 +383,7 @@ static int gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 static int gralloc_unlock(gralloc_module_t const* module, buffer_handle_t handle)
 {
 	MALI_IGNORE(module);
+
 	if (private_handle_t::validate(handle) < 0)
 	{
 		AERR("Unlocking invalid buffer 0x%p, returning error", handle);
@@ -375,7 +402,8 @@ static int gralloc_unlock(gralloc_module_t const* module, buffer_handle_t handle
 #else
 		AERR("Buffer 0x%p is UMP type but it is not supported", hnd);
 #endif
-	} else if ( hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION && hnd->writeOwner)
+	}
+	else if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION && hnd->writeOwner)
 	{
 #if GRALLOC_ARM_DMA_BUF_MODULE
 		private_module_t *m = (private_module_t*)module;
@@ -383,6 +411,18 @@ static int gralloc_unlock(gralloc_module_t const* module, buffer_handle_t handle
 		ion_sync_fd(m->ion_client, hnd->share_fd);
 #endif
 	}
+
+	pthread_mutex_lock(&s_map_lock);
+
+	hnd->lockState &= ~(private_handle_t::LOCK_STATE_WRITE);
+
+	/* if the handle has already been unregistered, unmap it here*/
+	if (hnd->lockState & private_handle_t::LOCK_STATE_UNREGISTERED)
+	{
+		unmap_buffer(hnd);
+	}
+
+	pthread_mutex_unlock(&s_map_lock);
 
 	return 0;
 }
@@ -418,6 +458,7 @@ private_module_t::private_module_t()
 	INIT_ZERO(base.reserved_proc);
 
 	framebuffer = NULL;
+	psCtx = NULL;
 	flags = 0;
 	numBuffers = 0;
 	bufferMask = 0;
