@@ -423,11 +423,19 @@ struct config_element sprd_front_camera_hardware_config[] = {
 #else
 	{"picture-size-values", "640x480,320x240"},
 #endif
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"picture-size", "2560x1440"},
+	{"preview-size-values",	"1280x960,1280x720,720x480,640x480,320x240,176x144"},
+	{"preview-size", "1280x960"},
+	{"video-size-values", ""},
+	{"video-size", "1280x720"},
+#else
 	{"picture-size", "640x480"},
 	{"preview-size-values",	"720x480,640x480,352x288,320x240,176x144"},
 	{"preview-size", "720x480"},
-	{"video-size-values",  ""},
+	{"video-size-values", ""},
 	{"video-size", "720x480"},
+#endif
 	{"video-picture-size-values", "1280x960,1280x960,1280x960"},
 	{"preferred-preview-size-for-video", ""},
 	{"video-frame-format-values", "yuv420sp,yuv420p"},
@@ -456,7 +464,6 @@ struct config_element sprd_front_camera_hardware_config[] = {
 	{"smooth-zoom-supported", "false"},
 	{"max-zoom", "7"},
 	{"zoom-ratios", "100,120,140,170,200,230,260,300"},
-	//{"zoom", "100"},
 	{"zoom", "0"},
 	{"brightness-supported", "true"},
 	{"smooth-brightness-supported", "false"},
@@ -478,11 +485,19 @@ struct config_element sprd_front_camera_hardware_config[] = {
 	{"sharpness-values", "0,1,2,3,4,5,6"},
 	{"sharpness", "3"},
 #endif
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"min-exposure-compensation", "-1"},
+	{"max-exposure-compensation", "1"},
+	{"exposure-compensation","0"},
+	{"exposure-compensation-step", "0.5"},
+	{"focal-length", "1.924"},
+#else
 	{"min-exposure-compensation", "0"},
 	{"max-exposure-compensation", "0"},
 	{"exposure-compensation","0"},
 	{"exposure-compensation-step", "0"},
 	{"focal-length", "3.75"},
+#endif
 	{"horizontal-view-angle", "54"},
 	{"vertical-view-angle", "54"},
 #ifndef CONFIG_CAMERA_FLASH_NOT_SUPPORT
@@ -490,10 +505,15 @@ struct config_element sprd_front_camera_hardware_config[] = {
 	{"flash-mode", "off"},
 #endif
 	{"flash-mode-supported", "false"},
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"focus-mode-values", "infinity,auto"},
+	{"focus-mode", "auto"},
+#else
 	//CTS will test front camera focus mode,but it don't support,so delete it.
 	/** SPRD: add { */
 	{"focus-mode-values", "fixed"},
 	{"focus-mode", "fixed"},
+#endif
 	{"focus-distances", "2.0,2.5,Infinity"},
 	/** SPRD: add { */
 #if defined(CONFIG_CAMERA_FACE_DETECT)
@@ -508,7 +528,7 @@ struct config_element sprd_front_camera_hardware_config[] = {
 	{"smile-snap-mode","0"},
 	{"hdr-supported","false"},
 	{"hdr","0"},
-#if	defined(CONFIG_CAMERA_ZSL_CAPTURE)
+#if defined(CONFIG_CAMERA_ZSL_CAPTURE)
 	{"zsl-supported","true"},
 #else
 	{"zsl-supported","false"},
@@ -523,7 +543,11 @@ struct config_element sprd_front_camera_hardware_config[] = {
 	{"max-slow-motion","3"},
 	{"slow-motion-values", "1"},
 	{"slow-motion", "1"},
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"max-num-metering-areas", "1"},
+#else
 	{"max-num-metering-areas", "0"},
+#endif
 #ifndef CONFIG_EXPOSURE_METERING_NOT_SUPPORT
 	{"auto-exposure","center-weighted"},
 	{"auto-exposure-values", "frame-average,center-weighted,spot-metering"},
@@ -563,7 +587,10 @@ struct config_element sprd_back_camera_hardware_config[] = {
 	{"video-picture-size-values", "1280x960,1280x960,1280x960,1280x960,1280x960"},
 #endif
 	{"picture-size", "640x480"},
-#if defined(CONFIG_CAMERA_SMALL_PREVSIZE)
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"preview-size-values", "1280x960,1280x720,800x480,640x480,720x720,720x480,320x240,176x14"},
+	{"preview-size", "1280x960"},
+#elif defined(CONFIG_CAMERA_SMALL_PREVSIZE)
 	{"preview-size-values", "720x480,640x480,352x288,320x240,176x144"},
 	{"preview-size", "640x480"},
 #else
@@ -576,7 +603,11 @@ struct config_element sprd_back_camera_hardware_config[] = {
 #endif
 #endif
 	{"video-size-values", ""},
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"video-size", "1280x720"},
+#else
 	{"video-size", "1920x1088"},
+#endif
 	{"preferred-preview-size-for-video", ""},
 	{"video-frame-format-values", "yuv420sp,yuv420p"},
 	{"video-frame-format", "yuv420sp"},
@@ -619,15 +650,18 @@ struct config_element sprd_back_camera_hardware_config[] = {
 	{"saturation-values", "0,1,2,3,4,5,6"},
 	{"saturation", "3"},
 #if 0
-
 	{"sharpness-supported", "true"},
 	{"max-sharpness", "6"},
 	{"sharpness-values", "0,1,2,3,4,5,6"},
 	{"sharpness", "3"},
 #endif
 #ifndef CONFIG_CAMERA_AUTOFOCUS_NOT_SUPPORT
-#if	defined(CONFIG_CAMERA_CAF)
+#if defined(CONFIG_CAMERA_CAF)
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"focus-mode-values", "auto,macro,face-priority,continuous-picture,continuous-video,infinity"},
+#else
 	{"focus-mode-values", "auto,macro,continuous-picture,continuous-video,infinity"},
+#endif
 	{"focus-mode", "auto"},
 #else
 	{"focus-mode-values", "auto,macro,infinity"},
@@ -644,16 +678,24 @@ struct config_element sprd_back_camera_hardware_config[] = {
 	{"min-exposure-compensation", "-4"},
 	{"max-exposure-compensation", "4"},
 	{"exposure-compensation","0"},
-	{"exposure-compensation-step", "1"},
+	{"exposure-compensation-step", "0.5"},
 //back camera add auto antibanding mode
 /** SPRD: add { */
 	{"antibanding-values","auto,50hz,60hz"},
 	{"antibanding","auto"},
 /** SPRD: add } */
 	{"antibanding-supported","true"},
+#if defined(CONFIG_CAMERA_SMJ320)
+	{"focal-length", "3.30"},
+	{"fnumber-value-numerator", "22"},
+	{"fnumber-value-denominator", "10"},
+	{"horizontal-view-angle", "54"},
+	{"vertical-view-angle", "54"},
+#else
 	{"focal-length", "3.75"},
 	{"horizontal-view-angle", "48"},
 	{"vertical-view-angle", "48"},
+#endif
 #ifndef CONFIG_CAMERA_FLASH_NOT_SUPPORT
 	{"flash-mode-values", "off,on,torch,auto"},
 	{"flash-mode", "off"},
@@ -682,7 +724,7 @@ struct config_element sprd_back_camera_hardware_config[] = {
 	{"smile-snap-mode","0"},
 	{"hdr-supported","true"},
 	{"hdr","0"},
-#if	defined(CONFIG_CAMERA_ZSL_CAPTURE)
+#if defined(CONFIG_CAMERA_ZSL_CAPTURE)
 	{"zsl-supported","true"},
 #else
 	{"zsl-supported","false"},
@@ -710,7 +752,7 @@ struct config_element sprd_back_camera_hardware_config[] = {
 	{"auto-exposure-supported", "0"},
 #endif
 	{"preview-env","0"},
-#if  defined(CONFIG_CAMERA_ZSL_CAPTURE)
+#if defined(CONFIG_CAMERA_ZSL_CAPTURE)
 	{"video-snapshot-supported","true"},
 #else
 	{"video-snapshot-supported","false"},
