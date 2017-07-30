@@ -588,7 +588,7 @@ struct config_element sprd_back_camera_hardware_config[] = {
 #endif
 	{"picture-size", "640x480"},
 #if defined(CONFIG_CAMERA_SMJ320)
-	{"preview-size-values", "1280x960,1280x720,800x480,640x480,720x720,720x480,320x240,176x14"},
+	{"preview-size-values", "1280x960,1280x720,800x480,640x480,720x720,720x480,320x240,176x144"},
 	{"preview-size", "1280x960"},
 #elif defined(CONFIG_CAMERA_SMALL_PREVSIZE)
 	{"preview-size-values", "720x480,640x480,352x288,320x240,176x144"},
