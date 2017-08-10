@@ -2687,7 +2687,7 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
                 select_devices_signal(adev);
             if ((AUDIO_MODE_IN_CALL == adev->mode) || adev->voip_start)
                 ret = setModemPath(adev);  //send at command to cp
-            AudioRilsetExtraVolume(audio_ril, adev->extra_volume);
+            //AudioRilsetExtraVolume(audio_ril, adev->extra_volume);
             pthread_mutex_unlock(&out->lock);
             pthread_mutex_unlock(&adev->lock);
           } else {
@@ -5106,7 +5106,7 @@ static int adev_set_parameters(struct audio_hw_device *dev, const char *kvpairs)
             adev->extra_volume = false;
         }
         setModemPath(adev);
-        AudioRilsetExtraVolume(audio_ril, adev->extra_volume);
+        //AudioRilsetExtraVolume(audio_ril, adev->extra_volume);
     }
 
     ret = AudioMMIParse(parms, adev->mmiHandle);
@@ -5178,13 +5178,13 @@ static int adev_set_mode(struct audio_hw_device *dev, audio_mode_t mode)
             AudioRilsetRealCallStatus(audio_ril, true);
 
             adev->extra_volume = true;
-            AudioRilsetExtraVolume(audio_ril, true);
+            //AudioRilsetExtraVolume(audio_ril, true);
 
             AudioRilsetVoiceVolume(audio_ril, adev->out_devices, adev->voice_volume);
         } else {
             if (adev->extra_volume) {
                 adev->extra_volume = false;
-                AudioRilsetExtraVolume(audio_ril, false);
+                //AudioRilsetExtraVolume(audio_ril, false);
             }
             AudioRilsetRealCallStatus(audio_ril, false);
         }

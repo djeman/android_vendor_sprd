@@ -50,7 +50,7 @@ int AudioRilsetVoiceVolume(HAudioRil client, int path, float volume) {
     if (client == NULL)
         return 0;
 
-    return ((android::SecRil *)client)->setVoiceVolume(path, volume*3);
+    return ((android::SecRil *)client)->setVoiceVolume(path, volume*5);
 }
 
 extern "C"
