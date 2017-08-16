@@ -374,12 +374,12 @@ static void parse_frame(packet_receive_data_t *receive_data, data_ready_cb data_
                     receive_data->bytes_remaining = (receive_data->type == DATA_TYPE_ACL) ? RETRIEVE_ACL_LENGTH(receive_data->preamble) : byte;
                     size_t buffer_size = receive_data->index + receive_data->bytes_remaining;
 
-                    if (!receive_data->buffer) {
+                    /*if (!receive_data->buffer) {
                         SITME("%s error getting buffer for incoming packet of type %d and size %zd", __func__, receive_data->type, buffer_size);
                         // Can't read any more of this current packet, so jump out
                         receive_data->state = receive_data->bytes_remaining == 0 ? BRAND_NEW : IGNORE;
                         break;
-                    }
+                    }*/
 
                     // Initialize the buffer
                     memcpy(receive_data->buffer, receive_data->preamble, receive_data->index);

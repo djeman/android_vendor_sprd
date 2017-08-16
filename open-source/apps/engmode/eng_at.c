@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 #include <errno.h>
@@ -549,7 +550,7 @@ void direct_write(char* rsp)
         ENG_LOG("%s: eng ATD response \n", __FUNCTION__);
     }
 
-    return 0;
+    return;
 }
 
 int eng_atd_direct_write(int chan)

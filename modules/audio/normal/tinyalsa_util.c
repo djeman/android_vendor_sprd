@@ -108,39 +108,7 @@ static int get_snd_card_name(int card, char *name)
     return 0;
 }
 
- void tinymix_list_controls(struct mixer *mixer,char * buf, unsigned int  *bytes)
-{
-    struct mixer_ctl *ctl;
-    const char *name, *type;
-    unsigned int num_ctls, num_values;
-    unsigned int i;
-    unsigned int size = *bytes;
-    unsigned int cur=0;
-    unsigned int cur1=0;
-    unsigned cur_len = 0;
-
-    num_ctls = mixer_get_num_ctls(mixer);
-
-    ALOGD("Number of controls: %d\n", num_ctls);
-    cur = snprintf(buf,size,"Number of controls: %d\n", num_ctls);
-    ALOGD("ctl\ttype\tnum\t%-40s value\n", "name");
-    cur += snprintf(buf+cur,size,"ctl\ttype\tnum\t%-40s value\n", "name");
-    for (i = 0; i < num_ctls; i++) {
-        ctl = mixer_get_ctl(mixer, i);
-
-        name = mixer_ctl_get_name(ctl);
-        type = mixer_ctl_get_type_string(ctl);
-        num_values = mixer_ctl_get_num_values(ctl);
-        cur1 = snprintf(buf+cur,size,"%d\t%s\t%d\t%-40s", i, type, num_values, name);
-        cur_len = size - (cur+cur1);
-        tinymix_detail_control(mixer, name, 0,buf+cur+cur1,&cur_len);
-        ALOGD(buf+cur);
-        cur += (cur1 +cur_len);
-    }
-    *bytes = cur;
-}
-
- void tinymix_print_enum(struct mixer_ctl *ctl, int print_all,char * buf, unsigned int  *bytes)
+void tinymix_print_enum(struct mixer_ctl *ctl, int print_all, char * buf, unsigned int *bytes)
 {
     unsigned int num_enums;
     unsigned int i;
@@ -151,7 +119,7 @@ static int get_snd_card_name(int card, char *name)
     num_enums = mixer_ctl_get_num_enums(ctl);
 
     for (i = 0; i < num_enums; i++) {
-        string = mixer_ctl_get_enum_string(ctl, i);
+        string = (char *)mixer_ctl_get_enum_string(ctl, i);
         if (print_all)
             ALOGD("\t%s%s", mixer_ctl_get_value(ctl, 0) == (int)i ? ">" : "",
                    string);
@@ -162,8 +130,8 @@ static int get_snd_card_name(int card, char *name)
     *bytes = cur;
 }
 
- void tinymix_detail_control(struct mixer *mixer, const char *control,
-                                   int print_all,char * buf, unsigned int  *bytes)
+void tinymix_detail_control(struct mixer *mixer, const char *control,
+                                   int print_all, char *buf, unsigned int *bytes)
 {
     struct mixer_ctl *ctl;
     enum mixer_ctl_type type;
@@ -172,12 +140,12 @@ static int get_snd_card_name(int card, char *name)
     int min, max;
     unsigned int size = *bytes;
     unsigned int cur=0;
-    unsigned cur_len = 0;
+    unsigned int cur_len = 0;
 
     if (isdigit(control[0]))
-        ctl = mixer_get_ctl(mixer, atoi(control));
+        ctl = (struct mixer_ctl *)mixer_get_ctl(mixer, atoi(control));
     else
-        ctl = mixer_get_ctl_by_name(mixer, control);
+        ctl = (struct mixer_ctl *)mixer_get_ctl_by_name(mixer, control);
 
     if (!ctl) {
         ALOGE(stderr, "Invalid mixer control\n");
@@ -224,7 +192,39 @@ static int get_snd_card_name(int card, char *name)
     *bytes = cur;
 }
 
- void tinymix_set_value(struct mixer *mixer, const char *control,
+void tinymix_list_controls(struct mixer *mixer, char *buf, unsigned int *bytes)
+{
+    struct mixer_ctl *ctl;
+    const char *name, *type;
+    unsigned int num_ctls, num_values;
+    unsigned int i;
+    unsigned int size = *bytes;
+    unsigned int cur=0;
+    unsigned int cur1=0;
+    unsigned int cur_len = 0;
+
+    num_ctls = mixer_get_num_ctls(mixer);
+
+    ALOGD("Number of controls: %d\n", num_ctls);
+    cur = snprintf(buf,size,"Number of controls: %d\n", num_ctls);
+    ALOGD("ctl\ttype\tnum\t%-40s value\n", "name");
+    cur += snprintf(buf+cur,size,"ctl\ttype\tnum\t%-40s value\n", "name");
+    for (i = 0; i < num_ctls; i++) {
+        ctl = (struct mixer_ctl *)mixer_get_ctl(mixer, i);
+
+        name = (char *)mixer_ctl_get_name(ctl);
+        type = (char *)mixer_ctl_get_type_string(ctl);
+        num_values = mixer_ctl_get_num_values(ctl);
+        cur1 = snprintf(buf+cur,size,"%d\t%s\t%d\t%-40s", i, type, num_values, name);
+        cur_len = size - (cur+cur1);
+        tinymix_detail_control(mixer, name, 0,(const char*)(buf+cur+cur1),&cur_len);
+        ALOGD("%s", (buf+cur));
+        cur += (cur1 +cur_len);
+    }
+    *bytes = cur;
+}
+
+void tinymix_set_value(struct mixer *mixer, const char *control,
                               char **values, unsigned int num_values)
 {
     struct mixer_ctl *ctl;
@@ -233,9 +233,9 @@ static int get_snd_card_name(int card, char *name)
     unsigned int i;
 
     if (isdigit(control[0]))
-        ctl = mixer_get_ctl(mixer, atoi(control));
+        ctl = (struct mixer_ctl *)mixer_get_ctl(mixer, atoi(control));
     else
-        ctl = mixer_get_ctl_by_name(mixer, control);
+        ctl = (struct mixer_ctl *)mixer_get_ctl_by_name(mixer, control);
 
     if (!ctl) {
         ALOGE("Invalid mixer control\n");

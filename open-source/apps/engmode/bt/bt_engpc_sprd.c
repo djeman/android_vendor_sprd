@@ -333,7 +333,7 @@ void bt_eut_parse(char *buf, char *rsp) {
         //-----------------------------------------------------
         default:
             strcpy(rsp, "can not match the at command");
-            return 0;
+            return;
     }
 }
 

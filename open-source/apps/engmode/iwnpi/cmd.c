@@ -335,8 +335,8 @@ static int print_reply_rx_count_data(struct nl_msg *msg, void *arg)
 			snprintf(ret_result_buf, WLNPI_RES_BUF_LEN, "ret: Invild len %d :end\n",
 			       nla_len(tb_msg[NLNPI_ATTR_REPLY_DATA]));
 		}
-		printf(ret_result_buf);
-		ALOGD(ret_result_buf);
+		printf("%s", ret_result_buf);
+		ALOGD("%s", ret_result_buf);
 	} else {
 		printf("ret: Failed to get result! :end\n");
 		ALOGD("ret: Failed to get result! :end");
@@ -361,8 +361,8 @@ static int print_reply_int_data(struct nl_msg *msg, void *arg)
 		else
 			snprintf(ret_result_buf, WLNPI_RES_BUF_LEN, "ret: Invild len %d :end\n", *(unsigned int *)
 			       nla_data(tb_msg[NLNPI_ATTR_REPLY_DATA]));
-		printf(ret_result_buf);
-		ALOGD(ret_result_buf);
+		printf("%s", ret_result_buf);
+		ALOGD("%s", ret_result_buf);
 	} else {
 		printf("ret: Failed to get result! :end\n");
 		ALOGD("ret: Failed to get result! :end");

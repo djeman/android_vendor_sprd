@@ -33,7 +33,6 @@
 #ifndef _OVERLAY_NATIVEWINDOW_H_
 #define _OVERLAY_NATIVEWINDOW_H_
 
-#include <ui/FramebufferNativeWindow.h>
 #include <ui/ANativeObjectBase.h>
 #include <ui/Fence.h>
 #include "gralloc_priv.h"

@@ -53,7 +53,7 @@ static struct bm_id_name bm_name[24]= {};
 int sprd_bm_prof_enable(void);
 int sprd_bm_prof_disable(void);
 unsigned short sprd_bm_get_chn_cnt(void);
-unsigned long sprd_bm_get_chn_name(int bm_index);
+unsigned char *sprd_bm_get_chn_name(int bm_index);
 unsigned long sprd_bm_get_rdcnt(int bm_index);
 unsigned long sprd_bm_get_wrcnt(int bm_index);
 unsigned long sprd_bm_get_rdbw(int bm_index);

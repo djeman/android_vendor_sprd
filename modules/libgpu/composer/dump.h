@@ -5,8 +5,9 @@
 #include <string.h>
 #include <assert.h>
 #include <system/graphics.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <cutils/log.h>
+#include <cutils/atomic.h>
 
 //LOCAL_SHARED_LIBRARIES := libcutils
 #include <cutils/properties.h>
@@ -99,4 +100,11 @@ extern int dumpImage(hwc_display_contents_1_t *list);
 extern int dumpOverlayImage(private_handle_t* buffer, const char* name);
 
 void dumpFrameBuffer(char *virAddr, const char* ptype, int width, int height, int format);
+
+static uint64_t getUniqueId() {
+    static volatile int32_t nextId = 0;
+    uint64_t id = static_cast<uint64_t>(getpid()) << 32;
+    id |= static_cast<uint32_t>(android_atomic_inc(&nextId));
+    return id;
+}
 #endif

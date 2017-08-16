@@ -169,7 +169,7 @@ const SENSOR_MATCH_T main_sensor_infor_tab[]=
 	//{"ov2640_yuv", &g_OV2640_yuv_info},
 	{"HM2058_yuv", &g_HM2058_yuv_info},
 #endif
-	PNULL
+	0
 };
 
 const SENSOR_MATCH_T sub_sensor_infor_tab[]=
@@ -202,18 +202,18 @@ const SENSOR_MATCH_T sub_sensor_infor_tab[]=
 	{"ov2680_mipi_raw", &g_ov2680_mipi_raw_info},
 #endif
 #endif
-	PNULL
+	0
 };
 const SENSOR_MATCH_T dev2_sensor_infor_tab[]=
 {
        {"imx132_mipi_raw", &g_imx132_mipi_raw_info},
-	   	PNULL
+	   	0
 };
 
 const SENSOR_MATCH_T atv_infor_tab[]=
 {
 	//&g_nmi600_yuv_info, //&g_tlg1120_yuv_info,
-	PNULL
+	0
 };
 
 /*
@@ -240,16 +240,16 @@ const SENSOR_MATCH_T  at_main_sensor_infor_tab[]=
 #else
 #ifdef CONFIG_BACK_CAMERA_MIPI
         {"ov5670_mipi_raw", &g_ov5670_mipi_raw_info},
-         {"ov8858_mipi_raw", &g_ov8858_mipi_raw_info},
+        {"ov8858_mipi_raw", &g_ov8858_mipi_raw_info},
 #endif
 #endif
-PNULL
+	0
 
 };
 const SENSOR_MATCH_T  at_sub_sensor_infor_tab[]=
 {
-    {"autotest_ov5648_mipi_raw", &g_at_ov5648_mipi_raw_info},
-    {"autotest_GC0310_MIPI_yuv", &g_GC0310_MIPI_yuv_info},
+	{"autotest_ov5648_mipi_raw", &g_at_ov5648_mipi_raw_info},
+	{"autotest_GC0310_MIPI_yuv", &g_GC0310_MIPI_yuv_info},
 #if !(defined(CONFIG_CAMERA_ISP_VERSION_V3) || defined(CONFIG_CAMERA_ISP_VERSION_V4))
 #ifdef CONFIG_FRONT_CAMERA_CCIR
 	{"GC0308_yuv", &g_GC0308_yuv_info},
@@ -269,19 +269,19 @@ const SENSOR_MATCH_T  at_sub_sensor_infor_tab[]=
 #endif
 
 #endif
-PNULL
-
+	0
 };
+
 const SENSOR_MATCH_T  at_dev2_sensor_infor_tab[]=
 {
-PNULL
+	0
 };
 
 const SENSOR_MATCH_T at_atv_infor_tab[]=
 {
 	//{"nmi600_yuv", &g_nmi600_yuv_info},
 	//{"tlg1120_yuv", &g_tlg1120_yuv_info},  bonnie
-	PNULL
+	0
 };
 
 /*

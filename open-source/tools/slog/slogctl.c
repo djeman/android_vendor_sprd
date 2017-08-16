@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
 	    printf("GMS push will start\nChecking filesystem\n");
 
 		// ensure the dir exist
-		if (gms_dir_ptr = (DIR*)opendir("/sdcard/gms/") == NULL) {
+		if ((gms_dir_ptr = opendir("/sdcard/gms/")) == NULL) {
 			printf("/sdcard/gms/ doesn't exsist or open failed.\n");
 			return -1;
 		}

@@ -167,8 +167,10 @@ void *vbc_ctrl_thread_linein_routine(void *args);
 
 extern int i2s_pin_mux_sel(struct tiny_audio_device *adev, int type);
 
-
 extern int headset_no_mic();
+
+void voip_forbid(struct tiny_audio_device * adev, bool value);
+void voip_forbid_cancel(struct tiny_audio_device * adev, int delay);
 
 /*
  * local functions definition.
@@ -2006,7 +2008,7 @@ void timer_handler(union sigval arg){
 }
 
 //this function is the interface to set adev->realCall value  adev-> mutex must get
-void voip_forbid (struct tiny_audio_device * adev  ,bool value){
+void voip_forbid(struct tiny_audio_device * adev, bool value) {
     ALOGV("%s, in",__func__);
 	if(adev->voip_timer.created){
 	    ALOGV("%s ,have create timer,so we delete it",__func__);
@@ -2021,11 +2023,10 @@ void voip_forbid (struct tiny_audio_device * adev  ,bool value){
 bool voip_is_forbid(struct tiny_audio_device * adev)
 {
 	return adev->realCall;
-
 }
 
 //adev-> mutex must get
-void voip_forbid_cancel(struct tiny_audio_device * adev,int delay){
+void voip_forbid_cancel(struct tiny_audio_device * adev, int delay) {
     ALOGV("%s ,in",__func__);
     int status;
     struct sigevent se;
@@ -2411,7 +2412,7 @@ static void do_select_devices_l(struct tiny_audio_device *adev,int devices_out_l
 }
 
 
-static void * vbc_ctl_modem_monitor_routine(void *arg)
+static void vbc_ctl_modem_monitor_routine(void *arg)
 {
     int cur_out_devices_l;
     int fd = -1;
@@ -2421,7 +2422,7 @@ static void * vbc_ctl_modem_monitor_routine(void *arg)
     ALOGD("vbc_ctl_modem_monitor_routine in");
     if( !adev) {
             ALOGD("vbc_ctl_modem_monitor_routine:error adev is null");
-            return -1;
+            return;
     }
 
 reconnect:
@@ -2466,7 +2467,7 @@ reconnect:
         }
     }
 
-    return 0;
+    return;
 }
 
 int vb_ctl_modem_monitor_open(void * arg)

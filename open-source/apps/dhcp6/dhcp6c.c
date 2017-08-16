@@ -1526,13 +1526,13 @@ client6_recv()
 			     if(NULL != domain_ptr)
 			     {
 			     	//_resolv_set_nameservers_for_iface(ifp->ifname, &dns_ptr, 1, *domain_ptr);
-			     	_resolv_set_nameservers_for_net(ifp->ifid, &dns_ptr, 1, *domain_ptr);
+			     	_resolv_set_nameservers_for_net(ifp->ifid, &dns_ptr, 1, domain_ptr, NULL);
 			     }
             }
 			if(NULL == domain_ptr)
 			{
 			     //_resolv_set_nameservers_for_iface(ifp->ifname, &dns_ptr, 1, "");
-			     _resolv_set_nameservers_for_net(ifp->ifid, &dns_ptr, 1, "");
+			     _resolv_set_nameservers_for_net(ifp->ifid, &dns_ptr, 1, "", NULL);
 			}		
 		}
 	}

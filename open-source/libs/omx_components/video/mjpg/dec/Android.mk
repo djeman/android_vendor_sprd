@@ -6,7 +6,7 @@ LOCAL_SRC_FILES := \
         SoftMJPG.cpp
 
 LOCAL_C_INCLUDES := \
-	external/jpeg \
+	external/libjpeg-turbo \
         frameworks/av/media/libstagefright/include \
 	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax
 

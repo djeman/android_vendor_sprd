@@ -40,7 +40,7 @@ int32 vpp_open_dev(VPPObject *vo)
             return -1;
         } else
         {
-            vo->s_vpp_Vaddr_base = mmap(NULL,SPRD_VPP_MAP_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED, vo->s_vpp_fd, 0);
+            vo->s_vpp_Vaddr_base = (unsigned long)mmap(NULL,SPRD_VPP_MAP_SIZE,PROT_READ|PROT_WRITE,MAP_SHARED, vo->s_vpp_fd, 0);
         }
     }
 

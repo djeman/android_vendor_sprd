@@ -161,7 +161,7 @@ static void lsof(struct tm tm, int pid)
 				tm.tm_sec);
         print_header(fp);
         lsof_dumpinfo(pid,fp);
-	close(fp);
+	fclose(fp);
 } 
 
 /* Send signal && save logs */

@@ -624,7 +624,7 @@ int get_nmea_data(char *nbuff)
 
 void astatus_cb(AGpsStatus* status)
 {
-    return 0;
+    return;
 }
 
 pthread_t acreate_thread_cb(const char* name, void (*start)(void *), void* arg)

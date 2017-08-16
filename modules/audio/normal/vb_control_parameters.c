@@ -161,6 +161,9 @@ void *vbc_ctrl_voip_thread_routine(void *arg);
 
 extern int headset_no_mic();
 
+void voip_forbid(struct tiny_audio_device * adev, bool value);
+void voip_forbid_cancel(struct tiny_audio_device * adev, int delay);
+
 /*
  * local functions definition.
  */
@@ -1763,7 +1766,7 @@ void timer_handler(union sigval arg){
 }
 
 //this function is the interface to set adev->realCall value  adev-> mutex must get
-void voip_forbid (struct tiny_audio_device * adev  ,bool value){
+void voip_forbid(struct tiny_audio_device * adev, bool value) {
     ALOGV("%s, in",__func__);
 	if(adev->voip_timer.created){
 	    ALOGV("%s ,have create timer,so we delete it",__func__);
@@ -1782,7 +1785,7 @@ bool voip_is_forbid(struct tiny_audio_device * adev)
 }
 
 //adev-> mutex must get
-void voip_forbid_cancel(struct tiny_audio_device * adev,int delay){
+void voip_forbid_cancel(struct tiny_audio_device * adev, int delay) {
     ALOGV("%s ,in",__func__);
     int status;
     struct sigevent se;
@@ -1843,8 +1846,6 @@ void *vbc_ctrl_thread_routine(void *arg)
     write_common_head.cmd_type = VBC_CMD_NONE;
     write_common_head.paras_size = 0;
     MY_TRACE("voice:vbc_ctrl_thread_routine in pipe_name:%s.", para->vbpipe);
-    if( para->vbpipe == NULL)
-		goto EXIT;
 
 RESTART:
     /* open vbpipe to build connection.*/
@@ -2278,7 +2279,7 @@ static void do_select_devices_l(struct tiny_audio_device *adev,int devices_out_l
 }
 
 
-static void * vbc_ctl_modem_monitor_routine(void *arg)
+static void vbc_ctl_modem_monitor_routine(void *arg)
 {
     int cur_out_devices_l;
     int fd = -1;
@@ -2288,7 +2289,7 @@ static void * vbc_ctl_modem_monitor_routine(void *arg)
     ALOGD("vbc_ctl_modem_monitor_routine in");
     if( !adev) {
             ALOGD("vbc_ctl_modem_monitor_routine:error adev is null");
-            return -1;
+            return;
     }
 reconnect:
     do {
@@ -2330,7 +2331,7 @@ reconnect:
         }
     }
 
-    return 0;
+    return;
 }
 
 int vb_ctl_modem_monitor_open(void * arg)

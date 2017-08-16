@@ -196,7 +196,7 @@ cmr_int Sensor_Ioctl(SENSOR_IOCTL_CMD_E sns_cmd, void *arg)
 	cmr_u32 ret = CMR_CAMERA_SUCCESS;
 
 
-	struct sensor_drv_context *sensor_cxt = sensor_get_dev_cxt();
+	struct sensor_drv_context *sensor_cxt = (struct sensor_drv_context *)sensor_get_dev_cxt();
 
 	if (SENSOR_IOCTL_GET_STATUS != sns_cmd) {
 		SCI_Trace_Dcam("cmd = %d, arg = %p.\n", sns_cmd, arg);
@@ -391,7 +391,7 @@ int write_sensor_shutter(uint32_t shutter_val)
 	unsigned long expsure_line=0x00;
 	uint32_t dummy=0x00;
 
-	struct sensor_drv_context *sensor_cxt = sensor_get_dev_cxt();
+	struct sensor_drv_context *sensor_cxt = (struct sensor_drv_context *)sensor_get_dev_cxt();
 	SENSOR_EXP_INFO_T *psensorinfo = Sensor_GetInfo();
 	cmr_uint mode;
 
@@ -912,14 +912,14 @@ int write_otp_sn(uint32_t data_size, uint8_t *data_buf)
 	return ret;
 }
 
-int  _start_camera(void  **pdev )
+int start_camera(void *pdev)
 {
 	int  ops_status 		= 0;
 #if (MINICAMERA != 1)
 	struct hw_module_t *module;
 	hw_device_t  *tmp	= NULL;
 
-	if(*pdev==NULL) {
+	if(pdev==NULL) {
 		CMR_LOGW("pdev->common.methods->open \n");
 
 		ops_status = hw_get_module(CAMERA_HARDWARE_MODULE_ID, (const hw_module_t**)&module);
@@ -932,17 +932,18 @@ int  _start_camera(void  **pdev )
 			CMR_LOGE("\n open %d fail ",0);
 			if(tmp)
 				tmp->close((hw_device_t*)tmp);  //avoid next time retry fail
-			*pdev = NULL;
+			pdev = NULL;
 			return -1;
 		}
 
-		*pdev = tmp;
+		pdev = tmp;
 	}
 #endif
 	return ops_status;
 
 }
-int  _stop_camera(void  *pdev)
+
+int stop_camera(void *pdev)
 {
 	int  ops_status = 0;
 #if (MINICAMERA != 1)
@@ -956,16 +957,11 @@ int  _stop_camera(void  *pdev)
 
 }
 
-
-#pragma weak start_camera =_start_camera
-#pragma weak stop_camera  =_stop_camera
-
-
 int write_otp_pownon()
 {
 	int ret = 0;
 	if(!p_camera_device){
-		ret = start_camera(&p_camera_device);
+		ret = start_camera(p_camera_device);
 	}
 
 	return ret;

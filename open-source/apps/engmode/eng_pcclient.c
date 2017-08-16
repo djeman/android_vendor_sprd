@@ -379,7 +379,7 @@ static void eng_get_usb_int(int argc, char** argv, char* at_dev, char* diag_dev,
         }
     }while(-1 != opt);
 
-    return type;
+    return;
 }
 
 static void eng_get_modem_int(char* type, char* at_chan, char* diag_chan, char* log_chan)
@@ -431,12 +431,12 @@ static void eng_check_whether_iqfeed(void)
 		err = remove(IQMODE_FLAG_PATH);
 		if(err < 0) {
 			ENG_LOG("%s: delete iqfeed flag file fail, %s\n", __FUNCTION__, strerror(errno));
-			return NULL;
+			return;
 		}
 		ret = eng_iqfeed_start(5);//start 5 times
 		if(ret < 0) {
 			ENG_LOG("%s: iqfeed start fail\n", __FUNCTION__);
-			return NULL;
+			return;
 		}
 	}
 }

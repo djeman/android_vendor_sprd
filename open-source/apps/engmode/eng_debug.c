@@ -93,5 +93,5 @@ void* eng_printlog_thread(void *x)
 
     system("sync");
 
-    return 1;
+    return 0;
 }

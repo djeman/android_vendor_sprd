@@ -69,7 +69,7 @@ static unsigned long _s5k3l2xx_GetExifInfo(unsigned long param);
 static unsigned long _s5k3l2xx_ExtFunc(unsigned long ctl_param);
 static uint16_t _s5k3l2xx_get_VTS(void);
 static uint32_t _s5k3l2xx_set_VTS(uint16_t VTS);
-static uint32_t _s5k3l2xx_ReadGain(uint32_t param);
+static uint32_t _s5k3l2xx_ReadGain(uint32_t *param);
 static unsigned long _s5k3l2xx_set_video_mode(unsigned long param);
 static uint16_t _s5k3l2xx_get_shutter(void);
 static uint32_t _s5k3l2xx_set_shutter(uint16_t shutter);
@@ -1882,7 +1882,7 @@ static uint32_t _s5k3l2xx_set_VTS(uint16_t VTS)
 	return 0;
 }
 
-static uint32_t _s5k3l2xx_ReadGain(uint32_t param)
+static uint32_t _s5k3l2xx_ReadGain(uint32_t *param)
 {
 	uint32_t rtn = SENSOR_SUCCESS;
 	uint32_t gain = 0;

@@ -297,8 +297,8 @@ int vdi_release(unsigned long coreIdx)
     if (vdi->vpu_instance_pool_memory.virt_addr)
     {
 #ifdef USE_MALLOC_FOR_INSTANCE_POOL
-        free(vdi->vpu_instance_pool_memory.virt_addr);
-        vdi->vpu_instance_pool_memory.virt_addr = NULL;
+        free((void*)vdi->vpu_instance_pool_memory.virt_addr);
+        vdi->vpu_instance_pool_memory.virt_addr = 0;
 #else
         munmap((void *)vdi->vpu_instance_pool_memory.virt_addr, vdi->vpu_instance_pool_memory.size);
 #endif
@@ -444,7 +444,7 @@ vpu_instance_pool_t *vdi_get_instance_pool(unsigned long coreIdx)
 
 #ifdef USE_MALLOC_FOR_INSTANCE_POOL
         vdb.virt_addr = (unsigned long)osal_malloc(vdb.size);
-        osal_memset(vdb.virt_addr, 0x00, vdb.size);
+        osal_memset((void *)vdb.virt_addr, 0x00, vdb.size);
 #else
         if (ioctl(vdi->vpu_fd, VDI_IOCTL_GET_INSTANCE_POOL, &vdb) < 0)
         {

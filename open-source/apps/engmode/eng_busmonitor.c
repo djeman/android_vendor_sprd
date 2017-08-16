@@ -102,7 +102,7 @@ int eng_diag_busmonitor_get_chaninfo(char *buf, int len, char *rsp, int rsplen)
     *((unsigned short*)(rsp_ptr + sizeof(MSG_HEAD_T))) = cnt;
 
     for(i = 0; i < cnt; i++){
-        memcpy((rsp_ptr + sizeof(MSG_HEAD_T)) + 2*sizeof(unsigned short) + i*sizeof(BUSMONITOR_CHAN_NAME),(char*)sprd_bm_get_chn_name(i),sizeof(BUSMONITOR_CHAN_NAME));
+        memcpy((rsp_ptr + sizeof(MSG_HEAD_T)) + 2*sizeof(unsigned short) + i*sizeof(BUSMONITOR_CHAN_NAME),sprd_bm_get_chn_name(i),sizeof(BUSMONITOR_CHAN_NAME));
     }
 
     rsplen = translate_packet(rsp,(unsigned char*)rsp_ptr,((MSG_HEAD_T*)rsp_ptr)->len);

@@ -450,7 +450,7 @@ static int32_t ae_ex_set_exposure(void *handler, struct ae_exposure *in_param)
 		ex_exposure.exposure = in_param->exposure;
 		ex_exposure.dummy = in_param->dummy;
 		ex_exposure.size_index = in_param->size_index;
-		ctrl_context->ioctrl_ptr->ex_set_exposure(&ex_exposure);
+		ctrl_context->ioctrl_ptr->ex_set_exposure((uint32_t)&ex_exposure);
 	} else {
 		ISP_LOGE("ex_set_exposure is NULL");
 	}
@@ -5389,7 +5389,7 @@ AEM2_DONE:
 			ae_stat_ptr = (struct isp_awb_statistic_info *)ae_cfg_param->addr;
 			ae_stat_ptr += ae_cfg_param->addr_num;
 			ae_cfg_param->addr_num = ((ae_cfg_param->addr_num+1)<ISP_BQ_BIN_CNT)?(ae_cfg_param->addr_num+1):0;
-			rtn = _ispSoft_bin_to_aem_statistics(handle, ae_stat_ptr, u_addr);
+			rtn = _ispSoft_bin_to_aem_statistics(handle, ae_stat_ptr, (void*)u_addr);
 
 		} else {
 			node_type = ISP_NODE_TYPE_RAWAEM;

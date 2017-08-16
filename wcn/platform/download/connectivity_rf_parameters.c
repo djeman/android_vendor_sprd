@@ -330,10 +330,9 @@ static nvm_name_table *wifi_nvm_config_table_match(nvm_cali_cmd *cmd)
 	int i;
 	nvm_name_table *pTable = NULL;
 	int len = sizeof(g_config_table) / sizeof(nvm_name_table);
-	if((NULL == cmd ) || (NULL == cmd->itm))
+	if (NULL == cmd)
 		return NULL;
-	for(i = 0; i < len; i++)
-	{
+	for (i = 0; i < len; i++) {
 		if(NULL == g_config_table[i].itm)
 			continue;
 		if( 0 != strcmp( g_config_table[i].itm, cmd->itm ) )
@@ -349,10 +348,9 @@ static nvm_name_table *wifi_nvm_cali_table_match(nvm_cali_cmd *cmd)
 	int i;
 	nvm_name_table *pTable = NULL;
 	int len = sizeof(g_cali_table) / sizeof(nvm_name_table);
-	if((NULL == cmd) || (NULL == cmd->itm))
+	if (NULL == cmd)
 		return NULL;
-	for(i = 0; i < len; i++)
-	{
+	for (i = 0; i < len; i++) {
 		if(NULL == g_cali_table[i].itm)
 			continue;
 		if( 0 != strcmp( g_cali_table[i].itm, cmd->itm ) )

@@ -4290,14 +4290,14 @@ static void eng_diag_cft_switch_hdlr(char *buf,int len, char *rsp, int rsplen)
     MSG_HEAD_T* msg_head_ptr = (MSG_HEAD_T*)(buf + 1);
     if(NULL == buf){
         ENG_LOG("%s,null pointer",__FUNCTION__);
-       return 0;
+        return;
     }
 
     rsplen = sizeof(TOOLS_DIAG_AP_CNF_T) + sizeof(MSG_HEAD_T);
     rsp_ptr = (char*)malloc(rsplen);
     if(NULL == rsp_ptr){
         ENG_LOG("%s: Buffer malloc failed\n", __FUNCTION__);
-        return 0;
+        return;
     }
 
 	memcpy(rsp_ptr,msg_head_ptr,sizeof(MSG_HEAD_T));

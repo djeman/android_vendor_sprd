@@ -24,6 +24,7 @@ volatile int log_level = 4;
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -3455,7 +3456,7 @@ static void audio_bt_sco_thread_destory(struct tiny_audio_device *adev)
     ALOGE("bt sco : duplicate thread destory before");
     ret = pthread_join(adev->bt_sco_manager.dup_thread, NULL);
     ALOGE("bt sco : duplicate thread destory ret is %d", ret);
-    adev->bt_sco_manager.dup_thread = NULL;
+    adev->bt_sco_manager.dup_thread = 0;
 
     pthread_mutex_destroy(&adev->bt_sco_manager.dup_mutex);
     pthread_mutex_destroy(&adev->bt_sco_manager.cond_mutex);
@@ -4766,11 +4767,11 @@ static void audiodebug_process(struct tiny_audio_device *adev,struct str_parms *
             }
             write(modem->i2s_btsco_fm->ctrl_file_fd,"1",1);
         }else{
-            int i2s_ctrl;
-            char * i2s_ctrl_value="1";
+            FILE *i2s_ctrl;
+            char *i2s_ctrl_value="1";
             adev->i2sfm_flag=0;
             i2s_ctrl = fopen("/proc/pin_switch/iis0_sys_sel/vbc_iis0","wb");
-            if(i2s_ctrl  != NULL){
+            if(i2s_ctrl != NULL){
                 fputs(i2s_ctrl_value,i2s_ctrl);
                 fclose(i2s_ctrl);
             }
@@ -4781,7 +4782,7 @@ static void audiodebug_process(struct tiny_audio_device *adev,struct str_parms *
     //Audio HAL debug for Music/Vaudio/SCO/BT SCO/WAV/Cache /Log Level.
     ret = str_parms_get_str(parms, "hal_debug", value, sizeof(value));
     if (ret >= 0) {
-        int hal_audio_ctrl;
+        FILE *hal_audio_ctrl;
         pthread_mutex_lock(&adev->lock);
         hal_audio_ctrl = fopen("/dev/pipe/mmi.audio.ctrl","wb");
         if(hal_audio_ctrl < 0){
