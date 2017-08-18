@@ -791,7 +791,9 @@ struct tiny_stream_in {
     bool is_fm;
     void *pFMBuffer;
     record_nr_handle rec_nr_handle;
+#ifdef RECORD_NR
     transform_handle Tras48To44;
+#endif
 };
 
 struct config_parse_state {
@@ -3775,6 +3777,7 @@ static int start_input_stream(struct tiny_stream_in *in)
         }
     }
 
+#ifdef RECORD_NR
     if((in->requested_rate != in->config.rate) && (NULL == in->Tras48To44)) {
         ALOGE(": in->requested_rate is %d, in->config.rate is %d",in->requested_rate, in->config.rate);
         ret= in_init_resampler(in);
@@ -3783,6 +3786,7 @@ static int start_input_stream(struct tiny_stream_in *in)
             goto err;
         }
     }
+#endif
 
     ALOGE("start_input,channels=%d,peroid_size=%d, peroid_count=%d,rate=%d",
             in->config.channels, in->config.period_size,
@@ -3855,10 +3859,12 @@ err:
         in->rec_nr_handle = NULL;
         adev->aud_proc_init = 0;
     }
+#ifdef RECORD_NR
     if(in->Tras48To44) {
         SprdSrc_To_44K_DeInit(in->Tras48To44);
         in->Tras48To44 = NULL;
     }
+#endif
     return -1;
 
 }
@@ -3983,10 +3989,12 @@ static int do_input_standby(struct tiny_stream_in *in)
             in->rec_nr_handle = NULL;
             adev->aud_proc_init = 0;
         }
+#ifdef RECORD_NR
         if(in->Tras48To44) {
             SprdSrc_To_44K_DeInit(in->Tras48To44);
             in->Tras48To44 = NULL;
         }
+#endif
         in->standby = 1;
     }
 
@@ -4395,6 +4403,7 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
 
     }
 
+#ifdef RECORD_NR
     if ((in->rec_nr_handle)||(in->active_rec_proc)){
         if ((in->rec_nr_handle)&&(in->Tras48To44))
         {
@@ -4424,6 +4433,7 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
         }
     }
     else
+#endif
         ret = read_pcm_data(in, buffer, bytes);
 
 #ifdef AUDIO_DEBUG
