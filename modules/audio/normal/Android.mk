@@ -118,8 +118,6 @@ endif
 
 ifeq ($(strip $(AUDIO_RECORD_NR)),true)
 LOCAL_CFLAGS += -DRECORD_NR
-LOCAL_SHARED_LIBRARIES += \
-	libresample48kto44k
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -129,8 +127,9 @@ LOCAL_SHARED_LIBRARIES := \
 	libhardware_legacy \
 	libmedia libutils \
 	libFMHalSource \
-	libAudioCustomMmi
-        
+	libresample48kto44k \
+        libAudioCustomMmi
+
 ifneq ($(filter $(strip $(PLATFORM_VERSION)),5.0 5.1),)
 LOCAL_SHARED_LIBRARIES += \
 	libatchannel
