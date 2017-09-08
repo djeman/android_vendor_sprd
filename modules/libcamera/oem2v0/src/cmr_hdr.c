@@ -284,13 +284,13 @@ static cmr_int hdr_transfer_frame(cmr_handle class_handle, struct ipm_frame_in *
 		get_sensor_info = hdr_handle->common.ipm_cxt->init_in.get_sensor_info;
 		get_sensor_info(oem_handle, sensor_id, &sensor_info);
 
-		if (SENSOR_IMAGE_FORMAT_RAW == sensor_info.image_format) {
+		/*if (SENSOR_IMAGE_FORMAT_RAW == sensor_info.image_format) {
 			isp_param.cmd_value= OEM_EV_LEVEL_2;
 			ret = isp_ioctl(oem_handle,COM_ISP_SET_HDR,(void *)&isp_param);
-		} else {
+		} else {*/
 			sn_param.cmd_value = OEM_EV_LEVEL_2;
 			ret = sensor_ioctl(oem_handle,COM_SN_SET_HDR_EV,(void *)&sn_param);
-		}
+		//}
 #else
 		sn_param.cmd_value = OEM_EV_LEVEL_2;
 		ret = sensor_ioctl(oem_handle,COM_SN_SET_HDR_EV,(void *)&sn_param);
@@ -371,13 +371,13 @@ static cmr_int hdr_frame_proc(cmr_handle class_handle)
 	CMR_LOGI("HDR ev_level = %d, img_fmt=%d", ev_level, sensor_info.image_format);
 
 #if defined(CONFIG_CAMERA_ISP_VERSION_V3) || defined(CONFIG_CAMERA_ISP_VERSION_V4)
-	if (SENSOR_IMAGE_FORMAT_RAW == sensor_info.image_format) {
+	/*if (SENSOR_IMAGE_FORMAT_RAW == sensor_info.image_format) {
 		isp_param.cmd_value = (cmr_u32)ev_level;
 		ret = isp_ioctl(oem_handle,COM_ISP_SET_HDR,(void *)&isp_param);
-	} else {
+	} else {*/
 		sn_param.cmd_value = (cmr_u32)ev_level;
 		ret = sensor_ioctl(oem_handle,COM_SN_SET_HDR_EV,(void *)&sn_param);
-	}
+	//}
 #else
 	sn_param.cmd_value = (cmr_u32)ev_level;
 	ret = sensor_ioctl(oem_handle,COM_SN_SET_HDR_EV,(void *)&sn_param);
