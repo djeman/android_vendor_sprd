@@ -204,12 +204,13 @@ static isp_s32 isp_pm_context_init(isp_pm_handle_t handle)
 						blk_ptr = (void *)(isp_cxt_start_addr + offset);
 						param_data_ptr = (void *)blk_header_ptr->absolute_addr;
 						if ((PNULL == blk_ptr) || (PNULL == param_data_ptr)
-							|| (PNULL == blk_header_ptr)) {
+							|| (PNULL == blk_header_ptr)
+							|| (PNULL == &(mode_param_ptr->resolution))) {
 							ISP_LOGE ("param is null error: blk_addr:%p, param:%p, header:%p, resolution:%p",
-								blk_ptr, param_data_ptr, blk_header_ptr, &mode_param_ptr->resolution);
+								blk_ptr, param_data_ptr, blk_header_ptr, &(mode_param_ptr->resolution));
 							rtn = ISP_ERROR;
 						} else {
-							ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &mode_param_ptr->resolution);
+							ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &(mode_param_ptr->resolution));
 						}
 					} else {
 						ISP_LOGI("param size is warning: size:%d, id:0x%x, i:%d\n", blk_header_ptr->size, id, i);
@@ -259,9 +260,10 @@ static isp_s32 isp_pm_context_update(isp_pm_handle_t handle, struct isp_pm_mode_
 						blk_ptr = (void *)(isp_cxt_start_addr + offset);
 						param_data_ptr = (void *)blk_header_ptr->absolute_addr;
 						if ((PNULL == blk_ptr) || (PNULL == param_data_ptr)
-							|| (PNULL == blk_header_ptr)) {
+							|| (PNULL == blk_header_ptr)
+							|| (PNULL == &(mode_param_ptr->resolution))) {
 							ISP_LOGE ("param is null error: blk_addr:%p, param:%p, header:%p, resolution:%p",
-								blk_ptr, param_data_ptr, blk_header_ptr, &mode_param_ptr->resolution);
+								blk_ptr, param_data_ptr, blk_header_ptr, &(mode_param_ptr->resolution));
 							rtn = ISP_ERROR;
 						} else {
 							for (j = 0; j < org_mode_param->block_num; j++) {
@@ -271,10 +273,10 @@ static isp_s32 isp_pm_context_update(isp_pm_handle_t handle, struct isp_pm_mode_
 							}
 							if (j < org_mode_param->block_num) {
 								if (blk_header_ptr->source_flag != org_mode_param->header[j].source_flag) {
-									ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &mode_param_ptr->resolution);
+									ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &(mode_param_ptr->resolution));
 								}
 							} else {
-								ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &mode_param_ptr->resolution);
+								ops->init(blk_ptr, param_data_ptr, blk_header_ptr, &(mode_param_ptr->resolution));
 							}
 						}
 					} else {

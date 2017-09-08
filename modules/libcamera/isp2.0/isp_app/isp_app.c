@@ -450,7 +450,7 @@ static int32_t ae_ex_set_exposure(void *handler, struct ae_exposure *in_param)
 		ex_exposure.exposure = in_param->exposure;
 		ex_exposure.dummy = in_param->dummy;
 		ex_exposure.size_index = in_param->size_index;
-		ctrl_context->ioctrl_ptr->ex_set_exposure((uint32_t)&ex_exposure);
+		ctrl_context->ioctrl_ptr->ex_set_exposure((unsigned long)&ex_exposure);
 	} else {
 		ISP_LOGE("ex_set_exposure is NULL");
 	}
@@ -1922,7 +1922,7 @@ static int32_t _ispSoft_ae_deinit(isp_ctrl_context* handle)
 	return rtn;
 }
 
-static int32_t _ispSoft_bin_to_aem_statistics(isp_handle isp_handler, void *dest_addr, void *src_addr)
+static int32_t _ispSoft_bin_to_aem_statistics(isp_handle isp_handler, void *dest_addr, uint16_t *src_addr)
 {
 	int32_t rtn = ISP_SUCCESS;
 	isp_ctrl_context *handle = (isp_ctrl_context *)isp_handler;
@@ -1954,7 +1954,7 @@ static int32_t _ispSoft_bin_to_aem_statistics(isp_handle isp_handler, void *dest
 	scale_ratio = (1 << ae_cfg->h_ratio) * (1 << ae_cfg->v_ratio);
 
 	ISP_LOGI("LHC:bayermode %d image_size %dx%d pos(%d,%d) blk_size %dx%d", bayer_mode, width, height, start_x, start_y, blk_width, blk_height);
-	rtn = aem_binning(bayer_mode, width, height, (uint16_t *)src_addr, start_x, start_y, blk_width, blk_height, (uint32_t *)dest_addr);
+	rtn = aem_binning(bayer_mode, width, height, src_addr, start_x, start_y, blk_width, blk_height, (uint32_t *)dest_addr);
 	if(rtn) {
 		ISP_LOGE("Parameter error");
 		return -1;
@@ -5389,7 +5389,7 @@ AEM2_DONE:
 			ae_stat_ptr = (struct isp_awb_statistic_info *)ae_cfg_param->addr;
 			ae_stat_ptr += ae_cfg_param->addr_num;
 			ae_cfg_param->addr_num = ((ae_cfg_param->addr_num+1)<ISP_BQ_BIN_CNT)?(ae_cfg_param->addr_num+1):0;
-			rtn = _ispSoft_bin_to_aem_statistics(handle, ae_stat_ptr, (void*)u_addr);
+			rtn = _ispSoft_bin_to_aem_statistics(handle, ae_stat_ptr, (uint16_t*)u_addr);
 
 		} else {
 			node_type = ISP_NODE_TYPE_RAWAEM;

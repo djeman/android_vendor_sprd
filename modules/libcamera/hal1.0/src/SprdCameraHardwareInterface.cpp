@@ -134,6 +134,41 @@ bool gIsApctRead = false;
 
 gralloc_module_t const* SprdCameraHardware::mGrallocHal = NULL;
 
+const camera_info SprdCameraHardware::kCameraInfo[] = {
+	{
+		CAMERA_FACING_BACK,
+		90,/*orientation*/
+		0, NULL, 0, NULL, 0
+	},
+#ifndef CONFIG_DCAM_SENSOR_NO_FRONT_SUPPORT
+	{
+		CAMERA_FACING_FRONT,
+		270,/*orientation*/
+		0, NULL, 0, NULL, 0
+	},
+#endif
+};
+
+const camera_info SprdCameraHardware::kCameraInfo3[] = {
+	{
+		CAMERA_FACING_BACK,
+		90,/*orientation*/
+		0, NULL, 0, NULL, 0
+	},
+
+	{
+		CAMERA_FACING_FRONT,
+		270,/*orientation*/
+		0, NULL, 0, NULL, 0
+	},
+
+	{
+		2,
+		0,/* orientation */
+		0, NULL, 0, NULL, 0
+	}
+};
+
 int SprdCameraHardware::getPropertyAtv()
 {
 #if 0
@@ -161,13 +196,9 @@ int SprdCameraHardware::getNumberOfCameras()
 	int num = 0;
 
 	if (1 == getPropertyAtv()) {
-		num = 3;
+		num = sizeof(SprdCameraHardware::kCameraInfo3) / sizeof(SprdCameraHardware::kCameraInfo3[0]);
 	} else {
-#ifndef CONFIG_DCAM_SENSOR_NO_FRONT_SUPPORT
-		num = 2;
-#else
-		num = 1;
-#endif
+		num = sizeof(SprdCameraHardware::kCameraInfo) / sizeof(SprdCameraHardware::kCameraInfo[0]);
 	}
 
 	LOGI("getNumberOfCameras:%d",num);
@@ -238,34 +269,10 @@ bool getApctCamInitSupport()
 
 int SprdCameraHardware::getCameraInfo(int cameraId, struct camera_info *cameraInfo)
 {
-	if (getPropertyAtv() == 1) {
-		switch (cameraId) {
-                case 1:
-			cameraInfo->facing = CAMERA_FACING_FRONT;
-			cameraInfo->orientation = 270;
-			break;
-                case 2:
-			cameraInfo->facing = 2;
-			cameraInfo->orientation = 0;
-			break;
-                default:
-			cameraInfo->facing = CAMERA_FACING_BACK;
-			cameraInfo->orientation = 90;
-			break;
-                }
+	if (1 == getPropertyAtv()) {
+		memcpy(cameraInfo, &kCameraInfo3[cameraId], sizeof(camera_info));
 	} else {
-		switch (cameraId) {
-#ifndef CONFIG_DCAM_SENSOR_NO_FRONT_SUPPORT
-                case 1:
-			cameraInfo->facing = CAMERA_FACING_FRONT;
-			cameraInfo->orientation = 270;
-			break;
-#endif
-                default:
-			cameraInfo->facing = CAMERA_FACING_BACK;
-			cameraInfo->orientation = 90;
-			break;
-                }
+		memcpy(cameraInfo, &kCameraInfo[cameraId], sizeof(camera_info));
 	}
 	return 0;
 }
@@ -5439,11 +5446,8 @@ status_t SprdCameraHardware::setCameraParameters()
 	struct cmr_focus_param   focus_param;
 	int i,cnt;
 	int *area_ptr = &area[1];
-	int orientation = 90;
-	if (mCameraId == 1)
-		orientation = 270;
 	mParameters.getFocusAreas(&area[1], &area[0], &preview_size, &preview_rect,
-		orientation, is_mirror);
+		kCameraInfo[mCameraId].orientation, is_mirror);
 	focus_param.zone_cnt = area[0];
 	cnt = (FOCUS_ZONE_CNT_MAX < focus_param.zone_cnt) ? FOCUS_ZONE_CNT_MAX : focus_param.zone_cnt;
 	for (i=0 ; i<cnt ; i++) {
@@ -5460,7 +5464,7 @@ status_t SprdCameraHardware::setCameraParameters()
 	struct cmr_ae_param ae_param;
 	if (2 == ae_mode) {
 		mParameters.getMeteringAreas(&area[1], &area[0], &preview_size, &preview_rect,
-					orientation, is_mirror);
+					kCameraInfo[mCameraId].orientation, is_mirror);
 	}
 	ae_param.mode = ae_mode;
 	ae_param.win_area.count = 1;
@@ -7191,7 +7195,7 @@ void SprdCameraHardware::receiveJpegPicture(struct camera_frame_type *frame)
 				camera_memory_t *mem = mGetMemory_cb(-1, (mJpegSize+isp_info_size), 1, 0);
 				memcpy(mem->data, encInfo->outPtr, mJpegSize);
 				if (isp_info_addr) {
-					memcpy(((char*)mem->data+mJpegSize),isp_info_addr,isp_info_size);
+					memcpy((char*)mem->data+mJpegSize,isp_info_addr,isp_info_size);
 				}
 				mData_cb(CAMERA_MSG_COMPRESSED_IMAGE,mem, 0, NULL, mUser );
 				mem->release(mem);
@@ -7200,7 +7204,7 @@ void SprdCameraHardware::receiveJpegPicture(struct camera_frame_type *frame)
 			camera_memory_t *mem = mGetMemory_cb(-1, (mJpegSize+isp_info_size), 1, 0);
 			memcpy(mem->data, encInfo->outPtr, mJpegSize);
 			if (isp_info_addr) {
-				memcpy(((char*)mem->data+mJpegSize),isp_info_addr,isp_info_size);
+				memcpy((char*)mem->data+mJpegSize,isp_info_addr,isp_info_size);
 			}
 			mData_cb(CAMERA_MSG_COMPRESSED_IMAGE,mem, 0, NULL, mUser );
 			mem->release(mem);
@@ -8755,24 +8759,28 @@ static hw_module_methods_t camera_module_methods = {
 };
 
 extern "C" {
-	struct camera_module HAL_MODULE_INFO_SYM = {
-		.common = {
+camera_module_t HAL_MODULE_INFO_SYM __attribute__ ((visibility("default"))) = {
+	.common = {
 		.tag = HARDWARE_MODULE_TAG,
-		.module_api_version = 1,
-		.hal_api_version = 0,
+		.module_api_version = CAMERA_MODULE_API_VERSION_1_0,
+		.hal_api_version = HARDWARE_HAL_API_VERSION,
 		.id = CAMERA_HARDWARE_MODULE_ID,
 		.name = "Sprd camera HAL",
 		.author = "Spreadtrum Corporation",
 		.methods = &camera_module_methods,
 		.dso = NULL,
 		.reserved = {0},
-		},
-		.get_number_of_cameras = HAL_getNumberOfCameras,
-		.get_camera_info = HAL_getCameraInfo,
-		.set_callbacks = NULL,
-		.get_vendor_tag_ops = NULL,
-		//reserved : {0,0,0,0,0,0,0},
-	};
+	},
+	.get_number_of_cameras = HAL_getNumberOfCameras,
+	.get_camera_info = HAL_getCameraInfo,
+	.set_callbacks = NULL,
+	.get_vendor_tag_ops = NULL,
+	.open_legacy = NULL,
+	.set_torch_mode = NULL,
+	.init = NULL,
+	.reserved = {0},
+};
 }
 
 }
+

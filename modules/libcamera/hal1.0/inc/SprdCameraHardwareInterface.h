@@ -143,8 +143,8 @@ public:
 	static int                   getPropertyAtv();
 	static int                   getNumberOfCameras();
 	static int                   getCameraInfo(int cameraId, struct camera_info *cameraInfo);
-	static const CameraInfo      kCameraInfo[];
-	static const CameraInfo      kCameraInfo3[];
+	static const camera_info     kCameraInfo[];
+	static const camera_info     kCameraInfo3[];
 	static int                   switch_monitor_thread_init(void *p_data);
 	static int                   switch_monitor_thread_deinit(void *p_data);
 	static void*                 switch_monitor_thread_proc(void *p_data);

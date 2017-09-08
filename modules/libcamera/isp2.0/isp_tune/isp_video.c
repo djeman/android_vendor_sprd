@@ -348,8 +348,8 @@ uint32_t ispvideo_GetImgDataLen(unsigned char* dig_ptr)
 }
 
 
-unsigned char* ispvideo_GetImgDataInfo(unsigned char* dig_ptr, uint32_t* packet_sn, uint32_t* total_pack,
-											uint32_t* img_width, uint32_t* img_height, uint32_t* img_headlen)
+unsigned char* ispvideo_GetImgDataInfo(unsigned char* dig_ptr, uint32_t* packet_sn, 
+		uint32_t* total_pack, uint32_t* img_width, uint32_t* img_height, uint32_t* img_headlen)
 {
 	unsigned char* data_ptr = NULL;
 	unsigned char* tmp_ptr = NULL;

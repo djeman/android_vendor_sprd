@@ -912,14 +912,14 @@ int write_otp_sn(uint32_t data_size, uint8_t *data_buf)
 	return ret;
 }
 
-int start_camera(void *pdev)
+int _start_camera(void **pdev)
 {
 	int  ops_status 		= 0;
 #if (MINICAMERA != 1)
 	struct hw_module_t *module;
 	hw_device_t  *tmp	= NULL;
 
-	if(pdev==NULL) {
+	if(*pdev==NULL) {
 		CMR_LOGW("pdev->common.methods->open \n");
 
 		ops_status = hw_get_module(CAMERA_HARDWARE_MODULE_ID, (const hw_module_t**)&module);
@@ -932,18 +932,18 @@ int start_camera(void *pdev)
 			CMR_LOGE("\n open %d fail ",0);
 			if(tmp)
 				tmp->close((hw_device_t*)tmp);  //avoid next time retry fail
-			pdev = NULL;
+			*pdev = NULL;
 			return -1;
 		}
 
-		pdev = tmp;
+		*pdev = tmp;
 	}
 #endif
 	return ops_status;
 
 }
 
-int stop_camera(void *pdev)
+int _stop_camera(void *pdev)
 {
 	int  ops_status = 0;
 #if (MINICAMERA != 1)
@@ -957,11 +957,14 @@ int stop_camera(void *pdev)
 
 }
 
+int start_camera(void *pdev) __attribute__ ((weak, alias ("_start_camera")));
+int stop_camera(void *pdev) __attribute__ ((weak, alias ("_stop_camera")));
+
 int write_otp_pownon()
 {
 	int ret = 0;
 	if(!p_camera_device){
-		ret = start_camera(p_camera_device);
+		ret = start_camera(&p_camera_device);
 	}
 
 	return ret;
