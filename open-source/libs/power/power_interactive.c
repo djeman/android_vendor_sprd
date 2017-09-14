@@ -35,7 +35,6 @@
 
 #include <hardware/hardware.h>
 #include <hardware/power.h>
-#include <liblights/samsung_lights_helper.h>
 
 #define CPU_SYSFS_PATH "/sys/devices/system/cpu/cpu0"
 #define CPU_INTERACTIVE_PATH "/sys/devices/system/cpu/cpufreq/interactive"
@@ -301,32 +300,9 @@ static void samsung_power_init(struct power_module *module)
 
 static void samsung_power_set_interactive(struct power_module *module, int on)
 {
-    struct samsung_power_module *samsung_pwr = (struct samsung_power_module *) module;
-    int panel_brightness;
-    char button_state[2];
-    int rc;
-    static bool touchkeys_blocked = false;
     char ON[PARAM_MAXLEN]  = {"1"};
     char OFF[PARAM_MAXLEN] = {"0"};
 
-    ALOGV("power_set_interactive: %d", on);
-
-    /*
-     * Do not disable any input devices if the screen is on but we are in a non-interactive
-     * state.
-     */
-    if (!on) {
-        panel_brightness = get_cur_panel_brightness();
-        if (panel_brightness < 0) {
-            ALOGE("%s: Failed to read panel brightness", __func__);
-        } else if (panel_brightness > 0) {
-            ALOGV("%s: Moving to non-interactive state, but screen is still on,"
-                  " not disabling input devices", __func__);
-            goto out;
-        }
-    }
-
-out:
     cpu_interactive_write(IO_IS_BUSY_PATH, on ? ON : OFF);
 
     ALOGV("power_set_interactive: %d done", on);

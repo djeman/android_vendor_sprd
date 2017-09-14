@@ -22,9 +22,6 @@ include $(CLEAR_VARS)
 ifneq ($(BOARD_POWERHINT_HAL),)
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils
-ifeq ($(strip $(BOARD_POWERHINT_HAL)),interactive)
-LOCAL_STATIC_LIBRARIES := liblights_helper
-endif
 LOCAL_SRC_FILES := power_$(BOARD_POWERHINT_HAL).c
 ifeq ($(TARGET_BOARD_PLATFORM),)
 LOCAL_MODULE := power.default
