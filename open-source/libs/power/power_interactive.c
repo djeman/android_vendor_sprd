@@ -333,10 +333,6 @@ static void samsung_power_hint(struct power_module *module,
             ALOGV("%s: POWER_HINT_LOW_POWER", __func__);
             set_power_profile(samsung_pwr, data ? PROFILE_POWER_SAVE : PROFILE_BALANCED);
             break;
-        case POWER_HINT_LAUNCH:
-            ALOGV("%s: POWER_HINT_LAUNCH", __func__);
-            send_boostpulse(samsung_pwr->boostpulse_fd);
-            break;
         case POWER_HINT_CPU_BOOST:
             ALOGV("%s: POWER_HINT_CPU_BOOST", __func__);
             int32_t duration_us = *((int32_t *)data);
