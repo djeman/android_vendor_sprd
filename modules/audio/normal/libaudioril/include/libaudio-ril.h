@@ -43,6 +43,7 @@ public:
     int checkMultiSim();
     int getDeviceType(int route, int flag);
     int isLoopbackStart();
+    int isSupportDS();
 
     int registerCallback(HRilClient client, uint32_t id, RilOnMessage handler);
     int registerCallbackSlot2(HRilClient client, uint32_t id, RilOnMessage handler);
@@ -68,13 +69,14 @@ public:
     void setRealCallStatus(bool value);
     int setRxMute(bool value);
     void setScoSolution(bool value, int port);
+    void setSoundClkMode(int mode);
     int setTxMute(bool value);
     int setVoicePath(int mode, int path);
-    int setVoiceSolution();
+    int setVoLTEstate(int state);
     int setVoiceVolume(int path, float volume);
 
 private:
-    char unk[0x40];
+    char unk[0x44];
 };
 // ---------------------------------------------------------------------------
 }; // namespace android
