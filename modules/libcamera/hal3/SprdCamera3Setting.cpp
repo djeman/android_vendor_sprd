@@ -1352,21 +1352,24 @@ const uint8_t kavailable_noise_reduction_modes[] = {
 };
 /**********************Static Members**********************/
 
-const CameraInfo kCameraInfo[] = {
+const camera_info kCameraInfo[] = {
 	{
 		CAMERA_FACING_BACK,
 		90,/*orientation*/
+		0, NULL, 0, NULL, 0
 	},
 #ifndef CONFIG_DCAM_SENSOR_NO_FRONT_SUPPORT
 	{
 		CAMERA_FACING_FRONT,
 		270,/*orientation*/
+		0, NULL, 0, NULL, 0
 	},
 #endif
 #ifdef CONFIG_DCAM_SENSOR_DEV_2_SUPPORT
 	{
 		2,
 		270,/*orientation*/
+		0, NULL, 0, NULL, 0
 	},
 #endif
 };

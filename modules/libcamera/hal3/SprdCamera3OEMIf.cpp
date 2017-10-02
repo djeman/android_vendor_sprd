@@ -4311,7 +4311,7 @@ int SprdCamera3OEMIf::SetCameraParaTag(cmr_uint cameraParaTag)
 
 	HAL_LOGV("set camera para, tag is %ld", cameraParaTag);
 	mSetting->getCONTROLTag(&controlInfo);
-	switch (cameraParaTag) {
+	switch ((int)cameraParaTag) {
 	case ANDROID_CONTROL_SCENE_MODE:
 		{
 			int8_t drvSceneMode = 0;

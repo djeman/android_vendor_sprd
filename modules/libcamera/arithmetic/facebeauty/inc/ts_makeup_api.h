@@ -10,7 +10,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef char bool;
     /*
      * PARAMETERS :
      *   @param[in] pInData : The TSMakeupData pointer.MUST not NULL.
@@ -21,7 +20,7 @@ typedef char bool;
      * RETURN    : TS_OK if success, otherwise failed.
      *
      */
-    int ts_face_beautify(TSMakeupData *pInData, TSMakeupData *pOutData, int skinCleanLevel, int skinWhitenLevel,TSRect* pfaceRect, bool Isfacefd);
+    int ts_face_beautify(TSMakeupData *pInData, TSMakeupData *pOutData, int skinCleanLevel, int skinWhitenLevel,TSRect* pfaceRect, char Isfacefd);
 
 #ifdef __cplusplus
 } /* extern "C" { */
