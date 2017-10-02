@@ -119,7 +119,7 @@ typedef struct {
 	uint8_t available_video_stab_modes[2];
 	int32_t max_regions[3];
 	uint8_t available_effects[9];
-	uint8_t available_scene_modes[18];
+	uint8_t available_scene_modes[20];
 	uint8_t mode;
 	uint8_t effect_mode;
 	uint8_t scene_mode;
@@ -253,7 +253,7 @@ typedef struct {
 typedef struct {
 	int32_t max_curve_points;
 	uint8_t mode;
-	uint8_t available_tone_map_modes[3];
+	uint8_t available_tone_map_modes[5];
 	float   curve_blue[SPRD_MAX_TONE_CURVE_POINT];
 	float   curve_green[SPRD_MAX_TONE_CURVE_POINT];
 	float   curve_red[SPRD_MAX_TONE_CURVE_POINT];
@@ -308,7 +308,7 @@ typedef struct {
 	int32_t available_characteristics_keys[100];
 	int32_t available_request_keys[50];
 	int32_t available_result_keys[50];
-	uint8_t available_capabilites[5];
+	uint8_t available_capabilites[10];
 	int32_t partial_result_count;
 	uint8_t pipeline_max_depth;
 	uint8_t pipeline_depth;

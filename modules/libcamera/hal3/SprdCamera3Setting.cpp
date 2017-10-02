@@ -76,7 +76,7 @@ typedef struct
 	uint8_t availableFaceDetectModes[2];
 	uint8_t availableVideoStabModes[2];
 	uint8_t availEffectModes[9];
-	uint8_t availSceneModes[18];
+	uint8_t availSceneModes[20];
 	uint8_t availAntibandingModes[4];
 	uint8_t availableAfModes[6];
 	uint8_t availableAmModes[4];
@@ -212,7 +212,7 @@ const uint8_t avail_effect_mode[] = {
 	ANDROID_CONTROL_EFFECT_MODE_AQUA
 };
 const uint8_t avail_scene_modes[] = {
-	ANDROID_CONTROL_SCENE_MODE_DISABLED,
+	//ANDROID_CONTROL_SCENE_MODE_DISABLED,
 	ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY,
 	ANDROID_CONTROL_SCENE_MODE_NIGHT,
 	ANDROID_CONTROL_SCENE_MODE_ACTION,
@@ -1832,17 +1832,19 @@ int SprdCamera3Setting::initStaticParameters(int32_t cameraId)
 		memcpy(s_setting[cameraId].controlInfo.ae_available_fps_ranges, kavailable_fps_ranges_back, sizeof(kavailable_fps_ranges_back));
 	else
 		memcpy(s_setting[cameraId].controlInfo.ae_available_fps_ranges, kavailable_fps_ranges_front, sizeof(kavailable_fps_ranges_front));
+
 	s_setting[cameraId].controlInfo.ae_compensation_step.numerator= 1;
 	s_setting[cameraId].controlInfo.ae_compensation_step.denominator = 1;
 	memcpy(s_setting[cameraId].controlInfo.available_video_stab_modes, camera3_default_info.common.availableVideoStabModes, sizeof(camera3_default_info.common.availableVideoStabModes));
 	if (cameraId == 0)
-	memcpy(s_setting[cameraId].controlInfo.max_regions, kmax_regions, sizeof(kmax_regions));
+		memcpy(s_setting[cameraId].controlInfo.max_regions, kmax_regions, sizeof(kmax_regions));
 	else
 		memcpy(s_setting[cameraId].controlInfo.max_regions, kmax_front_regions, sizeof(kmax_regions));
+
 	{
 		s_setting[cameraId].controlInfo.ae_compensation_range[0] = -3;
 		s_setting[cameraId].controlInfo.ae_compensation_range[1] = 3;
-    }
+	}
 	{
 		//s_setting[cameraId].controlInfo.available_effects[0] = ANDROID_CONTROL_EFFECT_MODE_OFF;
 		memcpy(s_setting[cameraId].controlInfo.available_effects, camera3_default_info.common.availEffectModes, sizeof(camera3_default_info.common.availEffectModes));
@@ -1857,6 +1859,7 @@ int SprdCamera3Setting::initStaticParameters(int32_t cameraId)
 	memcpy(s_setting[cameraId].controlInfo.am_available_modes, camera3_default_info.common.availableAmModes, sizeof(camera3_default_info.common.availableAmModes));
 	if (cameraId == 0 || cameraId == 1)
 		memcpy(s_setting[cameraId].sprddefInfo.availabe_slow_motion, camera3_default_info.common.availableSlowMotion, sizeof(camera3_default_info.common.availableSlowMotion));
+
 	//quirks
 	s_setting[cameraId].quirksInfo.use_parital_result = 1;
 
@@ -2016,7 +2019,7 @@ int SprdCamera3Setting::initStaticMetadata(int32_t cameraId, camera_metadata_t *
 	/*TONEMAP*/
 	staticInfo.update(ANDROID_TONEMAP_MAX_CURVE_POINTS,
 			&(s_setting[cameraId].toneInfo.max_curve_points), 1);
-	FILL_CAM_INFO(s_setting[cameraId].toneInfo.available_tone_map_modes, 1, 3, ANDROID_TONEMAP_AVAILABLE_TONE_MAP_MODES)
+	FILL_CAM_INFO(s_setting[cameraId].toneInfo.available_tone_map_modes, 1, 5, ANDROID_TONEMAP_AVAILABLE_TONE_MAP_MODES)
 
 	/*STATISTICS_INFO*/
 	staticInfo.update(ANDROID_STATISTICS_INFO_MAX_FACE_COUNT,
@@ -2071,7 +2074,7 @@ int SprdCamera3Setting::initStaticMetadata(int32_t cameraId, camera_metadata_t *
 			ARRAY_SIZE(s_setting[cameraId].controlInfo.ae_compensation_range));
 
 	FILL_CAM_INFO(s_setting[cameraId].controlInfo.available_effects, 1, 9, ANDROID_CONTROL_AVAILABLE_EFFECTS)
-	FILL_CAM_INFO(s_setting[cameraId].controlInfo.available_scene_modes, 1, 18,
+	FILL_CAM_INFO(s_setting[cameraId].controlInfo.available_scene_modes, 1, 20,
 							ANDROID_CONTROL_AVAILABLE_SCENE_MODES)
 	FILL_CAM_INFO(s_setting[cameraId].controlInfo.ae_available_abtibanding_modes, 1, 4,
 							ANDROID_CONTROL_AE_AVAILABLE_ANTIBANDING_MODES)
@@ -2112,7 +2115,7 @@ int SprdCamera3Setting::initStaticMetadata(int32_t cameraId, camera_metadata_t *
 	FILL_CAM_INFO(s_setting[cameraId].requestInfo.available_characteristics_keys, 0, 100, ANDROID_REQUEST_AVAILABLE_CHARACTERISTICS_KEYS)
 	FILL_CAM_INFO(s_setting[cameraId].requestInfo.available_request_keys, 0, 50, ANDROID_REQUEST_AVAILABLE_REQUEST_KEYS)
 	FILL_CAM_INFO(s_setting[cameraId].requestInfo.available_result_keys, 0, 50, ANDROID_REQUEST_AVAILABLE_RESULT_KEYS)
-	FILL_CAM_INFO(s_setting[cameraId].requestInfo.available_capabilites, 1, 5, ANDROID_REQUEST_AVAILABLE_CAPABILITIES)
+	FILL_CAM_INFO(s_setting[cameraId].requestInfo.available_capabilites, 1, 10, ANDROID_REQUEST_AVAILABLE_CAPABILITIES)
 	staticInfo.update(ANDROID_REQUEST_PARTIAL_RESULT_COUNT,
 			&(s_setting[cameraId].requestInfo.partial_result_count), 1);
 	staticInfo.update(ANDROID_REQUEST_PIPELINE_MAX_DEPTH,
@@ -2214,8 +2217,7 @@ int SprdCamera3Setting::getDefaultParameters(SprdCameraParameters &params)
 	return 0;
 }
 
-int SprdCamera3Setting::constructDefaultMetadata(int type,
-										camera_metadata_t **metadata)
+int SprdCamera3Setting::constructDefaultMetadata(int type, camera_metadata_t **metadata)
 {
 	size_t i = 0;
 	if (mDefaultMetadata[type] != NULL) {

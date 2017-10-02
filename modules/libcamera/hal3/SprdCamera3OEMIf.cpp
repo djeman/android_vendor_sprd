@@ -4302,7 +4302,7 @@ int SprdCamera3OEMIf::CameraConvertCropRegion(uint32_t sensorWidth, uint32_t sen
 	return ret;
 }
 
-int SprdCamera3OEMIf::SetCameraParaTag(cmr_uint cameraParaTag)
+int SprdCamera3OEMIf::SetCameraParaTag(int32_t cameraParaTag)
 {
 	int ret = 0;
 	CONTROL_Tag controlInfo;
@@ -4311,7 +4311,7 @@ int SprdCamera3OEMIf::SetCameraParaTag(cmr_uint cameraParaTag)
 
 	HAL_LOGV("set camera para, tag is %ld", cameraParaTag);
 	mSetting->getCONTROLTag(&controlInfo);
-	switch ((int)cameraParaTag) {
+	switch (cameraParaTag) {
 	case ANDROID_CONTROL_SCENE_MODE:
 		{
 			int8_t drvSceneMode = 0;

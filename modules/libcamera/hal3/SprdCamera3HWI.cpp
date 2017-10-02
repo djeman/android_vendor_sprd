@@ -71,15 +71,15 @@ unsigned int SprdCamera3HWI::mCameraSessionActive = 0;
 volatile uint32_t gHALLogLevel = 4;
 
 camera3_device_ops_t SprdCamera3HWI::mCameraOps = {
-	initialize:	                        SprdCamera3HWI::initialize,
-	configure_streams:                  SprdCamera3HWI::configure_streams,
-	register_stream_buffers:            NULL,//SprdCamera3HWI::register_stream_buffers,
-	construct_default_request_settings: SprdCamera3HWI::construct_default_request_settings,
-	process_capture_request:            SprdCamera3HWI::process_capture_request,
-	get_metadata_vendor_tag_ops:        NULL,//SprdCamera3HWI::get_metadata_vendor_tag_ops,
-	dump:                               SprdCamera3HWI::dump,
-	flush:                              SprdCamera3HWI::flush,
-	reserved:{0},
+	.initialize =	                      SprdCamera3HWI::initialize,
+	.configure_streams =                  SprdCamera3HWI::configure_streams,
+	.register_stream_buffers =            NULL,//SprdCamera3HWI::register_stream_buffers,
+	.construct_default_request_settings = SprdCamera3HWI::construct_default_request_settings,
+	.process_capture_request =            SprdCamera3HWI::process_capture_request,
+	.get_metadata_vendor_tag_ops =        NULL,//SprdCamera3HWI::get_metadata_vendor_tag_ops,
+	.dump =                               SprdCamera3HWI::dump,
+	.flush =                              SprdCamera3HWI::flush,
+	.reserved = {0},
 };
 
 static camera3_device_t *g_cam_device;

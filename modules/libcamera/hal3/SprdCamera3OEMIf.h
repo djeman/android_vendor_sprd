@@ -146,7 +146,7 @@ public:
 	int setCameraConvertCropRegion(void);
 	int CameraConvertCropRegion(uint32_t sensorWidth, uint32_t sensorHeight, struct img_rect *cropRegion);
 	inline bool isCameraInit();
-	int SetCameraParaTag(cmr_uint cameraParaTag);
+	int SetCameraParaTag(int32_t cameraParaTag);
 	int SetJpegGpsInfo(bool is_set_gps_location);
 	int setCapturePara(camera_capture_mode_t stream_type, uint32_t frame_number);
 	int SetChannelHandle(void *regular_chan, void *picture_chan);
