@@ -21,6 +21,7 @@
 int  start_camera(void  *pdev);
 int  stop_camera(void  *pdev);
 
+void isp_otp_needreload(uint8_t *value);
 int isp_otp_needstopprev(uint8_t *data_buf, uint32_t *data_size);
 int isp_otp_write(isp_handle isp_handler, unsigned char *buf, unsigned int *len);
 int isp_otp_read(isp_handle isp_handler, uint8_t *data_buf, uint32_t *data_size);

@@ -103,7 +103,7 @@ cmr_int cmr_sem_timedwait(sem_t *sem, const struct timespec *abs_timeout);
 
 cmr_int cmr_sem_post(sem_t *sem);
 
-cmr_int cmr_sem_getvalue(sem_t *sem, cmr_int *valp);
+cmr_int cmr_sem_getvalue(sem_t *sem, cmr_s32 *valp);
 
 #ifdef __cplusplus
 }

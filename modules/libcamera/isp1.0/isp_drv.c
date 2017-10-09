@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <sys/types.h>
+#include <string.h>
 #include "isp_reg.h"
 #include "isp_com.h"
 /**---------------------------------------------------------------------------*

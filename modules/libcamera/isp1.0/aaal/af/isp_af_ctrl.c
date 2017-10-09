@@ -20,6 +20,7 @@
 #include "isp_af_alg_v04.h"
 //#include<time.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*------------------------------------------------------------------------------*
 *					Compiler Flag				*

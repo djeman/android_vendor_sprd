@@ -23,6 +23,7 @@
 #endif
 #include "isp_type.h"
 
+#include "sensor_raw_tune.h"
 
 #define MAX_MODE_NUM 16
 

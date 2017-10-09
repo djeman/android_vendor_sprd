@@ -66,17 +66,6 @@ enum oem_ev_level {
 
 static uint32_t                                      is_support_reload = 0;
 
-// err log is always show
-// gCMRLogLevel(default is 4):
-//   1 - only show ALOGE
-//   2 - show ALOGE and ALOGW
-//   3 - show ALOGE, ALOGW and ALOGI
-//   4 - show ALOGE, ALOGW, ALOGI and ALOGD
-//   5 - show ALOGE, ALOGW, ALOGI and ALOGD, ALOGV
-// use the following command to change gCMRLogLevel:
-//   adb shell setprop persist.sys.camera.hal.log 1
-volatile uint32_t gCMRLogLevel = 4;
-
 /************************************internal interface ***************************************/
 static void camera_send_channel_data(cmr_handle oem_handle, cmr_handle receiver_handle, cmr_uint evt, void *data);
 static cmr_int camera_sensor_streamctrl(cmr_u32 on_off, void *privdata);

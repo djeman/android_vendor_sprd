@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <string.h>
 #include "isp_app.h"
 #include "isp_com.h"
 #include "isp_ae.h"

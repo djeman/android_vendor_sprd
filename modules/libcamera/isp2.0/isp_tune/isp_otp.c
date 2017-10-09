@@ -85,6 +85,8 @@ struct otp_setting {
 static uint8_t s_isp_otp_src_data[DATA_SIZE];
 static uint8_t s_isp_otp_rec_data[DATA_SIZE];
 
+static uint8_t otp_need_reload = 0;
+
 //#define OTP_DATA_TESTLOG
 static unsigned int otp_data_offset = 0;    //3792;
 #define otp_data_test_length (256/16)   //3120
@@ -343,9 +345,9 @@ int send_otp_data_to_isp(uint32_t start_addr, uint32_t data_size, uint8_t *data_
 		ret = compare( s_isp_otp_src_data, s_isp_otp_rec_data, otp_data_len);
 	}while((ret!=0) && (i++ < 1));
 
-	if (!ret) {
+	/*if (!ret) {
 		camera_calibrationconfigure_save (otp_start_addr, otp_data_len);
-	}
+	}*/
 #ifdef OTP_DATA_TESTLOG
 	for ( j = 0; j < otp_data_len; j++)
 	{
@@ -950,7 +952,7 @@ int _stop_camera(void *pdev)
 	if(pdev){
 		CMR_LOGW("pdev->close \n");
 		ops_status = ((hw_device_t*)pdev)->close((hw_device_t*)pdev);
-		mtrace_print_alllog(TRACE_MEMSTAT);
+		//mtrace_print_alllog(TRACE_MEMSTAT);
 	}
 #endif
 	return ops_status;
@@ -979,6 +981,12 @@ int write_otp_pownoff()
 	}
 
 	return ret;
+}
+
+void isp_otp_needreload(uint8_t *value)
+{
+	if (value != NULL)
+		*value = otp_need_reload;
 }
 
 int isp_otp_needstopprev(uint8_t *data_buf, uint32_t *data_size)
@@ -1070,10 +1078,10 @@ int isp_otp_write(isp_handle handler, uint8_t *data_buf, uint32_t *data_size)//D
 		break;
 
 	case OTP_RELOAD_ON_CMD:
-		camera_set_reload_support(1);
+		otp_need_reload = 1;
 		break;
 	case OTP_RELOAD_OFF_CMD:
-		camera_set_reload_support(0);
+		otp_need_reload = 0;
 		break;
 	case OTP_CAMERA_POWERON_CMD:
 		ret = write_otp_pownon();

@@ -20,6 +20,7 @@
 #include <utils/Log.h>
 #include <sched.h>
 #include <unistd.h>
+#include <strings.h>
 #define DEBUG_STR     "L %d, %s: "
 #define DEBUG_ARGS    __LINE__,__FUNCTION__
 
@@ -315,7 +316,7 @@ int stub_thread_create(cmr_handle *thread_handle, uint32_t queue_length, msg_pro
 	}
 
 	pthread_attr_destroy(&attr);
-	*thread_handle = (unsigned long)thread;
+	*thread_handle = (cmr_handle)thread;
 	return rtn;
 }
 

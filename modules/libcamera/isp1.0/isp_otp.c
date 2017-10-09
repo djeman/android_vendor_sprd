@@ -82,6 +82,8 @@ struct otp_setting {
 static uint8_t s_isp_otp_src_data[DATA_SIZE];
 static uint8_t s_isp_otp_rec_data[DATA_SIZE];
 
+static uint8_t otp_need_reload = 0;
+
 #define OTP_DATA_TESTLOG
 static unsigned int otp_data_offset = 0;    //3792;
 #define otp_data_test_length (256/16)   //3120
@@ -790,6 +792,12 @@ int  _stop_camera(camera_device_t  *pdev)
 #pragma weak start_camera =_start_camera
 #pragma weak stop_camera  =_stop_camera
 
+void isp_otp_needreload(uint8_t *value)
+{
+	if (value != NULL)
+		*value = otp_need_reload;
+}
+
 int isp_otp_needstopprev(uint8_t *data_buf, uint32_t *data_size)//DATA
 {
 	int ret = 0;
@@ -875,10 +883,10 @@ int isp_otp_write(uint8_t *data_buf, uint32_t *data_size)//DATA
 		break;
 
 	case OTP_RELOAD_ON_CMD:
-		camera_set_reload_support(1);
+		otp_need_reload = 1;
 		break;
 	case OTP_RELOAD_OFF_CMD:
-		camera_set_reload_support(0);
+		otp_need_reload = 0;
 		break;
 	case OTP_CAMERA_POWERON_CMD:
 		if(!p_camera_device){

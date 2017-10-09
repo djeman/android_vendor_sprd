@@ -21,7 +21,7 @@
 //#include <linux/types.h>
 #include <sys/types.h>
 #include "isp_exif.h"
-#include "cmr_isp_type.h"
+#include "cmr_type.h"
 /**---------------------------------------------------------------------------*
 **				Micro Define					*
 **----------------------------------------------------------------------------*/

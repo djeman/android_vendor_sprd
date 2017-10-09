@@ -17,6 +17,7 @@
 #include "isp_app_msg.h"
 #include <sys/types.h>
 #include <utils/Log.h>
+#include <strings.h>
 
 #define ISP_APP_MSG_CHECK_MSG_MAGIC(handle) \
 		do { \

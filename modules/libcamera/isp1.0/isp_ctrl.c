@@ -17,6 +17,7 @@
 #define LOG_TAG "isp_ctrl"
 
 #include <sys/types.h>
+#include <strings.h>
 #include <math.h>
 #include "isp_app.h"
 #include "isp_com.h"

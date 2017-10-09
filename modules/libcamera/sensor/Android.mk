@@ -1,23 +1,29 @@
-#
-# Copyright (C) 2008 The Android Open Source Project
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 
 CUR_DIR := sensor
 
+include $(CLEAR_VARS)
+
+include $(LOCAL_PATH)/SprdCtrl.mk
+
+LOCAL_C_INCLUDES := \
+	$(TOP)/vendor/sprd/modules/libcamera/common/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/tool/mtrace \
+	$(TOP)/vendor/sprd/modules/libcamera/oem$(ISP_HW_VER)/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/oem$(ISP_HW_VER)/isp_calibration/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/isp$(ISP_HW_VER)/isp_app \
+	$(TOP)/vendor/sprd/modules/libcamera/isp$(ISP_HW_VER)/ae/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/isp$(ISP_HW_VER)/awb/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/isp$(ISP_HW_VER)/inc \
+	$(TOP)/vendor/sprd/modules/libcamera/isp$(ISP_HW_VER)/utility
+
+LOCAL_ADDITIONAL_DEPENDENCIES += \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+
+LOCAL_C_INCLUDES += \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include/video
+
 ifeq ($(strip $(ISP_HW_VER)),2.0)
-LOCAL_SRC_FILES += \
+LOCAL_SRC_FILES := \
                 $(CUR_DIR)/vcm_dw9714a.c \
                 $(CUR_DIR)/ov5640/sensor_ov5640_mipi.c \
                 $(CUR_DIR)/ov5640/sensor_ov5640_mipi_raw.c \
@@ -45,8 +51,15 @@ LOCAL_SRC_FILES += \
                 $(CUR_DIR)/sensor_autotest_ov5648_mipi_raw.c \
                 $(CUR_DIR)/sensor_autotest_ov5670_mipi_raw.c \
                 $(CUR_DIR)/sensor_autotest_ov13850_mipi_raw.c
-else
+
 LOCAL_SRC_FILES += \
+                $(CUR_DIR)/oem/sensor_v2_cfg.c \
+                $(CUR_DIR)/oem/sensor_v2_drv_u.c \
+                $(CUR_DIR)/oem/sensor_v2_isp_param_merge.c \
+                $(CUR_DIR)/oem/sensor_v2_isp_param_awb_pac.c \
+                $(CUR_DIR)/isp/isp_v2_param_file_update.c
+else
+LOCAL_SRC_FILES := \
                 $(CUR_DIR)/sensor_ov8825_mipi_raw.c \
                 $(CUR_DIR)/sensor_autotest_ov8825_mipi_raw.c\
                 $(CUR_DIR)/sensor_ov13850_mipi_raw.c \
@@ -88,4 +101,17 @@ LOCAL_SRC_FILES += \
                 $(CUR_DIR)/sensor_autotest_ov8858_mipi_raw.c \
                 $(CUR_DIR)/sensor_autotest_ov2680_mipi_raw.c \
                 $(CUR_DIR)/sensor_autotest_gc0310_mipi.c
+
+LOCAL_SRC_FILES += \
+                $(CUR_DIR)/oem/sensor_v1_cfg.c \
+                $(CUR_DIR)/oem/sensor_v1_drv_u.c \
+                $(CUR_DIR)/isp/isp_v1_param_file_update.c
 endif
+
+LOCAL_SHARED_LIBRARIES := libcutils libcamcommon
+LOCAL_MODULE := libcamsensor
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+
+include $(BUILD_SHARED_LIBRARY)
+

@@ -1,5 +1,7 @@
 # add ctrl macro
 
+LOCAL_CFLAGS += -Wno-unused-parameter
+
 ifeq ($(strip $(TARGET_BOARD_CAMERA_HAL_VERSION)),1.0)
 LOCAL_CFLAGS += -DCONFIG_CAMERA_HAL_VERSION_1
 endif
@@ -160,8 +162,6 @@ endif
 ifeq ($(strip $(TARGET_VCM_BU64241GWZ)),true)
 LOCAL_CFLAGS += -DCONFIG_VCM_BU64241GWZ
 endif
-
-$(info we wanna del -DCONFIG_CAMERA_IMAGE_180 and -DCONFIG_VCM_BU64241GWZ)
 
 ifeq ($(strip $(TARGET_BOARD_CAMERA_PRE_ALLOC_CAPTURE_MEM)),true)
 LOCAL_CFLAGS += -DCONFIG_PRE_ALLOC_CAPTURE_MEM

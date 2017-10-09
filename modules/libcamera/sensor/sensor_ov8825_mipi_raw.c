@@ -3138,7 +3138,7 @@ LOCAL uint32_t _ov8825_access_val(unsigned long param)
 			*((uint32_t*)param_ptr->pval) = _ov8825_get_shutter();
 			break;
 		case SENSOR_VAL_TYPE_READ_OTP_GAIN:
-			rtn = _ov8825_read_otp_gain(param_ptr->pval);
+			rtn = _ov8825_read_otp_gain((unsigned long)param_ptr->pval);
 		default:
 			break;
 	}

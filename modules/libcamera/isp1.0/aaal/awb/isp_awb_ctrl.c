@@ -20,6 +20,7 @@
 #include "isp_awb.h"
 #include "isp_awb_ctrl.h"
 #include <utils/Timers.h>
+#include <string.h>
 
 /*------------------------------------------------------------------------------*
 *					Compiler Flag				*

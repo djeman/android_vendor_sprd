@@ -16,6 +16,7 @@
 #define LOG_TAG "cmr_msg"
 
 #include <stdlib.h>
+#include <strings.h>
 #include "cmr_common.h"
 #include "cmr_msg.h"
 
@@ -30,6 +31,17 @@
 			return CMR_MSG_INVALID_HANDLE; \
 		} \
 	} while(0)
+
+// err log is always show
+// gCMRLogLevel(default is 4):
+//   1 - only show ALOGE
+//   2 - show ALOGE and ALOGW
+//   3 - show ALOGE, ALOGW and ALOGI
+//   4 - show ALOGE, ALOGW, ALOGI and ALOGD
+//   5 - show ALOGE, ALOGW, ALOGI and ALOGD, ALOGV
+// use the following command to change gCMRLogLevel:
+//   adb shell setprop persist.sys.camera.hal.log 1
+volatile uint32_t gCMRLogLevel = 4;
 
 struct cmr_msg_in {
 	struct cmr_msg             msg;
@@ -500,7 +512,7 @@ cmr_int cmr_sem_post(sem_t *sem)
 	return sem_post(sem);
 }
 
-cmr_int cmr_sem_getvalue(sem_t *sem, cmr_int *valp)
+cmr_int cmr_sem_getvalue(sem_t *sem, cmr_s32 *valp)
 {
 	return sem_getvalue(sem, valp);
 }

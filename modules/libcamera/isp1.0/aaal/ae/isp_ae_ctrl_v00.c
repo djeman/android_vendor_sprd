@@ -16,6 +16,7 @@
 
 #include "isp_com.h"
 #include "isp_ae_alg_v00.h"
+#include <string.h>
 
 /**---------------------------------------------------------------------------*
  ** 				Compiler Flag					*
