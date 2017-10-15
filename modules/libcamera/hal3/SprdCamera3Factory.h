@@ -42,6 +42,7 @@ public:
 	SprdCamera3Factory();
 	virtual ~SprdCamera3Factory();
 	static int get_number_of_cameras();
+	static int setTorchMode(const char *,bool);
 	static int get_camera_info(int camera_id, struct camera_info *info);
 	static int set_callbacks(const camera_module_callbacks_t *callbacks);
 	static void get_vendor_tag_ops(vendor_tag_ops_t* ops);

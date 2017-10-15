@@ -29,12 +29,12 @@
 #include <camera/Camera.h>
 #include <semaphore.h>
 #include "cmr_oem.h"
-#include "SprdOEMCamera.h"
+#include "cmr_common.h"
 #include "isp_cali_interface.h"
 #include "sensor_drv_u.h"
 #include "sensor_cfg.h"
 #include "ion_sprd.h"
-
+#include <dlfcn.h>
 
 
 using namespace android;
@@ -119,20 +119,27 @@ uint32_t *autotest_camer_saveaddr = NULL;
 int g_image_size=0;
 int g_commandid=0;
 int g_sensor_opened=0;
+static oem_module_t   *mHalOem;
+static isp_cali_ops_t *mHalIspCali;
 
 #define USE_PHYSICAL_ADD 0
 #define USE_IOMM_ADD 1
 #define AUTOTEST_CLIENTDATA    0xffffffff
 
-#define SET_PARM(x,y,z) do {\
+#define SET_PARM(h,x,y,z) do {\
 			INFO("%s: set camera param: %s, %d", __func__, #x, y);\
-			camera_set_param (x, y, z);\
+			if (NULL != mHalOem && NULL != mHalOem->ops)\
+				mHalOem->ops->camera_set_param (x, y, z);\
 		} while(0)
 
 static int g_mem_method = USE_PHYSICAL_ADD;/*0: physical address, 1: iommu  address*/
 cmr_int read_data_from_sensor();
 static int auto_test_dcam_preview_mem_alloc(cmr_u32 size, cmr_u32 sum, cmr_uint *phy_addr, cmr_uint *vir_addr);
 static int auto_test_dcam_cap_memory_alloc(cmr_u32 size, cmr_u32 sum, cmr_uint *addr_phy, cmr_uint *addr_vir);
+static void auto_test_dcam_cap_memory_release(void);
+extern "C" {
+	static cmr_int autotest_load_hal_lib(void);
+}
 
 static void auto_test_dcam_usage()
 {
@@ -213,7 +220,10 @@ cmr_int Callback_Malloc(enum camera_mem_cb_type type, cmr_u32 *size_ptr, cmr_u32
 	}
 	size = *size_ptr;
 	sum = *sum_ptr;
-	if (CAMERA_PREVIEW == type) {
+	if ( type == CAMERA_SNAPSHOT_ZSL_RESERVED){
+		CMR_LOGE("In autotest Mode,don't need alloc snp reserved buffer");
+		return ret;
+	} else if (CAMERA_PREVIEW == type) {
 		ret = auto_test_dcam_preview_mem_alloc(size, sum, phy_addr, vir_addr);
 	} else {
 		ret = auto_test_dcam_cap_memory_alloc(size, sum, phy_addr, vir_addr);
@@ -225,7 +235,8 @@ cmr_int Callback_Malloc(enum camera_mem_cb_type type, cmr_u32 *size_ptr, cmr_u32
 cmr_int Callback_Free(enum camera_mem_cb_type type, cmr_uint *phy_addr, cmr_uint *vir_addr, cmr_u32 sum, void* private_data)
 {
 	cmr_int            ret = 0;
-
+	if (CAMERA_SNAPSHOT == type)
+		auto_test_dcam_cap_memory_release();
 	return ret;
 }
 #if 0
@@ -352,9 +363,10 @@ int auto_test_dcam_cap_memory_alloc(cmr_u32 size, cmr_u32 sum, cmr_uint *addr_ph
 		CMR_LOGE("param error, sum %d", sum);
 		return -1;
 	}
+	CMR_LOGI("sum %d", sum);
 	for (i=0 ; i< sum ; i++) {
 		if(g_mem_method == USE_PHYSICAL_ADD)
-			cmr_cxt_ptr->cap_pmem_hp[i] = new MemoryHeapIon("/dev/ion", buffer_size , MemoryHeapIon::NO_CACHING, ION_HEAP_ID_MASK_MM);
+			cmr_cxt_ptr->cap_pmem_hp[i] = new MemoryHeapIon("/dev/ion", buffer_size ,0 , (1<<31) | ION_HEAP_ID_MASK_MM); /*use cache*/
 		else
 			cmr_cxt_ptr->cap_pmem_hp[i] = new MemoryHeapIon("/dev/ion", buffer_size ,MemoryHeapIon::NO_CACHING, ION_HEAP_ID_MASK_SYSTEM);
 
@@ -378,6 +390,7 @@ int auto_test_dcam_cap_memory_alloc(cmr_u32 size, cmr_u32 sum, cmr_uint *addr_ph
 		} else {
 			*addr_phy++ = (cmr_uint)cmr_cxt_ptr->cap_physical_addr[i];
 			*addr_vir++ = (cmr_uint)cmr_cxt_ptr->cap_virtual_addr[i];
+			CMR_LOGE("phy:0x%x,vir:0x%x",cmr_cxt_ptr->cap_physical_addr[i], cmr_cxt_ptr->cap_virtual_addr[i]);
 		}
 	}
 	INFO("debug %s %d X \n",__func__,__LINE__);
@@ -392,9 +405,18 @@ static void auto_test_dcam_close(void)
 	INFO("auto_test_dcam_close:start");
 	/*auto_test_dcam_preview_mem_release();*/
 	auto_test_dcam_cap_memory_release();
-	camera_cancel_takepicture(cmr_cxt_ptr->camera_handle);
-	camera_deinit(cmr_cxt_ptr->camera_handle);
+	if(NULL != mHalOem && NULL != mHalOem->ops) {
+		mHalOem->ops->camera_cancel_takepicture(cmr_cxt_ptr->camera_handle);
+		mHalOem->ops->camera_deinit(cmr_cxt_ptr->camera_handle);
+	}
 	cmr_cxt_ptr->camera_handle = 0;
+
+	if(NULL != mHalOem->dso){
+		dlclose(mHalOem->dso);
+	}
+	free((void *)mHalOem);
+	mHalOem = NULL;
+	mHalIspCali = NULL;
 	INFO("auto_test_dcam_close:end");
 }
 
@@ -409,7 +431,7 @@ int autotest_came_save_to_buf(uint32_t **ppbuf_addr,struct auto_test_cmr_context
 	g_commandid=image_type;
 
 	if ((0 == image_type) || (2 == image_type)) {
-		g_image_size = save_cmr_cxt_ptr->capture_width* save_cmr_cxt_ptr->capture_height * 2;
+		g_image_size = save_cmr_cxt_ptr->capture_width* save_cmr_cxt_ptr->capture_height;
 		capture_addr = save_cmr_cxt_ptr->capture_raw_vir_addr;
 	} else if(1 == image_type) {
 		g_image_size = save_cmr_cxt_ptr->jpg_size;
@@ -430,21 +452,6 @@ int autotest_came_save_to_buf(uint32_t **ppbuf_addr,struct auto_test_cmr_context
 
 return ret_val;
 
-}
-
-int autotest_cam_from_buf(void**pp_image_addr,int bufsize,int *out_size )
-{
-	read_data_from_sensor();
-	int tempsize=0;
-	if ((pp_image_addr!= NULL) && (*pp_image_addr!=NULL) && (bufsize>0)) {
-		tempsize=(bufsize<=g_image_size)?(bufsize):(g_image_size);
-		memcpy(*pp_image_addr,autotest_camer_saveaddr,tempsize);
-		*out_size=g_image_size;
-		return 0;
-	} else {
-		ERR("%s pp_image_addr is null !!\n",__func__);
-		return -1;
-	}
 }
 
 static int32_t auto_test_dcam_save_raw_data(void)
@@ -687,7 +694,12 @@ int32_t rtn = 0;
 		tmp_addr.uv_addr = img_addr.uv_addr;
 		tmp_addr.v_addr = img_addr.v_addr;
 	}
-	ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
+
+	if (NULL == mHalIspCali){
+		rtn = -1;
+                ERR("auto_test_dcam_awb: IspCali is null.\n");
+	}
+	mHalIspCali->ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
 	len_tab_addr = (uint16_t *)malloc(len_tab_size);
 	if (NULL == len_tab_addr) {
 		rtn = -1;
@@ -718,7 +730,7 @@ int32_t rtn = 0;
 		len = fix_ptr->lnc.map[0][0].len;
 		memcpy((void*)len_tab_addr, (void*)tmp_lnc_ptr, len);
 	} else {
-		if (ISP_Cali_GetLensTabs(tmp_addr, lsc_grid, img_size, (uint32_t*)len_tab_addr, index, 0, sub_cmd)) {
+		if (mHalIspCali->ISP_Cali_GetLensTabs(tmp_addr, lsc_grid, img_size, (uint32_t*)len_tab_addr, index, 0, sub_cmd)) {
 			rtn = -1;
 			ERR("auto_test_dcam_awb: fail to isp_cali_getlenstab.\n");
 			goto awb_exit;
@@ -727,13 +739,13 @@ int32_t rtn = 0;
 	dst_addr.y_addr = (uintptr_t)img_tmp_addr;
 	dst_addr.v_addr = 0;
 	dst_addr.uv_addr = 0;
-	ISP_Cali_LensCorrection(&tmp_addr,
+	mHalIspCali->ISP_Cali_LensCorrection(&tmp_addr,
 							&dst_addr,
 							img_size,
 							lsc_grid,
 							len_tab_addr);
 
-	if (ISP_Cali_RawRGBStat(&dst_addr, &rect, &img_size, &stat_param)) {
+	if (mHalIspCali->ISP_Cali_RawRGBStat(&dst_addr, &rect, &img_size, &stat_param)) {
 		ERR("auto_test_dcam_awb: failed to isp_cali_raw_rgb_status.\n");
 		rtn = -1;
 		goto awb_exit;
@@ -862,7 +874,12 @@ int32_t rtn = 0;
 		tmp_addr.v_addr = img_addr.v_addr;
 	}
 
-	ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
+	if (NULL == mHalIspCali) {
+		rtn = -1;
+		ERR("auto_test_dcam_flashlight: IspCali is null.\n");
+	}
+
+	mHalIspCali->ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
 	len_tab_addr = (uint16_t *)malloc(len_tab_size);
 	if (NULL == len_tab_addr) {
 		rtn = -1;
@@ -891,7 +908,7 @@ int32_t rtn = 0;
 		len = fix_ptr->lnc.map[0][0].len;
 		memcpy((void*)len_tab_addr, (void*)tmp_lnc_ptr, len);
 	} else {
-		if (ISP_Cali_GetLensTabs(tmp_addr, lsc_grid, img_size, (uint32_t*)len_tab_addr, index, 0, sub_cmd)) {
+		if (mHalIspCali->ISP_Cali_GetLensTabs(tmp_addr, lsc_grid, img_size, (uint32_t*)len_tab_addr, index, 0, sub_cmd)) {
 			rtn = -1;
 			ERR("auto_test_dcam_lsc: fail to isp_cali_getlenstab.\n");
 			goto flashlight_exit;
@@ -900,12 +917,12 @@ int32_t rtn = 0;
 	dst_addr.y_addr = (uintptr_t)img_tmp_addr;
 	dst_addr.v_addr = 0;
 	dst_addr.uv_addr = 0;
-	ISP_Cali_LensCorrection(&tmp_addr,
+	mHalIspCali->ISP_Cali_LensCorrection(&tmp_addr,
 							&dst_addr,
 							img_size,
 							lsc_grid,
 							len_tab_addr);
-	if (ISP_Cali_RawRGBStat(&dst_addr, &rect, &img_size, &stat_param)) {
+	if (mHalIspCali->ISP_Cali_RawRGBStat(&dst_addr, &rect, &img_size, &stat_param)) {
 		ERR("auto_test_dcam_flashlight: failed to isp_cali_raw_rgb_status.\n");
 		rtn = -1;
 		goto flashlight_exit;
@@ -982,7 +999,12 @@ int32_t rtn = 0;
 
 	INFO("debug %s %d E \n",__func__,__LINE__);
 
-	ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
+	if (NULL == mHalIspCali) {
+		rtn = -1;
+		ERR("auto_test_dcam_lsc: IspCali is null.\n");
+	}
+
+	mHalIspCali->ISP_Cali_GetLensTabSize(img_size, lsc_grid, &len_tab_size);
 
 	len_tab_addr = (uint32_t *)malloc(len_tab_size);
 	if (NULL == len_tab_addr) {
@@ -1036,7 +1058,7 @@ int32_t rtn = 0;
 		ERR("auto_test_dcam_lsc: do not find param index.\n");
 		goto lsc_exit;
 	}
-	if (ISP_Cali_GetLensTabs(dst_addr, lsc_grid, img_size, len_tab_addr, index, 0, sub_cmd)) {
+	if (mHalIspCali->ISP_Cali_GetLensTabs(dst_addr, lsc_grid, img_size, len_tab_addr, index, 0, sub_cmd)) {
 		rtn = -1;
 		ERR("auto_test_dcam_lsc: fail to isp_cali_getlenstab.\n");
 		goto lsc_exit;
@@ -1276,19 +1298,23 @@ static int32_t auto_test_dcam_capture(void)
 	if (auto_test_dcam_capture_flash_eb())
 		return -1;
 */
-	if (CMR_CAMERA_SUCCESS != camera_set_mem_func(cmr_cxt_ptr->camera_handle, (void*)Callback_Malloc, (void*)Callback_Free, (void*)AUTOTEST_CLIENTDATA)) {
+	if(NULL == cmr_cxt_ptr->camera_handle || NULL == mHalOem || NULL == mHalOem->ops) {
+		ERR("auto_test_dcam_capture: oem is null or oem ops is null, do nothing\n");
+		return -1;
+	}
+	if (CMR_CAMERA_SUCCESS != mHalOem->ops->camera_set_mem_func(cmr_cxt_ptr->camera_handle, (void*)Callback_Malloc, (void*)Callback_Free, (void*)AUTOTEST_CLIENTDATA)) {
 		ERR("auto_test_dcam_capture: failed to camera_set_mem_func");
 		return -1;
 	}
 	if ((AUTO_TEST_CALIBRATION_CAP_JPG == cmr_cxt_ptr->cmd) ) {
-		if (CMR_CAMERA_SUCCESS != camera_take_picture(cmr_cxt_ptr->camera_handle,CAMERA_NORMAL_MODE)) {
+		if (CMR_CAMERA_SUCCESS != mHalOem->ops->camera_take_picture(cmr_cxt_ptr->camera_handle,CAMERA_NORMAL_MODE)) {
 			rtn = -1;
-			INFO("debug %s  line=%d  \n",__func__,__LINE__);
+			CMR_LOGE("debug %s  line=%d  \n",__func__,__LINE__);
 			goto cap_exit;
 		}
 	} else {
-		INFO("debug %s  line=%d  \n",__func__,__LINE__);
-		if (CMR_CAMERA_SUCCESS != camera_take_picture(cmr_cxt_ptr->camera_handle,CAMERA_AUTOTEST_MODE)) {
+		CMR_LOGE("debug %s  line=%d  \n",__func__,__LINE__);
+		if (CMR_CAMERA_SUCCESS != mHalOem->ops->camera_take_picture(cmr_cxt_ptr->camera_handle,CAMERA_AUTOTEST_MODE)) {
 			rtn = -1;
 			goto cap_exit;
 		}
@@ -1322,36 +1348,45 @@ cap_exit:
 	return rtn;
 }
 
+
 cmr_int read_data_from_sensor()
 {
 	cmr_int rtn = 0;
 	struct  img_size req_size;
 	struct  auto_test_cmr_context *cmr_cxt_ptr = g_auto_test_cmr_cxt_ptr;
-	INFO("debug %s %d . \n",__func__,__LINE__);
+	CMR_LOGI("debug %s %d . \n",__func__,__LINE__);
+
+	if ( g_sensor_opened == 0) {
+		rtn = autotest_load_hal_lib();
+		if( 0 != rtn) {
+			CMR_LOGE("load_oem_lib failed\n");
+			rtn = -1;
+			goto exit;
+		}
+		rtn = mHalOem->ops->camera_init(cmr_cxt_ptr->sensor_id, auto_test_dcam_cap_cb, (void*)AUTOTEST_CLIENTDATA, 1, &cmr_cxt_ptr->camera_handle);
+		if( CMR_CAMERA_SUCCESS != rtn) {
+			CMR_LOGE("camera_init failed\n");
+			rtn = -1;
+			goto exit;
+		}
+	}
+	g_sensor_opened=1;
 
 	req_size.width = (cmr_u32)AUTO_TEST_PREVIEW_WIDTH;
 	req_size.height = (cmr_u32)AUTO_TEST_PREVIEW_HEIGHT;
-	SET_PARM(cmr_cxt_ptr->camera_handle, CAMERA_PARAM_PREVIEW_SIZE, (cmr_uint)&req_size);
+	SET_PARM(mHalOem, cmr_cxt_ptr->camera_handle, CAMERA_PARAM_PREVIEW_SIZE, (cmr_uint)&req_size);
 
 	req_size.width = (cmr_u32)cmr_cxt_ptr->capture_width;
 	req_size.height = (cmr_u32)cmr_cxt_ptr->capture_height;
-	SET_PARM(cmr_cxt_ptr->camera_handle, CAMERA_PARAM_CAPTURE_SIZE, (cmr_uint)&req_size);
+	SET_PARM(mHalOem, cmr_cxt_ptr->camera_handle, CAMERA_PARAM_CAPTURE_SIZE, (cmr_uint)&req_size);
 
 	INFO("debug %s %d . ..\n",__func__,__LINE__);
-
-	if ((g_sensor_opened==0) &&
-		(CMR_CAMERA_SUCCESS != camera_init(cmr_cxt_ptr->sensor_id, auto_test_dcam_cap_cb, (void*)AUTOTEST_CLIENTDATA, 1, &cmr_cxt_ptr->camera_handle))) {
-		INFO("debug %s %d . \n",__func__,__LINE__);
-		rtn = -1;
-		goto exit;
-	}
-	g_sensor_opened=1;
 
 /*	if ( auto_test_dcam_preview() ) {
 		goto exit;
 	}*/
 
-	INFO("debug  %s  cmr_cxt_ptr->cmd=%d   LINE=%d . \n ",__func__, cmr_cxt_ptr->cmd,__LINE__);
+	CMR_LOGI("debug  %s  cmr_cxt_ptr->cmd=%d   LINE=%d . \n ",__func__, cmr_cxt_ptr->cmd,__LINE__);
 	if (auto_test_dcam_capture()) {
 		goto exit;
 	}
@@ -1387,6 +1422,76 @@ exit:
 
 }
 
+extern "C" {
+static cmr_int autotest_load_hal_lib(void)
+{
+	int ret = 0;
+	if(!mHalOem) {
+		void *handle;
+		oem_module_t *omi;
+
+		mHalOem = (oem_module_t *)malloc(sizeof(oem_module_t));
+		handle = dlopen("/system/lib/libcamoem.so", RTLD_NOW);
+
+	if (handle == NULL) {
+		char const *err_str = dlerror();
+		ALOGE("dlopen error%s", err_str?err_str:"unknown");
+		ret = -1;
+		goto loaderror;
+	}
+
+	/* Get the address of the struct hal_module_info. */
+	const char *sym = OEM_MODULE_INFO_SYM_AS_STR;
+	omi = (oem_module_t *)dlsym(handle, sym);
+	if (omi == NULL) {
+		ALOGE("load: couldn't find symbol %s", sym);
+		ret = -1;
+		goto loaderror;
+	}
+
+	mHalOem->dso = handle;
+	mHalOem->ops = omi->ops;
+
+	/* Get the address of the struct hal_module_info. */
+	//mHalIspCali = (isp_cali_ops_t *)malloc(sizeof(isp_cali_ops_t));
+	const char *symIsp = OEM_MODULE_ISP_CALI_INFO_SYM_AS_STR;
+	mHalIspCali = (isp_cali_ops_t *)dlsym(handle, symIsp);
+	if (mHalIspCali == NULL) {
+		ALOGE("load: couldn't find symbol %s", symIsp);
+		 ret = -1;
+		 goto loaderror;
+	}
+	ALOGE("loaded HAL libcamoem handle=%p", handle);
+	}
+
+	return ret;
+
+loaderror:
+
+	if(NULL != mHalOem->dso){
+		dlclose(mHalOem->dso);
+	}
+	free((void *)mHalOem);
+	free((void*)mHalIspCali);
+	mHalOem = NULL;
+	mHalIspCali = NULL;
+	return ret;
+}
+
+int autotest_cam_from_buf(void**pp_image_addr,int bufsize,int *out_size )
+{
+	read_data_from_sensor();
+	int tempsize=0;
+	if ((pp_image_addr!= NULL) && (*pp_image_addr!=NULL) && (bufsize>0)) {
+		tempsize=(bufsize<=g_image_size)?(bufsize):(g_image_size);
+		memcpy(*pp_image_addr,autotest_camer_saveaddr,tempsize);
+		*out_size=g_image_size;
+		return 0;
+	} else {
+		ERR("%s pp_image_addr is null !!\n",__func__);
+		return -1;
+	}
+}
 
 int32_t autotest_set_testmode(int camerinterface,int maincmd ,int subcmd,int cameraid,int width,int height)
 {
@@ -1397,7 +1502,7 @@ int32_t autotest_set_testmode(int camerinterface,int maincmd ,int subcmd,int cam
 	if(g_sensor_opened==1)
 		return 0;
 
-	CMR_LOGV("sensor is %s ",is_raw_sensor?("raw"):("yuv"));
+	CMR_LOGI("sensor is %s ",is_raw_sensor?("raw"):("yuv"));
 
 	g_mem_method = MemoryHeapIon::IOMMU_is_enabled(ION_MM);
 
@@ -1408,14 +1513,21 @@ int32_t autotest_set_testmode(int camerinterface,int maincmd ,int subcmd,int cam
 		||(subcmd>=AUTO_TEST_CALI_SUB_CMD_MAX||subcmd<0)
 		||(cameraid>1||cameraid<0)
 		||(width%32||height%32)) {
-		CMR_LOGV("autotest parameter error %s %d E\n ",__func__,__LINE__);
+		CMR_LOGE("autotest parameter error %s %d E\n ",__func__,__LINE__);
 		ret = -1;
 		goto cali_exit;
 	} else {
 		auto_test_dcam_param_set(maincmd ,subcmd,cameraid,width,height);
 	}
-	if (CMR_CAMERA_SUCCESS != camera_init(cmr_cxt_ptr->sensor_id, auto_test_dcam_cap_cb, (void*)AUTOTEST_CLIENTDATA, 1, &cmr_cxt_ptr->camera_handle)) {
-		INFO("debug %s %d . \n",__func__,__LINE__);
+	ret = autotest_load_hal_lib();
+	if( ret != 0 ) {
+		CMR_LOGE("open_oem_lib failed%s %d E\n ",__func__,__LINE__);
+		ret = -1;
+		goto cali_exit;
+	}
+	ret = mHalOem->ops->camera_init(cmr_cxt_ptr->sensor_id, auto_test_dcam_cap_cb, (void*)AUTOTEST_CLIENTDATA, 0, &cmr_cxt_ptr->camera_handle);
+	if( CMR_CAMERA_SUCCESS != ret ) {
+		CMR_LOGE("camera_init failed%s %d E\n ",__func__,__LINE__);
 		ret = -1;
 		goto cali_exit;
 	}
@@ -1435,4 +1547,4 @@ int autotest_close_testmode(void)
 	g_sensor_opened=0;
 	return 0;
 }
-
+}

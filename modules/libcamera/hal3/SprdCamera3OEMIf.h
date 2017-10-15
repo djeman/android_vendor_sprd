@@ -36,7 +36,7 @@ extern "C" {
 #include <hardware/gralloc.h>
 #include <camera/CameraParameters.h>
 #include "SprdCameraParameters.h"
-#include "SprdOEMCamera.h"
+#include "cmr_common.h"
 #include "cmr_oem.h"
 #include "sprd_dma_copy_k.h"
 
@@ -459,6 +459,7 @@ private:
 	void                            *mUser;
 	preview_stream_ops              *mPreviewWindow;
 	static gralloc_module_t const   *mGrallocHal;
+        static oem_module_t   *mHalOem;
 	bool                            mIsStoreMetaData;
 	bool                            mIsFreqChanged;
 	int32_t                         mCameraId;

@@ -36,6 +36,7 @@
 #include <utils/KeyedVector.h>
 #include <hardware/camera3.h>
 #include <camera/CameraMetadata.h>
+#include "include/SprdCamera3Tags.h"
 #include "SprdCamera3HALHeader.h"
 #include "SprdCameraParameters.h"
 
@@ -53,9 +54,10 @@ namespace sprdcamera {
 #define ROUND_TO_PAGE(x) (((x)+0xfff)&~0xfff)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 #define METADATA_SIZE (2*sizeof(unsigned long)+5*sizeof(unsigned int))//28/* (7 * 4) */
-#define SET_PARM(x,y,z) do {\
+#define SET_PARM(h,x,y,z) do {\
 			HAL_LOGV("%s: set camera param: %s, %d", __func__, #x, y);\
-			camera_set_param (x, y, z);\
+			if (NULL != h && NULL != h->ops)\
+			    h->ops->camera_set_param (x, y, z);\
 		} while(0)
 #define SIZE_ALIGN(x) (((x)+15)&(~15))
 #define UNUSED(x) (void)x
@@ -104,7 +106,7 @@ typedef int64_t nsecs_t;
 #define SPRD_SHADING_FACTOR_NUM    (2*2)//(>1*1*4,<=64*64*4)
 #define SPRD_MAX_TONE_CURVE_POINT  64  //>=64
 
-
+#define CAMERA_SETTINGS_CONFIG_ARRAYSIZE 70
 
 typedef struct {
 	uint8_t correction_mode;
@@ -277,9 +279,9 @@ typedef struct {
 	int32_t jpeg_size[20];
 	int64_t jpeg_min_durations[2];
 	int32_t crop_region[4];
-	int32_t available_stream_configurations[240];
-	int64_t min_frame_durations[240];
-	int64_t stall_durations[240];
+	int32_t available_stream_configurations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE*4];
+	int64_t min_frame_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE*4];
+	int64_t stall_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE*4];
 	uint8_t cropping_type;
 } SCALER_Tag;
 
@@ -426,6 +428,7 @@ public:
 	int updateWorkParameters(const CameraMetadata &frame_settings);
 	int getDefaultParameters(SprdCameraParameters &params);
 	int popAndroidParaTag();
+	int popSprdParaTag();
 	void releaseAndroidParaTag();
 
 	int setPreviewSize(cam_dimension_t size);
@@ -525,9 +528,11 @@ public:
 
 private:
 	void pushAndroidParaTag(camera_metadata_tag_t tag);
+ 	void pushAndroidParaTag(sprd_camera_metadata_tag_t tag);
 
 	Mutex                           mLock;
 	List<camera_metadata_tag_t>     mParaChangedTagQueue;
+	List<sprd_camera_metadata_tag_t>     mSprdParaChangedTagQueue;
 	uint8_t mCameraId;
 
 	static int parse_int(const char *str, int *data, char delim, char **endptr = NULL);

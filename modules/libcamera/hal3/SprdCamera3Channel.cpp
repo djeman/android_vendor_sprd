@@ -345,6 +345,13 @@ int SprdCamera3RegularChannel::addStream(camera_stream_type_t stream_type, camer
 		return BAD_VALUE;
 	}
 
+	for(int i = 1; i < CHANNEL_REGULAR_MAX; i ++){
+		if((index != 0 ) && (index != i) && mCamera3Stream[i] != NULL){
+			delete mCamera3Stream[i];
+			mCamera3Stream[i] = NULL;
+		}
+	}
+
 	if(mCamera3Stream[index])
 	{
 		mCamera3Stream[index]->getStreamType(&oldstream_type);
@@ -400,7 +407,7 @@ int SprdCamera3RegularChannel::getStream(camera_stream_type_t stream_type, SprdC
 
 	if(mCamera3Stream[index] == NULL)
 	{
-		HAL_LOGW("channel has no valied stream(type is %d)", stream_type);
+		HAL_LOGV("channel has no valied stream(type is %d)", stream_type);
 		return INVALID_OPERATION;
 	}
 
@@ -758,7 +765,7 @@ int SprdCamera3MetadataChannel::start(uint32_t frame_number)
 		switch (tag) {
 		case ANDROID_CONTROL_AF_TRIGGER:
 			mSetting->getCONTROLTag(&controlInfo);
-			HAL_LOGD("AF_TRIGGER %d", controlInfo.af_trigger);
+			HAL_LOGV("AF_TRIGGER %d", controlInfo.af_trigger);
 			if (controlInfo.af_trigger == ANDROID_CONTROL_AF_TRIGGER_START) {
 				mOEMIf->autoFocus(this);
 			} else if (controlInfo.af_trigger == ANDROID_CONTROL_AF_TRIGGER_CANCEL) {
@@ -775,27 +782,11 @@ int SprdCamera3MetadataChannel::start(uint32_t frame_number)
 			break;
 
 		case ANDROID_SCALER_CROP_REGION:
-			HAL_LOGD("SCALER_CROP_REGION");
+			HAL_LOGV("SCALER_CROP_REGION");
 			mOEMIf->setCameraConvertCropRegion();
 			break;
 		case ANDROID_CONTROL_CAPTURE_INTENT:
 			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_CAPTURE_INTENT);
-			break;
-		case ANDROID_SPRD_BRIGHTNESS:
-			HAL_LOGV("ANDROID_SPRD_BRIGHTNESS");
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_BRIGHTNESS);
-			break;
-		case ANDROID_SPRD_CONTRAST:
-			HAL_LOGV("contrast");
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_CONTRAST);
-			break;
-		case ANDROID_SPRD_SATURATION:
-			HAL_LOGV("ANDROID_SPRD_SATURATION");
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SATURATION);
-			break;
-		case ANDROID_SPRD_CAPTURE_MODE:
-			HAL_LOGD("ANDROID_SPRD_CAPTURE_MODE");
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_CAPTURE_MODE);
 			break;
 		case ANDROID_LENS_FOCAL_LENGTH:
 			HAL_LOGV("ANDROID_LENS_FOCAL_LENGTH");
@@ -837,35 +828,15 @@ int SprdCamera3MetadataChannel::start(uint32_t frame_number)
 		case ANDROID_CONTROL_AE_ANTIBANDING_MODE:
 			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AE_ANTIBANDING_MODE);
 			break;
-		case ANDROID_SPRD_SENSOR_ORIENTATION:
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SENSOR_ORIENTATION);
-			break;
-		case ANDROID_SPRD_SENSOR_ROTATION:
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SENSOR_ROTATION);
-			break;
-		case ANDROID_SPRD_UCAM_SKIN_LEVEL:
-			HAL_LOGV("ANDROID_SPRD_UCAM_SKIN_LEVEL");
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_UCAM_SKIN_LEVEL);
-			break;
-                case ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR:
-                         HAL_LOGV("ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR");
-                         mOEMIf->SetCameraParaTag(ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR);
-                         break;
 		case ANDROID_FLASH_MODE:
 			HAL_LOGV("ANDROID_FLASH_MODE");
 			mOEMIf->SetCameraParaTag(ANDROID_FLASH_MODE);
-			break;
-		case ANDROID_SPRD_METERING_MODE:
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_METERING_MODE);
 			break;
 		case ANDROID_CONTROL_AF_MODE:
 			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AF_MODE);
 			break;
 		case ANDROID_CONTROL_AF_REGIONS:
 			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AF_REGIONS);
-			break;
-		case ANDROID_SPRD_ISO:
-			mOEMIf->SetCameraParaTag(ANDROID_SPRD_ISO);
 			break;
 		case ANDROID_STATISTICS_FACE_DETECT_MODE:
 			HAL_LOGV("FACE DECTION");
@@ -881,16 +852,60 @@ int SprdCamera3MetadataChannel::start(uint32_t frame_number)
 		case ANDROID_CONTROL_AE_TARGET_FPS_RANGE:
 			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AE_TARGET_FPS_RANGE);
 			break;
+
+		case ANDROID_CONTROL_AE_LOCK:
+			HAL_LOGV("ANDROID_CONTROL_AE_LOCK");
+			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AE_LOCK);
+			break;
+		default:
+			HAL_LOGV("other tag");
+			break;
+		}
+	}
+	while ((tag = mSetting->popSprdParaTag()) != -1) {
+		switch (tag) {
+		case ANDROID_SPRD_BRIGHTNESS:
+			HAL_LOGV("ANDROID_SPRD_BRIGHTNESS");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_BRIGHTNESS);
+			break;
+		case ANDROID_SPRD_CONTRAST:
+			HAL_LOGV("contrast");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_CONTRAST);
+			break;
+		case ANDROID_SPRD_SATURATION:
+			HAL_LOGV("ANDROID_SPRD_SATURATION");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SATURATION);
+			break;
+		case ANDROID_SPRD_CAPTURE_MODE:
+			HAL_LOGV("ANDROID_SPRD_CAPTURE_MODE");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_CAPTURE_MODE);
+			break;
+		case ANDROID_SPRD_SENSOR_ORIENTATION:
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SENSOR_ORIENTATION);
+			break;
+		case ANDROID_SPRD_SENSOR_ROTATION:
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_SENSOR_ROTATION);
+			break;
+		case ANDROID_SPRD_UCAM_SKIN_LEVEL:
+			HAL_LOGV("ANDROID_SPRD_UCAM_SKIN_LEVEL");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_UCAM_SKIN_LEVEL);
+			break;
+		case ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR:
+			HAL_LOGV("ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR");
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_CONTROL_FRONT_CAMERA_MIRROR);
+			break;
+		case ANDROID_SPRD_METERING_MODE:
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_METERING_MODE);
+			break;
+		case ANDROID_SPRD_ISO:
+			mOEMIf->SetCameraParaTag(ANDROID_SPRD_ISO);
+			break;
 #ifdef CONFIG_SPRD_PRIVATE_ZSL
 		case ANDROID_SPRD_ZSL_ENABLED:
 			HAL_LOGV("ANDROID_SPRD_ZSL_ENABLED");
 			mOEMIf->SetCameraParaTag(ANDROID_SPRD_ZSL_ENABLED);
 			break;
 #endif
-		case ANDROID_CONTROL_AE_LOCK:
-			HAL_LOGD("ANDROID_CONTROL_AE_LOCK");
-			mOEMIf->SetCameraParaTag(ANDROID_CONTROL_AE_LOCK);
-			break;
 		default:
 			HAL_LOGV("other tag");
 			break;

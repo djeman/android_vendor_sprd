@@ -56,7 +56,7 @@ LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES := libutils libmemoryheapion libcamera_client libcutils libhardware libcamera_metadata libdl
-LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER) libcamoem
+LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
 
 ifneq ($(strip $(TARGET_BOARD_CAMERA_FACE_BEAUTY)),false)
   LOCAL_SHARED_LIBRARIES += libts_face_beautify_hal

@@ -55,11 +55,10 @@ LOCAL_SRC_DIR := $(LOCAL_PATH)/test
 LOCAL_SRC_FILES += $(shell find $(LOCAL_SRC_DIR) -name '*.cpp' | sed s:^$(LOCAL_PATH)/::g )
 
 ### hal 1 include ###
-$(info because hal3 use hal1.0 head file and cpp !!!!!!!!!!!!)
-$(info what the f* is it!!!!!!!!!!!!! We must change this code)
-
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/hal1.0/inc
-LOCAL_SRC_FILES += hal1.0/src/SprdCameraParameters.cpp
+
+LOCAL_SRC_DIR := $(LOCAL_PATH)/hal1.0/src
+LOCAL_SRC_FILES += $(shell find $(LOCAL_SRC_DIR) -name '*.cpp' | sed s:^$(LOCAL_PATH)/::g )
 #####################
 
 LOCAL_MODULE_RELATIVE_PATH := hw
@@ -67,7 +66,7 @@ LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES := libutils libmemoryheapion libcamera_client libcutils libhardware libcamera_metadata libdl
-LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER) libcamoem
+LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
 
 ifneq ($(strip $(TARGET_BOARD_CAMERA_FACE_BEAUTY)),false)
   LOCAL_SHARED_LIBRARIES += libts_face_beautify_hal

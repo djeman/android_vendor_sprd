@@ -24,7 +24,7 @@ namespace android {
 	{
 #endif
 
-#include "SprdOEMCamera.h"
+#include "cmr_common.h"
 int androidAfModeToDrvAfMode(camera_metadata_enum_android_control_af_mode_t androidAfMode, int8_t *convertDrvMode);
 int androidFlashModeToDrvFlashMode(camera_metadata_enum_android_flash_mode_t androidFlashMode, int8_t *convertDrvMode);
 int androidAeModeToDrvAeMode(camera_metadata_enum_android_control_ae_mode_t androidAeMode, int8_t *convertDrvMode);
@@ -195,6 +195,12 @@ static tags_info_t android_add_parameters[VENDOR_SECTION_END - VENDOR_SECTION_ST
     { "notify-flag-rec -sync",         TYPE_BYTE },
     { "sprdZslEnabled",         TYPE_BYTE },
     { "mirror",                TYPE_BYTE },
+    { "sprdEisEnabled",         TYPE_BYTE },
+    { "eisCrop",                TYPE_INT32 },
+    { "sprdHighIsoEnabled",     TYPE_BYTE },
+    { "availableSmileEnable",                TYPE_BYTE },
+    { "availableAntibandAutoSupported",                TYPE_BYTE },
+    { "maxPreviewSize", TYPE_INT32},
 };
 
 tags_info_t *cam_tag_info[ANDROID_VENDOR_SECTION_COUNT] = {

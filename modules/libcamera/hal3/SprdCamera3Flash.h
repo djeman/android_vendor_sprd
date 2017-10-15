@@ -27,35 +27,51 @@
 *
 */
 
-#include "SprdCamera3Factory.h"
+#ifndef __SPRDCAMERA_FLASH_H__
+#define __SPRDCAMERA_FLASH_H__
 
-extern int HAL_camera_device_open_wrapper(const struct hw_module_t* module,
-              const char *id, struct hw_device_t** device);
+#define SPRD_CAMERA_MAX_NUM_SENSORS 2
 
-static int HAL_open_legacy(const struct hw_module_t* module, const char* id, uint32_t halVersion, struct hw_device_t** device)
-{
-    return HAL_camera_device_open_wrapper(module, id, device);
-}
+#include <hardware/camera_common.h>
 
-static hw_module_t camera_common = {
-	.tag = HARDWARE_MODULE_TAG,
-	.module_api_version = CAMERA_MODULE_API_VERSION_2_4,//CAMERA_MODULE_API_VERSION_2_0,
-	.hal_api_version = HARDWARE_HAL_API_VERSION,
-	.id = CAMERA_HARDWARE_MODULE_ID,
-	.name = "Sprd Camera HAL3",
-	.author = "Spreadtrum Corporation",
-	.methods = &sprdcamera::SprdCamera3Factory::mModuleMethods,
-	.dso = NULL,
-	.reserved = {0},
+#define SPRD_FLASH_CMD_OFF	"0x00"
+#define SPRD_FLASH_CMD_ON 	"0x01"
+
+enum flash_status {
+	SPRD_FLASH_STATUS_OFF,
+	SPRD_FLASH_STATUS_ON,
+	SPRD_FLASH_STATUS_MAX
 };
 
-camera_module_t HAL_MODULE_INFO_SYM = {
-	.common = camera_common,
-	.get_number_of_cameras = sprdcamera::SprdCamera3Factory::get_number_of_cameras,
-	.get_camera_info = sprdcamera::SprdCamera3Factory::get_camera_info,
-	.set_callbacks = sprdcamera::SprdCamera3Factory::set_callbacks,/*HAL 3.2*/
-	.get_vendor_tag_ops = sprdcamera::SprdCamera3Factory::get_vendor_tag_ops,/*HAL 3.2*/
-	.open_legacy = HAL_open_legacy,/*HAL1.0*/
-	.set_torch_mode = sprdcamera::SprdCamera3Factory::setTorchMode,
+namespace sprdcamera {
+
+class SprdCamera3Flash {
+public:
+	static SprdCamera3Flash* getInstance();
+	int32_t setFlashMode(const int camera_id, const bool on);
+	int32_t reserveFlashForCamera(const int camera_id);
+	int32_t releaseFlashFromCamera(const int camera_id);
+	//const camera_module_callbacks_t *m_callbacks;
+	int32_t set_torch_mode(const char*, bool);
+	//External Interface
+	static int32_t registerCallbacks(const camera_module_callbacks_t* callbacks);
+	static int32_t setTorchMode(const char* cameraIdStr, bool on);
+	static int32_t reserveFlash(const int cameraId);
+	static int32_t releaseFlash(const int cameraId);
+
+private:
+	virtual ~SprdCamera3Flash();
+	SprdCamera3Flash();
+	SprdCamera3Flash(const SprdCamera3Flash&);
+	SprdCamera3Flash& operator=(const SprdCamera3Flash&);
+	const camera_module_callbacks_t *m_callbacks;
+	int32_t m_flashFds[SPRD_CAMERA_MAX_NUM_SENSORS];
+	bool m_flashOn;
+	bool m_flashLastStat[SPRD_CAMERA_MAX_NUM_SENSORS];
+	bool m_cameraOpen[SPRD_CAMERA_MAX_NUM_SENSORS];
+	static SprdCamera3Flash * _instance;
 };
 
+}; // namespace qcamera
+
+#endif /* __SPRDCAMERA_FLASH_H__ */

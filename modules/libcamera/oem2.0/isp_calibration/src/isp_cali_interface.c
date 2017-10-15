@@ -310,3 +310,9 @@ int32_t ISP_Cali_BlackLevelCorrection(struct isp_addr_t *in_img_addr,
 
 	return rtn;
 }
+isp_cali_ops_t OMICI= {
+       ISP_Cali_GetLensTabSize,
+       ISP_Cali_GetLensTabs,
+       ISP_Cali_LensCorrection,
+       ISP_Cali_RawRGBStat,
+};

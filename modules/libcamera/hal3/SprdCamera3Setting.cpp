@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <cutils/properties.h>
 #include <media/hardware/MetadataBufferType.h>
-#include "SprdOEMCamera.h"
+#include "cmr_common.h"
 //#include <androidfw/SprdIlog.h>
 #include "SprdCamera3Setting.h"
 
@@ -307,7 +307,7 @@ const uint8_t availableIso[] = {
 };
 
 
-const int32_t kavailable_back_stream_configurations[60][4] = {
+const int32_t kavailable_back_stream_configurations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 #if defined(CONFIG_CAMERA_SUPPORT_13M)
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 4160, 3120, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT},
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 3264, 2448, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT}, //for CTS
@@ -469,7 +469,7 @@ const int32_t kavailable_back_stream_configurations[60][4] = {
 	{HAL_PIXEL_FORMAT_BLOB, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT},
 #endif
 };
-const int32_t kavailable_front_stream_configurations[60][4] = {
+const int32_t kavailable_front_stream_configurations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 #ifdef CONFIG_FRONT_CAMERA_SUPPORT_5M
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2592, 1944, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT},
 #endif
@@ -578,7 +578,7 @@ const int32_t kavailable_front_stream_configurations[60][4] = {
 	{HAL_PIXEL_FORMAT_BLOB, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT},
 };
 
-const int64_t kavailable_back_min_frame_durations[60][4] = {
+const int64_t kavailable_back_min_frame_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 	/*{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 3264, 2448, 33331760L},
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2592, 1952, 33331760L},
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2560, 1536, 33331760L},
@@ -722,7 +722,7 @@ const int64_t kavailable_back_min_frame_durations[60][4] = {
 	{HAL_PIXEL_FORMAT_BLOB, 176, 144, 33331760L},
 #endif
 };
-const int64_t kavailable_front_min_frame_durations[60][4] = {
+const int64_t kavailable_front_min_frame_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 #ifndef CONFIG_CAMERA_FULL_SCREEN_DISPLAY
 #ifdef CONFIG_FRONT_CAMERA_SUPPORT_5M
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2592, 1944, 33331760L},
@@ -817,7 +817,7 @@ const int64_t kavailable_front_min_frame_durations[60][4] = {
 	{HAL_PIXEL_FORMAT_BLOB, 176, 144, 33331760L},
 };
 
-const int64_t kavailable_back_stall_durations[60][4] = {
+const int64_t kavailable_back_stall_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 	/*{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 3264, 2448, 0L},
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2592, 1952, 0L},
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2560, 1536, 0L},
@@ -963,7 +963,7 @@ const int64_t kavailable_back_stall_durations[60][4] = {
 	{HAL_PIXEL_FORMAT_BLOB, 176, 144, 33331760L},
 #endif
 };
-const int64_t kavailable_front_stall_durations[60][4] = {
+const int64_t kavailable_front_stall_durations[CAMERA_SETTINGS_CONFIG_ARRAYSIZE][4] = {
 #ifndef CONFIG_CAMERA_FULL_SCREEN_DISPLAY
 #ifdef CONFIG_FRONT_CAMERA_SUPPORT_5M
 	{HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2592, 1944, 0L},
@@ -2041,7 +2041,7 @@ int SprdCamera3Setting::initStaticMetadata(int32_t cameraId, camera_metadata_t *
 	staticInfo.update(ANDROID_SCALER_AVAILABLE_RAW_MIN_DURATIONS,
 			s_setting[cameraId].scalerInfo.raw_min_duration,
 			ARRAY_SIZE(s_setting[cameraId].scalerInfo.raw_min_duration));
-	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.available_stream_configurations, 0, 60, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS)
+	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.available_stream_configurations, 0, CAMERA_SETTINGS_CONFIG_ARRAYSIZE, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS)
 	HAL_LOGD("format=%d size=%d", s_setting[cameraId].scalerInfo.available_stream_configurations[0], array_size);
 	staticInfo.update(ANDROID_SCALER_AVAILABLE_PROCESSED_MIN_DURATIONS,
 			s_setting[cameraId].scalerInfo.processed_min_durations,
@@ -2051,8 +2051,8 @@ int SprdCamera3Setting::initStaticMetadata(int32_t cameraId, camera_metadata_t *
 	staticInfo.update(ANDROID_SCALER_AVAILABLE_JPEG_MIN_DURATIONS,
 			s_setting[cameraId].scalerInfo.jpeg_min_durations,
 			ARRAY_SIZE(s_setting[cameraId].scalerInfo.jpeg_min_durations));
-	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.min_frame_durations, 0, 60, ANDROID_SCALER_AVAILABLE_MIN_FRAME_DURATIONS)
-	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.stall_durations, 0, 60, ANDROID_SCALER_AVAILABLE_STALL_DURATIONS)
+	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.min_frame_durations, 0, CAMERA_SETTINGS_CONFIG_ARRAYSIZE, ANDROID_SCALER_AVAILABLE_MIN_FRAME_DURATIONS)
+	FILL_CAM_INFO_ARRAY(s_setting[cameraId].scalerInfo.stall_durations, 0, CAMERA_SETTINGS_CONFIG_ARRAYSIZE, ANDROID_SCALER_AVAILABLE_STALL_DURATIONS)
 	staticInfo.update(ANDROID_SCALER_CROPPING_TYPE,
 			&(s_setting[cameraId].scalerInfo.cropping_type), 1);
 
@@ -2847,10 +2847,27 @@ int SprdCamera3Setting::popAndroidParaTag()
 	mParaChangedTagQueue.erase(tag);
 	return ret;
 }
+int SprdCamera3Setting::popSprdParaTag()
+{
+	List<sprd_camera_metadata_tag_t>::iterator tag;
+	int ret;
+
+	if(mSprdParaChangedTagQueue.size() == 0)
+		return -1;
+
+	tag = mSprdParaChangedTagQueue.begin()++;
+	ret = static_cast<int>(*tag);
+	mSprdParaChangedTagQueue.erase(tag);
+	return ret;
+}
 
 void SprdCamera3Setting::pushAndroidParaTag(camera_metadata_tag_t tag)
 {
 	mParaChangedTagQueue.push_back(tag);
+}
+void SprdCamera3Setting::pushAndroidParaTag(sprd_camera_metadata_tag_t tag)
+{
+	mSprdParaChangedTagQueue.push_back(tag);
 }
 
 void SprdCamera3Setting::releaseAndroidParaTag()

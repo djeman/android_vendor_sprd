@@ -44,6 +44,7 @@ namespace sprdcamera {
 typedef void (*channel_cb_routine)(cam_result_data_info_t *result_info, void *userdata);
 
 #define CHANNEL_MAX_STREAM_NUM           4
+#define CHANNEL_REGULAR_MAX         3
 #define REGULAR_STREAM_TYPE_BASE	CAMERA_STREAM_TYPE_PREVIEW
 #define REPROCESS_STREAM_TYPE_BASE	CAMERA_STREAM_TYPE_ZSL_PREVIEW
 #define PIC_STREAM_TYPE_BASE		CAMERA_STREAM_TYPE_PICTURE_SNAPSHOT

@@ -36,6 +36,7 @@
 #include <hardware/camera3.h>
 
 #include "SprdCamera3Factory.h"
+#include "SprdCamera3Flash.h"
 
 using namespace android;
 
@@ -153,14 +154,39 @@ int SprdCamera3Factory::getCameraInfo(int camera_id, struct camera_info *info)
 
 	info->device_version = CAMERA_DEVICE_API_VERSION_3_2;//CAMERA_DEVICE_API_VERSION_3_0;
 	info->static_camera_characteristics = mStaticMetadata;
-
-	HAL_LOGD("X");
+	info->conflicting_devices_length = 0;
+	HAL_LOGV("X");
 	return rc;
+}
+/*====================================================================
+*FUNCTION     :setTorchMode
+*DESCRIPTION  :Attempt to turn on or off the torch of the flash unint.
+*
+*PARAMETERS   :
+*      @camera_id : camera ID
+*      @enabled   : Indicate whether to turn the flash on or off
+*
+*RETURN       : 0         --success
+*               non zero  --failure
+*===================================================================*/
+int SprdCamera3Factory::setTorchMode(const char* camera_id,bool enabled){
+	int retval = 0;
+	ALOGV("%s: In,camera_id:%s,enable:%d",__func__,camera_id,enabled);
+
+	retval = SprdCamera3Flash::setTorchMode(camera_id,enabled);
+	ALOGV("retval = %d",retval);
+
+	return retval;
 }
 
 int SprdCamera3Factory::set_callbacks(const camera_module_callbacks_t *callbacks)
 {
-    return 0;
+	ALOGV("%s :In",__func__);
+	int retval = 0;
+
+	retval = SprdCamera3Flash::registerCallbacks(callbacks);
+
+    return retval;
 }
 
 
@@ -195,6 +221,7 @@ int SprdCamera3Factory::cameraDeviceOpen(int camera_id,
 		return -ENODEV;
 
 	SprdCamera3HWI *hw = new SprdCamera3HWI(camera_id);
+
 	if (!hw) {
 		HAL_LOGE("Allocation of hardware interface failed");
 		return NO_MEMORY;

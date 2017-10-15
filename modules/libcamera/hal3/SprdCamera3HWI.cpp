@@ -58,6 +58,7 @@ using namespace android;
 namespace sprdcamera {
 
 unsigned int SprdCamera3HWI::mCameraSessionActive = 0;
+Mutex SprdCamera3HWI::mOpenCloseLock;
 
 // err log is always show
 // gHALLogLevel(default is 4):
@@ -101,6 +102,7 @@ SprdCamera3HWI::SprdCamera3HWI(int cameraId)
 	mPictureChannel(NULL),
 	mDeqBufNum(0),
 	mRecSkipNum(0),
+	mFlush(false),
 	mIsSkipFrm(false)
 {
 	getLogLevel();
@@ -295,6 +297,7 @@ static int ispCtrlFlash(uint32_t param, uint32_t status)
 int SprdCamera3HWI::openCamera(struct hw_device_t **hw_device)
 {
 	int ret = 0;
+	Mutex::Autolock ocl(mOpenCloseLock);
 	Mutex::Autolock l(mLock);
 
 	if (mCameraSessionActive) {
@@ -453,6 +456,7 @@ int32_t SprdCamera3HWI::tranStreamAndChannelType(camera3_stream_t* new_stream, c
 					*stream_type = CAMERA_STREAM_TYPE_PREVIEW;
 					*channel_type = CAMERA_CHANNEL_TYPE_REGULAR;
 					new_stream->usage |= GRALLOC_USAGE_SW_READ_OFTEN;
+					new_stream->usage |= GRALLOC_USAGE_PRIVATE_1;
 				}
 				break;
 			case HAL_PIXEL_FORMAT_YV12:
@@ -898,11 +902,8 @@ int SprdCamera3HWI::processCaptureRequest(camera3_capture_request_t *request)
 	{
 		case ANDROID_CONTROL_CAPTURE_INTENT_PREVIEW:
 			if(mOldCapIntent != capturePara.cap_intent) {
-				mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_PREVIEW, mFrameNum);
-				mFirstRegularRequest = true;
-			}
 #ifdef CONFIG_SPRD_PRIVATE_ZSL
-			if(capturePara.sprd_zsl_enabled == true && mOldCapIntent != capturePara.cap_intent) {
+			if(capturePara.sprd_zsl_enabled == true) {
 				mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_SPRD_ZSL_PREVIEW, mFrameNum);
 				if(mOldCapIntent == ANDROID_CONTROL_CAPTURE_INTENT_STILL_CAPTURE) {
 					mFirstRegularRequest = false;
@@ -910,8 +911,13 @@ int SprdCamera3HWI::processCaptureRequest(camera3_capture_request_t *request)
 				else {
 					mFirstRegularRequest = true;
 				}
-			}
+			}else
 #endif
+				{
+					mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_PREVIEW, mFrameNum);
+					mFirstRegularRequest = true;
+				}
+			}
 			break;
 		case ANDROID_CONTROL_CAPTURE_INTENT_VIDEO_RECORD:
 			if(mOldCapIntent != capturePara.cap_intent) {
@@ -922,20 +928,23 @@ int SprdCamera3HWI::processCaptureRequest(camera3_capture_request_t *request)
 			break;
 		case ANDROID_CONTROL_CAPTURE_INTENT_STILL_CAPTURE:
 			if(mOldCapIntent != capturePara.cap_intent) {
-				mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_CONTINUE_NON_ZSL_SNAPSHOT, mFrameNum);
-				mPictureRequest = true;
-			}
 #ifdef CONFIG_SPRD_PRIVATE_ZSL
-			if(capturePara.sprd_zsl_enabled == true) {
-				//if(mOldCapIntent != capturePara.cap_intent) {
-					mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_SPRD_ZSL_SNAPSHOT, mFrameNum);
-					mPictureRequest = true;
-				//}else {
-				//	mOEMIf->SprdZslTakePicture();
-				//	mPictureRequest = false;
-				//}
-			}
+					if(capturePara.sprd_zsl_enabled == true) {
+						//if(mOldCapIntent != capturePara.cap_intent) {
+							mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_SPRD_ZSL_SNAPSHOT, mFrameNum);
+							mPictureRequest = true;
+						//}else {
+						//	mOEMIf->SprdZslTakePicture();
+						//	mPictureRequest = false;
+						//}
+					} else
 #endif
+				{
+					mOEMIf->setCapturePara(CAMERA_CAPTURE_MODE_CONTINUE_NON_ZSL_SNAPSHOT, mFrameNum);
+					mPictureRequest = true;
+				}
+			}
+
 			break;
 		case ANDROID_CONTROL_CAPTURE_INTENT_VIDEO_SNAPSHOT:
 			if(mOldCapIntent == ANDROID_CONTROL_CAPTURE_INTENT_VIDEO_RECORD) { //for CTS
@@ -1114,7 +1123,7 @@ int SprdCamera3HWI::processCaptureRequest(camera3_capture_request_t *request)
 		for (size_t i = 0; i < request->num_output_buffers; i++) {
 			camera3_stream_t *stream = request->output_buffers[i].stream;
 			channel = (SprdCamera3Channel *)stream->priv;
-			HAL_LOGD("channel = 0x%lx, mRegularChan = 0x%lx, mCallbackChan = 0x%lx",channel, mRegularChan, mCallbackChan);
+			HAL_LOGV("channel = 0x%lx, mRegularChan = 0x%lx, mCallbackChan = 0x%lx",channel, mRegularChan, mCallbackChan);
 			if(channel == mRegularChan || channel == mCallbackChan) {
 				ret = mRegularChan->start(mFrameNum);
 				if(ret != NO_ERROR) {
@@ -1147,12 +1156,18 @@ int SprdCamera3HWI::processCaptureRequest(camera3_capture_request_t *request)
 
 	{
 		Mutex::Autolock lr(mRequestLock);
+		size_t pendingCount = 0;
 		while (mPendingRequest >= receive_req_max) {
-			ret = mRequestSignal.waitRelative(mRequestLock, kPendingTime);
-			if (ret == TIMED_OUT) {
-				ret = -ENODEV;
+			mRequestSignal.waitRelative(mRequestLock, kPendingTime);
+			if (mFlush || pendingCount > kPendingTimeOut/kPendingTime) {
+				HAL_LOGD("mFlush=%d, pendingCount=%d", mFlush, pendingCount);
+				if (mFlush)
+					ret = 0;
+				else
+					ret = -ENODEV;
 				break;
 			}
+			pendingCount++;
 		}
 	}
 	if (ret == -ENODEV)
@@ -1228,7 +1243,7 @@ void SprdCamera3HWI::handleCbDataWithLock(cam_result_data_info_t *result_info)
 				notify_msg.message.shutter.timestamp = capture_time;
 				mCallbackOps->notify(mCallbackOps, &notify_msg);
 				i->bNotified = true;
-				HAL_LOGD("notified frame_num = %d, timestamp = %lld",i->frame_number, notify_msg.message.shutter.timestamp);
+				HAL_LOGV("notified frame_num = %d, timestamp = %lld",i->frame_number, notify_msg.message.shutter.timestamp);
 
 				SENSOR_Tag sensorInfo;
 				REQUEST_Tag requestInfo;
@@ -1306,7 +1321,7 @@ void SprdCamera3HWI::handleCbDataWithLock(cam_result_data_info_t *result_info)
 
 	if (mPendingRequest != oldrequest
 		&& oldrequest >= receive_req_max) {
-		HAL_LOGD("signal request=%d", oldrequest);
+		HAL_LOGV("signal request=%d", oldrequest);
 		mRequestSignal.signal();
 	}
 	//HAL_LOGD("X");
@@ -1349,6 +1364,7 @@ int SprdCamera3HWI::flush()
 			mPicChan->channelClearAllQBuff(timestamp, CAMERA_STREAM_TYPE_PICTURE_SNAPSHOT);
 		}
 	}
+	mFlush = true;
 	Mutex::Autolock l(mLock);
 
 	if(mMetadataChannel)
@@ -1361,8 +1377,12 @@ int SprdCamera3HWI::flush()
 	timer_set(this, 20);
 	mOldCapIntent = SPRD_CONTROL_CAPTURE_INTENT_FLUSH;
 	ret = mFlushSignal.waitRelative(mLock, 800000000); //800ms
-	if (ret == TIMED_OUT)
+	if (ret == TIMED_OUT){
+		mFlush = false;
 		return -ENODEV;
+	}
+
+	mFlush = false;
 
 	return 0;
 }
@@ -1458,7 +1478,7 @@ SprdCamera3HWI::construct_default_request_settings(const struct camera3_device *
 int SprdCamera3HWI::process_capture_request(const struct camera3_device *device,
 						camera3_capture_request_t * request)
 {
-	HAL_LOGD("mCameraOps E");
+	HAL_LOGV("mCameraOps E");
 	SprdCamera3HWI *hw = reinterpret_cast < SprdCamera3HWI * >(device->priv);
 	if (!hw) {
 		HAL_LOGE("NULL camera device");
@@ -1466,7 +1486,7 @@ int SprdCamera3HWI::process_capture_request(const struct camera3_device *device,
 	}
 
 	int ret = hw->processCaptureRequest(request);
-	HAL_LOGD("mCameraOps X");
+	HAL_LOGV("mCameraOps X");
 	return ret;
 }
 
@@ -1518,6 +1538,7 @@ int SprdCamera3HWI::flush(const struct camera3_device *device)
 int SprdCamera3HWI::close_camera_device(struct hw_device_t *device)
 {
 	int ret = NO_ERROR;
+	Mutex::Autolock ocl(mOpenCloseLock);
 
 	HAL_LOGD("S");
 	SprdCamera3HWI *hw = reinterpret_cast<SprdCamera3HWI *>(reinterpret_cast <camera3_device_t *>(device)->priv);

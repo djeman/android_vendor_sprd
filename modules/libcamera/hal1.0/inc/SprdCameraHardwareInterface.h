@@ -26,7 +26,7 @@ extern "C" {
 #endif
 #include <sys/types.h>
 
-#include "SprdOEMCamera.h"
+#include "cmr_common.h"
 #include <utils/threads.h>
 #if(MINICAMERA != 1)
 #include <utils/RefBase.h>
@@ -41,7 +41,6 @@ extern "C" {
 #endif
 #include <camera/CameraParameters.h>
 #include "SprdCameraParameters.h"
-#include "SprdOEMCamera.h"
 #include "cmr_oem.h"
 #include "cmr_msg.h"
 
@@ -541,6 +540,7 @@ private:
 	void                            *mUser;
 	preview_stream_ops              *mPreviewWindow;
 	static gralloc_module_t const   *mGrallocHal;
+        static oem_module_t   *mHalOem;
 	int32_t                         mMsgEnabled;
 	bool                            mIsStoreMetaData;
 	bool                            mIsFreqChanged;
