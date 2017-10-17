@@ -2040,7 +2040,7 @@ LOCAL unsigned long _ov2680_PowerOn(unsigned long power_on)
 		usleep(1000);
 		Sensor_SetIovddVoltage(SENSOR_AVDD_CLOSED);
 	}
-	SENSOR_PRINT("SENSOR_ov2680: _ov2680_Power_On(1:on, 0:off): %d", power_on);
+	SENSOR_PRINT("SENSOR_ov2680: _ov2680_Power_On(1:on, 0:off): %lu", power_on);
 	return SENSOR_SUCCESS;
 }
 
@@ -2624,8 +2624,8 @@ LOCAL unsigned long _ov2680_write_gain(unsigned long param)
 	//real_gain = ((param&0xf)+16)*(((param>>4)&0x01)+1)*(((param>>5)&0x01)+1)*(((param>>6)&0x01)+1)*(((param>>7)&0x01)+1);
 	//real_gain = real_gain*(((param>>8)&0x01)+1)*(((param>>9)&0x01)+1)*(((param>>10)&0x01)+1)*(((param>>11)&0x01)+1);
        real_gain = param >>3;
-	SENSOR_PRINT("SENSOR_ov2680: real_gain:0x%x, param: 0x%x", real_gain, param);
-	SENSOR_PRINT("SENSOR_ov2680: real_gain:%d, param: %d", real_gain, param);
+	SENSOR_PRINT("SENSOR_ov2680: real_gain:0x%x, param: 0x%lx", real_gain, param);
+	SENSOR_PRINT("SENSOR_ov2680: real_gain:%d, param: %lu", real_gain, param);
 
 	value = real_gain&0xff;
 	ret_value = Sensor_WriteReg(0x350b, value);/*0-7*/
@@ -2644,7 +2644,7 @@ LOCAL unsigned long _ov2680_write_af(unsigned long param)
 	uint16_t  slave_addr = 0;
 	uint16_t cmd_len = 0;
 
-	SENSOR_PRINT("SENSOR_ov2680: _write_af %d", param);
+	SENSOR_PRINT("SENSOR_ov2680: _write_af %lu", param);
 
 	slave_addr = DW9714_VCM_SLAVE_ADDR;
 	cmd_val[0] = (param&0xfff0)>>4;
@@ -2729,7 +2729,7 @@ LOCAL unsigned long _ov2680_SetEV(unsigned long param)
 	uint32_t gain = s_ov2680_gain;
 	uint32_t ev = param;
 
-	SENSOR_PRINT("_ov2680_SetEV param: 0x%x,0x%x,0x%x,0x%x", param, s_ov2680_gain,s_capture_VTS,s_capture_shutter);
+	SENSOR_PRINT("_ov2680_SetEV param: 0x%lx,0x%x,0x%x,0x%x", param, s_ov2680_gain,s_capture_VTS,s_capture_shutter);
 
 	switch(ev) {
 	case SENSOR_HDR_EV_LEVE_0:
@@ -2797,7 +2797,7 @@ LOCAL unsigned long _ov2680_PreBeforeSnapshot(unsigned long param)
 	uint32_t prv_linetime = s_ov2680_Resolution_Trim_Tab[preview_mode].line_time;
 	uint32_t cap_linetime = s_ov2680_Resolution_Trim_Tab[capture_mode].line_time;
 
-	SENSOR_PRINT("SENSOR_ov2680: BeforeSnapshot mode: 0x%08x",param);
+	SENSOR_PRINT("SENSOR_ov2680: BeforeSnapshot mode: 0x%08lx",param);
 
 	if (preview_mode == capture_mode) {
 		SENSOR_PRINT("SENSOR_ov2680: prv mode equal to capmode");
@@ -2862,7 +2862,7 @@ LOCAL unsigned long _ov2680_BeforeSnapshot(unsigned long param)
 	uint32_t cap_mode = (param>>CAP_MODE_BITS);
 	uint32_t rtn = SENSOR_SUCCESS;
 
-	SENSOR_PRINT("%d,%d.",cap_mode,param);
+	SENSOR_PRINT("%d,%lu.",cap_mode,param);
 
 	rtn = _ov2680_PreBeforeSnapshot(param);
 

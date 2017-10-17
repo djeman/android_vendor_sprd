@@ -484,7 +484,7 @@ static unsigned long _s5k4h5yc_set_video_mode(unsigned long param)
 		Sensor_WriteReg(sensor_reg_ptr[i].reg_addr, sensor_reg_ptr[i].reg_value);
 	}
 
-	SENSOR_PRINT("0x%02x", param);
+	SENSOR_PRINT("0x%02lx", param);
 	return 0;
 }
 
@@ -1013,7 +1013,7 @@ static unsigned long _s5k4h5yc_PowerOn(unsigned long power_on)
 		Sensor_SetMonitorVoltage(SENSOR_AVDD_CLOSED);
 	}
 
-	SENSOR_PRINT_ERR("SENSOR_S5K4H5YC: _s5k4h5yc_Power_On(1:on, 0:off): %d, reset_level %d, dvdd_val %d", power_on, reset_level, dvdd_val);
+	SENSOR_PRINT_ERR("SENSOR_S5K4H5YC: _s5k4h5yc_Power_On(1:on, 0:off): %u, reset_level %d, dvdd_val %d", power_on, reset_level, dvdd_val);
 	return SENSOR_SUCCESS;
 }
 
@@ -1346,7 +1346,7 @@ static unsigned long _s5k4h5yc_BeforeSnapshot(unsigned long param)
 	uint32_t prv_linetime=s_s5k4h5yc_Resolution_Trim_Tab[preview_mode].line_time;
 	uint32_t cap_linetime = s_s5k4h5yc_Resolution_Trim_Tab[capture_mode].line_time;
 
-	SENSOR_PRINT("SENSOR_S5K4H5YC: BeforeSnapshot mode: 0x%08x",param);
+	SENSOR_PRINT("SENSOR_S5K4H5YC: BeforeSnapshot mode: 0x%08lx",param);
 
 	if (preview_mode == capture_mode) {
 		SENSOR_PRINT("SENSOR_S5K4H5YC: prv mode equal to capmode");

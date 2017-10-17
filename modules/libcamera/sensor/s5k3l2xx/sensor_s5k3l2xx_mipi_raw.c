@@ -1131,7 +1131,7 @@ static unsigned long _s5k3l2xx_set_video_mode(unsigned long param)
 		Sensor_WriteReg(sensor_reg_ptr[i].reg_addr, sensor_reg_ptr[i].reg_value);
 	}
 
-	SENSOR_PRINT("0x%02x", param);
+	SENSOR_PRINT("0x%02lx", param);
 	return 0;
 }
 
@@ -1379,7 +1379,7 @@ static unsigned long _s5k3l2xx_PowerOn(unsigned long power_on)
 		Sensor_SetVoltage(SENSOR_AVDD_CLOSED, SENSOR_AVDD_CLOSED, SENSOR_AVDD_CLOSED);
 		Sensor_SetMonitorVoltage(SENSOR_AVDD_CLOSED);
 	}
-	SENSOR_PRINT_ERR("SENSOR_S5K3L2XX: _s5k3l2xx_Power_On(1:on, 0:off): %d, reset_level %d, dvdd_val %d", power_on, reset_level, dvdd_val);
+	SENSOR_PRINT_ERR("SENSOR_S5K3L2XX: _s5k3l2xx_Power_On(1:on, 0:off): %lu, reset_level %d, dvdd_val %d", power_on, reset_level, dvdd_val);
 	return SENSOR_SUCCESS;
 }
 
@@ -1555,7 +1555,7 @@ static unsigned long _s5k3l2xx_write_gain(unsigned long param)
 //	real_gain = real_gain<<1;
 	real_gain = param/4;
 
-	SENSOR_PRINT("_s5k3l2xx: real_gain:0x%x, param: 0x%x", real_gain, param);
+	SENSOR_PRINT("_s5k3l2xx: real_gain:0x%x, param: 0x%lx", real_gain, param);
 
 	//ret_value = Sensor_WriteReg(0x104, 0x01);
 	value = real_gain;
@@ -1604,11 +1604,11 @@ static unsigned long _s5k3l2xx_BeforeSnapshot(unsigned long param)
 	uint32_t gain = 0;
 
 	param = param&0xffff;
-	SENSOR_PRINT("SENSOR_s5k3h7yx:cap_mode = %d,param = %d.",cap_mode,param);
+	SENSOR_PRINT("SENSOR_s5k3h7yx:cap_mode = %d,param = %lu.",cap_mode,param);
 	cap_linetime = s_s5k3l2xx_Resolution_Trim_Tab[param].line_time;
 
 
-	SENSOR_PRINT("SENSOR_s5k3h7yx: BeforeSnapshot moe: %d",param);
+	SENSOR_PRINT("SENSOR_s5k3h7yx: BeforeSnapshot moe: %lu",param);
 
 	if (SENSOR_MODE_PREVIEW_ONE >= param){
 		SENSOR_PRINT("SENSOR_s5k3h7yx: prvmode equal to capmode");
@@ -1632,7 +1632,7 @@ static unsigned long _s5k3l2xx_BeforeSnapshot(unsigned long param)
 		if(capture_exposure > frame_len*2)
 			break;
 	}
-	SENSOR_PRINT("SENSOR_s5k3h7yx: cap moe: %d,FL: %x,exp=%d,g=%x",param,frame_len,capture_exposure,gain);
+	SENSOR_PRINT("SENSOR_s5k3h7yx: cap moe: %lu,FL: %x,exp=%d,g=%x",param,frame_len,capture_exposure,gain);
 
 	if(capture_exposure >= (frame_len - 4)){
 		frame_len = capture_exposure+4;

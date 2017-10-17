@@ -1469,7 +1469,7 @@ LOCAL unsigned long _ov13850r2a_write_gain(unsigned long param)
 	real_gain = ((param&0xf)+16)*(((param>>4)&0x01)+1)*(((param>>5)&0x01)+1)*(((param>>6)&0x01)+1)*(((param>>7)&0x01)+1);
 	real_gain = real_gain*(((param>>8)&0x01)+1)*(((param>>9)&0x01)+1)*(((param>>10)&0x01)+1)*(((param>>11)&0x01)+1);
 #endif
-	SENSOR_PRINT("SENSOR_OV13850R2A: real_gain:0x%x, param: 0x%x", real_gain, param);
+	SENSOR_PRINT("SENSOR_OV13850R2A: real_gain:0x%x, param: 0x%lx", real_gain, param);
 
 	value = real_gain & 0xff;
 	Sensor_WriteReg(0x350b, value);
@@ -1517,7 +1517,7 @@ LOCAL unsigned long _ov13850r2a_BeforeSnapshot(unsigned long param)
 	uint32_t prv_linetime=s_ov13850r2a_Resolution_Trim_Tab[preview_mode].line_time;
 	uint32_t cap_linetime = s_ov13850r2a_Resolution_Trim_Tab[capture_mode].line_time;
 
-	SENSOR_PRINT("SENSOR_OV13850R2A: BeforeSnapshot mode: 0x%08x",param);
+	SENSOR_PRINT("SENSOR_OV13850R2A: BeforeSnapshot mode: 0x%08lx",param);
 
 	if (preview_mode == capture_mode) {
 		SENSOR_PRINT("SENSOR_OV13850R2A: prv mode equal to capmode");
@@ -1601,7 +1601,7 @@ static unsigned long _ov13850r2a_GetExifInfo(unsigned long param)
 
 LOCAL unsigned long _ov13850r2a_flash(unsigned long param)
 {
-	SENSOR_PRINT("SENSOR_OV13850R2A: param=%d", param);
+	SENSOR_PRINT("SENSOR_OV13850R2A: param=%lu", param);
 
 	/* enable flash, disable in _ov13850r2a_BeforeSnapshot */
 	g_flash_mode_en = param;
@@ -1799,7 +1799,7 @@ LOCAL unsigned long _dw9718s_SRCInit(unsigned long mode)
 	uint16_t slave_addr = 0;
 	uint16_t cmd_len = 0;
 	uint32_t ret_value = SENSOR_SUCCESS;
-	SENSOR_PRINT("SENSOR_OV13850R2A: %d",mode);
+	SENSOR_PRINT("SENSOR_OV13850R2A: %lu",mode);
 
 	slave_addr = DW9718S_VCM_SLAVE_ADDR;
 	switch (mode) {
