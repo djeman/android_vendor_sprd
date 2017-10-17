@@ -25,6 +25,7 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/external/jhead \
 	$(TOP)/external/sqlite/dist \
 	$(TOP)/system/media/camera/include \
+	$(TOP)/frameworks/native/include/media/openmax \
 	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion
 
 LOCAL_C_INCLUDES += \
@@ -60,6 +61,11 @@ LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(I
 
 ifneq ($(strip $(TARGET_BOARD_CAMERA_FACE_BEAUTY)),false)
   LOCAL_SHARED_LIBRARIES += libts_face_beautify_hal
+endif
+
+#use media extension
+ifeq ($(TARGET_USES_MEDIA_EXTENSIONS), true)
+  LOCAL_CFLAGS += -DUSE_MEDIA_EXTENSIONS
 endif
 
 include $(BUILD_SHARED_LIBRARY)

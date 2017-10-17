@@ -41,6 +41,12 @@
 #include "SprdCameraHardwareInterface.h"
 //#include <androidfw/SprdIlog.h>
 
+#ifdef USE_MEDIA_EXTENSIONS
+#include <media/hardware/HardwareAPI.h>
+#else
+#define METADATA_SIZE 28/* (7 * 4) */
+#endif
+
 #ifdef CONFIG_CAMERA_ISP
 extern "C" {
 #include "isp_video.h"
@@ -70,7 +76,10 @@ namespace android {
 #define PRINT_TIME 0
 #define ROUND_TO_PAGE(x) (((x)+0xfff)&~0xfff)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
-#define METADATA_SIZE 28/* (7 * 4) */
+
+//addr_phy, addr_vir, width, height, x, y
+#define VIDEO_METADATA_NUM_INTS 6
+
 #define SET_PARM(h,x,y,z) do {\
 			LOGI("%s: set camera param: %s, %d", __func__, #x, y);\
 			if(h != NULL & h->ops != NULL)\
@@ -172,6 +181,67 @@ const camera_info SprdCameraHardware::kCameraInfo3[] = {
 		0, NULL, 0, NULL, 0
 	}
 };
+
+int SprdCameraHardware::allocateMeta(uint8_t buf_cnt, int numFDs, int numInts)
+{
+	int rc = NO_ERROR;
+
+	for (int i = 0; i < buf_cnt; i++) {
+#ifdef USE_MEDIA_EXTENSIONS
+		mMetadataHeap[i] = mGetMemory_cb(-1, sizeof(VideoNativeHandleMetadata), 1, NULL);
+#else
+		mMetadataHeap[i] = mGetMemory_cb(-1, METADATA_SIZE, 1, NULL);
+#endif
+		if (!mMetadataHeap[i]) {
+			LOGE("allocation of video metadata failed.");
+			for (int j = (i - 1); j >= 0; j--) {
+#ifdef USE_MEDIA_EXTENSIONS
+				if (NULL != mNativeHandleHeap[j]) {
+					native_handle_delete(mNativeHandleHeap[j]);
+				}
+#endif
+				mMetadataHeap[j]->release(mMetadataHeap[j]);
+			}
+			return NO_MEMORY;
+		}
+#ifdef USE_MEDIA_EXTENSIONS
+        	mNativeHandleHeap[i] = native_handle_create(numFDs, (numInts * numFDs));
+		if (mNativeHandleHeap[i] == NULL) {
+			LOGE("Error in getting video native handle");
+			for (int j = (i - 1); j >= 0; j--) {
+				mMetadataHeap[i]->release(mMetadataHeap[i]);
+				if (NULL != mNativeHandleHeap[j]) {
+					native_handle_delete(mNativeHandleHeap[j]);
+				}
+				mMetadataHeap[j]->release(mMetadataHeap[j]);
+			}
+			return NO_MEMORY;
+		}
+#endif
+	}
+	mMetaBufCount = buf_cnt;
+	return rc;
+}
+
+void SprdCameraHardware::deallocateMeta()
+{
+	for (int i = 0; i < mMetaBufCount; i++) {
+#ifdef USE_MEDIA_EXTENSIONS
+		native_handle_t *nh = mNativeHandleHeap[i];
+		if (NULL != nh) {
+			if (native_handle_delete(nh)) {
+				LOGE("Unable to delete native handle");
+			}
+		} else {
+			LOGE("native handle not available");
+		}
+		mNativeHandleHeap[i] = NULL;
+#endif
+		mMetadataHeap[i]->release(mMetadataHeap[i]);
+		mMetadataHeap[i] = NULL;
+    	}
+    	mMetaBufCount = 0;
+}
 
 int SprdCameraHardware::getPropertyAtv()
 {
@@ -324,7 +394,6 @@ SprdCameraHardware::SprdCameraHardware(int cameraId)
 	mPathRawHeapNum(0),
 	mPathRawHeapSize(0),
 	mFDAddr(0),
-	mMetadataHeap(NULL),
 	mParameters(),
 	mSetParameters(),
 	mSetParametersBak(),
@@ -433,6 +502,11 @@ SprdCameraHardware::SprdCameraHardware(int cameraId)
 	memset(mIspRawAemHeapReserved, 0, sizeof(mIspRawAemHeapReserved));
 	memset(mPreviewHeapArray_phy, 0, sizeof(mPreviewHeapArray_phy));
 	memset(mPreviewHeapArray_vir, 0, sizeof(mPreviewHeapArray_vir));
+	memset(mPreviewHeapArray_size, 0, sizeof(mPreviewHeapArray_size));
+	memset(mVideoHeapArray_phy, 0, sizeof(mVideoHeapArray_phy));
+	memset(mVideoHeapArray_vir, 0, sizeof(mVideoHeapArray_vir));
+	memset(mZslHeapArray_phy, 0, sizeof(mZslHeapArray_phy));
+	memset(mZslHeapArray_vir, 0, sizeof(mZslHeapArray_vir));
 	memset(mSubRawHeapArray, 0, sizeof(mSubRawHeapArray));
 	memset(mPathRawHeapArray, 0, sizeof(mPathRawHeapArray));
 #if(MINICAMERA != 1)
@@ -444,6 +518,12 @@ SprdCameraHardware::SprdCameraHardware(int cameraId)
 	mPreviewHeapBakUseFlag = 0;
 	memset(&mRawHeapInfoBak, 0, sizeof(mRawHeapInfoBak));
 	mRawHeapBakUseFlag = 0;
+
+	memset(&mMetadataHeap, 0, sizeof(mMetadataHeap));
+	mMetaBufCount = 0;
+#ifdef USE_MEDIA_EXTENSIONS
+	memset(&mNativeHandleHeap, 0, sizeof(mNativeHandleHeap));
+#endif
 
 	setCameraState(SPRD_INIT, STATE_CAMERA);
 
@@ -569,13 +649,7 @@ void SprdCameraHardware::release()
 		LOGI("stopping camera.");
 		if (NULL != mHalOem && NULL != mHalOem->ops && CMR_CAMERA_SUCCESS != mHalOem->ops->camera_deinit(mCameraHandle)) {
 			setCameraState(SPRD_ERROR, STATE_CAMERA);
-			if(NULL != mMetadataHeap){
-				if(NULL != mMetadataHeap->release){
-					LOGV("freePreviewMem start release mMetadataHeap");
-					mMetadataHeap->release(mMetadataHeap);
-					mMetadataHeap = NULL;
-				}
-			}
+			deallocateMeta();
 			mReleaseFLag = true;
 			LOGE("release X: fail to camera_stop().");
 			return;
@@ -584,13 +658,8 @@ void SprdCameraHardware::release()
 		WaitForCameraStop();
 	}
 
-	if(NULL != mMetadataHeap){
-		if(NULL != mMetadataHeap->release){
-			LOGV("freePreviewMem start release mMetadataHeap");
-			mMetadataHeap->release(mMetadataHeap);
-			mMetadataHeap = NULL;
-		}
-	}
+	deallocateMeta();
+
 	// Free mCommonHeapReserved for preview, video, and zsl
 	if (NULL != mCommonHeapReserved) {
 		freeCameraMem(mCommonHeapReserved);
@@ -1054,8 +1123,8 @@ status_t SprdCameraHardware::startRecording()
 	p.setRecordingHint(new_recordingHint);
 	setParameters(p);
 
-	if (NULL == mMetadataHeap) {
-		LOGE("startRecording failed, mMetadataHeap is null");
+	if (mMetaBufCount < kPreviewBufferCount) {
+		LOGE("startRecording failed, mMetaBufCount inferior at kPreviewBufferCount");
 		return INVALID_OPERATION;
 	}
 
@@ -1123,7 +1192,14 @@ void SprdCameraHardware::releaseRecordingFrame(const void *opaque)
 		LOGI("releaseRecordingFrame E. ");
 	}
 	uint8_t *addr = (uint8_t *)opaque;
-	uint32_t index = (addr - (uint8_t *)mMetadataHeap->data) / (METADATA_SIZE);
+	uint32_t index = 0;
+
+	for (int i = 0; i < mMetaBufCount; i++) {
+		if (mMetadataHeap[i]->data == opaque) {
+			index = i;
+			break;
+		}
+	}
 
 	Mutex::Autolock pbl(&mReleaseVideoBufLock);
 	if (!isPreviewing() || NULL == mHalOem || NULL == mHalOem->ops || NULL == mCameraHandle) {
@@ -1137,13 +1213,14 @@ void SprdCameraHardware::releaseRecordingFrame(const void *opaque)
 		uint32_t *paddr = NULL;
 
 		if (mIsStoreMetaData) {
+#ifdef USE_MEDIA_EXTENSIONS
+			VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)(*(uint32_t *)addr);
+			paddr = (uint32_t *) packet->pHandle->data[1];
+			vaddr = (uint32_t *) packet->pHandle->data[2];
+#else
 			paddr = (uint32_t *) *((uintptr_t*)addr + 1);
 			vaddr = (uint32_t *) *((uintptr_t*)addr + 2);
-
-/*			if (camera_get_rot_set()) {
-				index += kPreviewBufferCount;
-			}*/
-
+#endif
 		} else {
 			for (index=0; index < mPreviewHeapNum; index++) {
 				if ((uintptr_t)addr == mPreviewHeapArray_vir[index])
@@ -2545,8 +2622,8 @@ status_t SprdCameraHardware::storeMetaDataInBuffers(bool enable)
 		return INVALID_OPERATION;
 	}
 
-	if (NULL == mMetadataHeap) {
-		if (NULL == (mMetadataHeap = mGetMemory_cb(-1, METADATA_SIZE, kPreviewBufferCount, NULL))) {
+	if (mMetaBufCount < kPreviewBufferCount) {
+		if ((allocateMeta(kPreviewBufferCount, 1, VIDEO_METADATA_NUM_INTS)) != NO_ERROR) {
 			LOGE("fail to alloc memory for the metadata for storeMetaDataInBuffers.");
 			return INVALID_OPERATION;
 		}
@@ -3221,7 +3298,8 @@ bool SprdCameraHardware::allocatePreviewMemFromGraphics(cmr_u32 size, cmr_u32 su
 				mGraphBufferCount[i] = 0;
 			}
 			private_h = (struct private_handle_t*) (*buffer_handle);
-			LOGI("get buffer handle 0x%lx buffer_handle 0x%x", (unsigned long)private_h,buffer_handle);
+			LOGI("get buffer handle 0x%lx buffer_handle 0x%lx", 
+				(unsigned long)private_h, (unsigned long)buffer_handle);
 			if (NULL == private_h) {
 				LOGE("NULL buffer handle!");
 				return -1;
@@ -3233,30 +3311,33 @@ bool SprdCameraHardware::allocatePreviewMemFromGraphics(cmr_u32 size, cmr_u32 su
 					LOGE("allocatePreviewMemFromGraphics: Get_phy_addr_from_ion error");
 					return -1;
 				}
-				LOGI("MemoryHeapIon::Get_mm_ion: %d addr 0x%x size 0x%x",i, ion_addr, ion_size);
-				mPreviewBufferHandle[i] = buffer_handle;
+
+				LOGI("MemoryHeapIon::Get_mm_ion: %d addr 0x%lx size 0x%x", i, ion_addr, ion_size);
 				mPreviewHeapArray_phy[i] = (uintptr_t)ion_addr;
-				mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
+				mPreviewHeapArray_size[i] = ion_size;
 				*phy_addr++ = (cmr_uint)ion_addr;
-				*vir_addr++ = (cmr_uint)private_h->base;
 			} else {
 				unsigned long iova_addr=0;
 				size_t iova_size=0;
-				LOGI("MemoryHeapIon::Get_mm_iova: %d",i);
 				if (MemoryHeapIon::Get_iova(ION_MM, private_h->share_fd,&iova_addr,&iova_size)) {
 					LOGE("allocatePreviewMemFromGraphics: Get_mm_iova error");
 					return -1;
 				}
-				mPreviewBufferHandle[i] = buffer_handle;
+
+				LOGI("MemoryHeapIon::Get_mm_iova: %d addr 0x%lx size 0x%x", i, iova_addr, iova_size);
 				mPreviewHeapArray_phy[i] = (uintptr_t)iova_addr;
-				mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
 				mPreviewHeapArray_size[i] = iova_size;
 				*phy_addr++ = (cmr_uint)iova_addr;
-				*vir_addr++ = (cmr_uint)private_h->base;
 			}
 
+			mPreviewBufferHandle[i] = buffer_handle;
+			mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
+			*vir_addr++ = (cmr_uint)private_h->base;
+
 			LOGI("allocatePreviewMemFromGraphics: phyaddr:0x%lx, base:0x%lx, size:0x%x, stride:0x%x ",
-				 mPreviewHeapArray_phy[i],(uintptr_t)private_h->base,private_h->size, stride);
+				(unsigned long)mPreviewHeapArray_phy[i], 
+				(unsigned long)private_h->base, 
+				private_h->size, stride);
 			mCancelBufferEb[i] = 0;
 		}
 
@@ -3375,19 +3456,19 @@ int SprdCameraHardware::Callback_PreviewMalloc(cmr_u32 size, cmr_u32 sum, cmr_ui
 
 			sprd_camera_memory_t* PreviewHeap = allocCameraMem(frame_size, true);
 			if (NULL == PreviewHeap) {
-				LOGE("allocatePreviewMem: 420p error PreviewHeap is null, index=%d", i);
+				LOGE("allocatePreviewMem: 420p error PreviewHeap is null, index=%lu", i);
 				return false;
 			}
 
 			if (NULL == PreviewHeap->handle) {
-				LOGE("allocatePreviewMem: 420p error handle is null, index=%d", i);
+				LOGE("allocatePreviewMem: 420p error handle is null, index=%lu", i);
 				freeCameraMem(PreviewHeap);
 				freePreviewMem();
 				return false;
 			}
 
 			if (PreviewHeap->phys_addr & 0xFF) {
-				LOGE("allocatePreviewMem: 420p error mPreviewHeap is not 256 bytes aligned, index=%d", i);
+				LOGE("allocatePreviewMem: 420p error mPreviewHeap is not 256 bytes aligned, index=%lu", i);
 				freeCameraMem(PreviewHeap);
 				freePreviewMem();
 				return false;
@@ -4249,14 +4330,15 @@ void SprdCameraHardware::clearCameraMem(sprd_camera_memory_t* memory)
 int SprdCameraHardware::map(sprd_camera_memory_t* camera_memory, hal_mem_info_t *mem_info)
 {
 	if (NULL == camera_memory || !mem_info) {
-		LOGE("map: Fatal error! memory pointer is null camera_memory 0x%lx mem_info 0x%lx.", camera_memory, mem_info);
+		LOGE("map: Fatal error! memory pointer is null camera_memory 0x%lx mem_info 0x%lx.", 
+			(unsigned long)camera_memory, (unsigned long)mem_info);
 		return -1;
 	}
 
 	unsigned long paddr = 0;
 	size_t psize = 0;
 	int result = 0;
-	LOGI("map E: camera_memory 0x%x", camera_memory);
+	LOGI("map E: camera_memory 0x%lx", (unsigned long)camera_memory);
 
 	if (0 == s_mem_method) {
 		result = camera_memory->ion_heap->get_phy_addr_from_ion(&paddr, &psize);
@@ -4291,7 +4373,8 @@ getpmem_end:
 int SprdCameraHardware::unmap(sprd_camera_memory_t* camera_memory, hal_mem_info_t *mem_info)
 {
 	if (NULL == camera_memory || !mem_info) {
-		LOGE("unmap: Fatal error! memory pointer is null camera_memory 0x%lx mem_info 0x%lx.", camera_memory, mem_info);
+		LOGE("unmap: Fatal error! memory pointer is null camera_memory 0x%lx mem_info 0x%lx.", 
+			(unsigned long)camera_memory, (unsigned long)mem_info);
 		return -1;
 	}
 	int result = 0;
@@ -4381,7 +4464,7 @@ uint32_t SprdCameraHardware::releaseZslBuffer(struct camera_frame_type *frame)
 	hal_mem_info_t mem_info;
 	ZslBufferQueue zsl_buffer_q;
 	if (NULL == frame) {
-		LOGE("releaseZslBuffer error param frame 0x%lx.", frame);
+		LOGE("releaseZslBuffer error param frame 0x%lx.", (unsigned long)frame);
 		return -1;
 	}
 
@@ -4390,7 +4473,7 @@ uint32_t SprdCameraHardware::releaseZslBuffer(struct camera_frame_type *frame)
 	memset(&mem_info, 0, sizeof(mem_info));
 	memset(&zsl_buffer_q, 0, sizeof(zsl_buffer_q));
 	ret = unmap(mZslHeapArray[frame->buf_id], &mem_info);
-	LOGI("unmap releaseZslBuffer: DCAM %ld, phys_addr 0x%lx", frame->buf_id, (unsigned long)mZslHeapArray[frame->buf_id]->phys_addr);
+	LOGI("unmap releaseZslBuffer: DCAM %u, phys_addr 0x%lx", frame->buf_id, (unsigned long)mZslHeapArray[frame->buf_id]->phys_addr);
 	//mZslHeapArray[j++] = ZslHeap;
 	mZslHeapArray_phy[frame->buf_id] = (uintptr_t)0;//(uintptr_t)mem_info.addr_phy;
 	mZslHeapArray_vir[frame->buf_id] = (uintptr_t)0;//(uintptr_t)mem_info.addr_vir;
@@ -4409,15 +4492,15 @@ uint32_t SprdCameraHardware::getZslBuffer(hal_mem_info_t *mem_info)
 	ZslBufferQueue zsl_frame;
 
 	if (NULL == mem_info) {
-		LOGE("getZslBuffer error param mem_info 0x%lx.", mem_info);
+		LOGE("getZslBuffer error param mem_info 0x%x.", (uint32_t)mem_info);
 		return -1;
 	}
 
 	zsl_frame = popZSLQueue();
 	buf_id = zsl_frame.frame.buf_id;
 	map(zsl_frame.heap_array, mem_info);
-	LOGI("map getZslBuffer: DCAM %ld, phys_addr 0x%lx, zsl_priv 0x%x",
-		buf_id, (unsigned long)mZslHeapArray[buf_id]->phys_addr, mem_info->zsl_private);
+	LOGI("map getZslBuffer: DCAM %d, phys_addr 0x%lx, zsl_priv 0x%x",
+		buf_id, (unsigned long)mZslHeapArray[buf_id]->phys_addr, (uint32_t)mem_info->zsl_private);
 	//mZslHeapArray[j++] = ZslHeap;
 	mZslHeapArray_phy[buf_id] = (uintptr_t)mem_info->addr_phy;
 	mZslHeapArray_vir[buf_id] = (uintptr_t)mem_info->addr_vir;
@@ -4546,10 +4629,9 @@ bool SprdCameraHardware::allocatePreviewMemByGraphics()
 					return -1;
 				}
 				LOGI("MemoryHeapIon::Get_mm_ion: %d addr 0x%lx size 0x%x",i, ion_addr, ion_size);
-				mPreviewBufferHandle[i] = buffer_handle;
+				
 				mPreviewHeapArray_phy[i] = (uintptr_t)ion_addr;
-				mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
-				/*mPreviewHeapArray_size[i] = ion_size;*/
+				mPreviewHeapArray_size[i] = ion_size;
 			} else {
 				unsigned long iova_addr=0;
 				size_t iova_size=0;
@@ -4558,13 +4640,15 @@ bool SprdCameraHardware::allocatePreviewMemByGraphics()
 					LOGE("allocatePreviewMemByGraphics: Get_mm_iova error");
 					return -1;
 				}
-				mPreviewBufferHandle[i] = buffer_handle;
 				mPreviewHeapArray_phy[i] = (uintptr_t)iova_addr;
-				mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
-				mPreviewHeapArray_size[i]=iova_size;
+				mPreviewHeapArray_size[i] = iova_size;
 			}
-			LOGI("allocatePreviewMemByGraphics: phyaddr:0x%lx, base:0x%lx, size:0x%x, stride:0x%x ",
-				mPreviewHeapArray_phy[i],(unsigned long)private_h->base,private_h->size, stride);
+
+			mPreviewBufferHandle[i] = buffer_handle;
+			mPreviewHeapArray_vir[i] = (uintptr_t)private_h->base;
+
+			LOGI("allocatePreviewMemByGraphics: phyaddr:0x%x, base:0x%lx, size:0x%x, stride:0x%x ",
+				(uint32_t)mPreviewHeapArray_phy[i],(unsigned long)private_h->base,private_h->size, stride);
 			mCancelBufferEb[i] = 0;
 		}
 
@@ -5997,7 +6081,7 @@ bool SprdCameraHardware::displayOneFrame(uint32_t width, uint32_t height, uintpt
 			return false;
 		}
 
-		LOGV("%s: size = %dx%d, addr = 0x%lx", __func__, width, height, phy_addr);
+		LOGV("%s: size = %dx%d, addr = 0x%x", __func__, width, height, phy_addr);
 
 		buffer_handle_t *buf_handle = NULL;
 		int stride = 0;
@@ -6100,13 +6184,13 @@ bool SprdCameraHardware::displayOneFrame(uint32_t width, uint32_t height, uintpt
 				}
 				if (0 != ret || NULL == vaddr) {
 					LOGE("%s: failed to lock buffer ret=%d, vaddr=0x%lx id=%d, BufferHandle=0x%x, handle=0x%x",
-						__func__,ret,(unsigned long)vaddr, id,mPreviewBufferHandle[id],*mPreviewBufferHandle[id]);
+						__func__,ret,(unsigned long)vaddr, id,(uint32_t)mPreviewBufferHandle[id],(uint32_t)*mPreviewBufferHandle[id]);
 					return false;
 				}
 			}
 
 			mGrallocHal->unlock(mGrallocHal, *mPreviewBufferHandle[id]);
-			LOGI("displayOneFrame enqueue buff: mPreviewHeapArray_phy[%d] = 0x%lx, mPreviewHeapArray_vir[%d] = 0x%lx", id, mPreviewHeapArray_phy[id], id, mPreviewHeapArray_vir[id]);
+			LOGI("displayOneFrame enqueue buff: mPreviewHeapArray_phy[%d] = 0x%x, mPreviewHeapArray_vir[%d] = 0x%x", id, mPreviewHeapArray_phy[id], id, mPreviewHeapArray_vir[id]);
 			if (0 != mPreviewWindow->enqueue_buffer(mPreviewWindow, mPreviewBufferHandle[id])) {
 				LOGE("displayOneFrame fail: Could not enqueue gralloc buffer!\n");
 
@@ -6576,7 +6660,7 @@ void SprdCameraHardware::sendPreviewFrameToApp(struct camera_frame_type *frame, 
 			{
 				Mutex::Autolock pcpl(&mPrevBufLock);
 				if (mPreviewHeapArray) {
-					LOGD("sendPreviewFrameToApp: data addr is 0x%lx, dataSize = 0x%lx", mPreviewHeapArray[mPreviewDcamAllocBufferCnt -1]->camera_memory->data, dataSize);
+					LOGD("sendPreviewFrameToApp: data addr is 0x%x, dataSize = 0x%x", (uint32_t)mPreviewHeapArray[mPreviewDcamAllocBufferCnt -1]->camera_memory->data, dataSize);
 					if(0 == strcmp(mParameters.getPreviewFormat(), "yuv420p"))
 						uv420SPTouv420P((char*)mPreviewHeapArray[mPreviewDcamAllocBufferCnt -1]->camera_memory->data,(char *)frame->y_vir_addr, frame->width, frame->height);
 					else
@@ -6603,7 +6687,6 @@ void SprdCameraHardware::sendPreviewFrameToVideo(struct camera_frame_type *frame
 {
 	ssize_t offset = frame->buf_id;
 	camera_frame_metadata_t metadata;
-	int width, height;
 	nsecs_t timestamp = frame->timestamp;
 	Mutex::Autolock videoll(&mVideoBufLock);
 
@@ -6611,6 +6694,7 @@ void SprdCameraHardware::sendPreviewFrameToVideo(struct camera_frame_type *frame
 		timestamp,
 		mIsStoreMetaData,
 		frame->buf_id);
+
 	if (mTimeCoeff > 1) {
 		if (0 != mRecordingFirstFrameTime) {
 			timestamp = mRecordingFirstFrameTime + (timestamp - mRecordingFirstFrameTime)*mTimeCoeff;
@@ -6625,29 +6709,62 @@ void SprdCameraHardware::sendPreviewFrameToVideo(struct camera_frame_type *frame
 		mGraphBufferCount[offset]++;
 	}
 
-	width = frame->width;
-	height = frame->height;
 	if (mIsStoreMetaData) {
 		uint32_t tmpIndex = frame->order_buf_id;
-		uint32_t *data = (uint32_t *)mMetadataHeap->data + offset * METADATA_SIZE / 4;
+
+		if (!mPreviewHeapArray) {
+			LOGE("Error in getting preview heap array");
+			return;
+		}
+
+#ifdef USE_MEDIA_EXTENSIONS
+		struct private_handle_t *private_h = NULL;
+
+		native_handle_t *nh = mNativeHandleHeap[offset];
+		if (!nh) {
+			LOGE("Error in getting video native handle");
+			return;
+		}
+
+		private_h = (struct private_handle_t*)(*mPreviewBufferHandle[offset]);
+
+		if (NULL == private_h) {
+			LOGE("NULL buffer handle!");
+			return;
+		}
+
+		nh->data[0] = private_h->share_fd;
+                nh->data[1] = frame->y_phy_addr;
+		nh->data[2] = frame->y_vir_addr;
+		nh->data[3] = frame->width;
+		nh->data[4] = frame->height;
+		nh->data[5] = mPreviewWidth_trimx;
+		nh->data[6] = mPreviewHeight_trimy;
+
+		VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)mMetadataHeap[offset]->data;
+		packet->eType = kMetadataBufferTypeNativeHandleSource;
+		packet->pHandle = nh;
+#else
+		uint32_t *data = (uint32_t *)mMetadataHeap[offset]->data;
 		*data++ = kMetadataBufferTypeCameraSource;
 		*data++ = frame->y_phy_addr;
-		*data++ = (uint32_t)frame->y_vir_addr;
-		*data++ = width;
-		*data++ = height;
+		*data++ = frame->y_vir_addr;
+		*data++ = frame->width;
+		*data++ = frame->height;
 		*data++ = mPreviewWidth_trimx;
 		*data = mPreviewHeight_trimy;
+#endif
+
 		{
 			Mutex::Autolock l(&mCbPrevDataBusyLock);
 			if(!isPreviewing()) return;
 			if (PREVIEW_BUFFER_USAGE_GRAPHICS == mPreviewBufferUsage) {
 				tmpIndex = mPreviewDcamAllocBufferCnt - 1;
 			}
-			if (mPreviewHeapArray) {
-				mPreviewHeapArray[tmpIndex]->busy_flag = true;
-				mData_cb_timestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, mMetadataHeap, offset, mUser);
-				mPreviewHeapArray[tmpIndex]->busy_flag = false;
-			}
+			
+			mPreviewHeapArray[tmpIndex]->busy_flag = true;
+			mData_cb_timestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, mMetadataHeap[offset], 0, mUser);
+			mPreviewHeapArray[tmpIndex]->busy_flag = false;
 		}
 	} else {
 		uint32_t tmpIndex = frame->order_buf_id;
@@ -6713,7 +6830,7 @@ ZslBufferQueue SprdCameraHardware::popZSLQueue()
 int SprdCameraHardware::getZSLSnapshotFrame(hal_mem_info_t *mem_info)
 {
 	int ret = -1;
-	int j = 0;
+	uint32_t j = 0;
 	int buf_id;
 	ZslBufferQueue zsl_frame;
 
@@ -6725,7 +6842,7 @@ int SprdCameraHardware::getZSLSnapshotFrame(hal_mem_info_t *mem_info)
 
 			buf_id = zsl_frame.frame.buf_id;
 			map(zsl_frame.heap_array, mem_info);
-			LOGI("map getZSLSnapshotFrame: DCAM %ld, phys_addr 0x%lx", buf_id, (unsigned long)mZslHeapArray[buf_id]->phys_addr);
+			LOGI("map getZSLSnapshotFrame: DCAM %d, phys_addr 0x%lx", buf_id, (unsigned long)mZslHeapArray[buf_id]->phys_addr);
 			mZslHeapArray_phy[buf_id] = (uintptr_t)mem_info->addr_phy;
 			mZslHeapArray_vir[buf_id] = (uintptr_t)mem_info->addr_vir;
 			mem_info->valid = zsl_frame.valid;
@@ -6903,7 +7020,7 @@ void SprdCameraHardware::receivePreviewFrame(struct camera_frame_type *frame)
 	ssize_t offset = frame->buf_id;
 	camera_frame_metadata_t metadata;
 	metadata.light_condition = frame->lls_info;
-	LOGI("receivePreviewFrame lls_info = %d frame->type = %d", metadata.light_condition, frame->type);
+	LOGI("receivePreviewFrame lls_info = %d frame->type = %ld", metadata.light_condition, frame->type);
 	camera_face_t face_info[FACE_DETECT_NUM];
 	uint32_t k = 0;
 	int width, height, frame_size;
@@ -6984,7 +7101,7 @@ void SprdCameraHardware::receivePreviewFrame(struct camera_frame_type *frame)
 
 	if(mData_cb != NULL)
 	{
-		LOGI("receivePreviewFrame mMsgEnabled: 0x%x  type %d",mMsgEnabled, frame->type);
+		LOGI("receivePreviewFrame mMsgEnabled: 0x%x  type %ld",mMsgEnabled, frame->type);
 
 		if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
 			if (PREVIEW_FRAME == frame->type && mIsSupportCallback == 1) {
@@ -7328,7 +7445,7 @@ void SprdCameraHardware::receiveJpegPicture(struct camera_frame_type *frame)
 			isp_info_size = 0;
 			isp_info_addr = NULL;
 		}
-		LOGE("0x%x", isp_info_addr);
+		LOGE("0x%x", (uint32_t)isp_info_addr);
 		if (1 == mCaptureNum) {
 			if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE){
 				camera_memory_t *mem = mGetMemory_cb(-1, (mJpegSize+isp_info_size), 1, 0);
@@ -8097,7 +8214,7 @@ cmr_int SprdCameraHardware::ZSLMode_monitor_thread_proc(struct cmr_msg *message,
 	if(exit_flag){
 		CMR_LOGI("ZSLMode monitor thread exit ");
 	}
-	return NULL;
+	return 0;
 }
 
 void SprdCameraHardware::sync_bak_parameters()
@@ -8764,35 +8881,31 @@ static int HAL_getCameraInfo(int cameraId, struct camera_info *cameraInfo)
 	return SprdCameraHardware::getCameraInfo(cameraId, cameraInfo);
 }
 
-#define SET_METHOD(m) m : HAL_camera_device_##m
-
 static camera_device_ops_t camera_device_ops = {
-	SET_METHOD(set_preview_window),
-	SET_METHOD(set_callbacks),
-	SET_METHOD(enable_msg_type),
-	SET_METHOD(disable_msg_type),
-	SET_METHOD(msg_type_enabled),
-	SET_METHOD(start_preview),
-	SET_METHOD(stop_preview),
-	SET_METHOD(preview_enabled),
-	SET_METHOD(store_meta_data_in_buffers),
-	SET_METHOD(start_recording),
-	SET_METHOD(stop_recording),
-	SET_METHOD(recording_enabled),
-	SET_METHOD(release_recording_frame),
-	SET_METHOD(auto_focus),
-	SET_METHOD(cancel_auto_focus),
-	SET_METHOD(take_picture),
-	SET_METHOD(cancel_picture),
-	SET_METHOD(set_parameters),
-	SET_METHOD(get_parameters),
-	SET_METHOD(put_parameters),
-	SET_METHOD(send_command),
-	SET_METHOD(release),
-	SET_METHOD(dump),
+	HAL_camera_device_set_preview_window,
+	HAL_camera_device_set_callbacks,
+	HAL_camera_device_enable_msg_type,
+	HAL_camera_device_disable_msg_type,
+	HAL_camera_device_msg_type_enabled,
+	HAL_camera_device_start_preview,
+	HAL_camera_device_stop_preview,
+	HAL_camera_device_preview_enabled,
+	HAL_camera_device_store_meta_data_in_buffers,
+	HAL_camera_device_start_recording,
+	HAL_camera_device_stop_recording,
+	HAL_camera_device_recording_enabled,
+	HAL_camera_device_release_recording_frame,
+	HAL_camera_device_auto_focus,
+	HAL_camera_device_cancel_auto_focus,
+	HAL_camera_device_take_picture,
+	HAL_camera_device_cancel_picture,
+	HAL_camera_device_set_parameters,
+	HAL_camera_device_get_parameters,
+	HAL_camera_device_put_parameters,
+	HAL_camera_device_send_command,
+	HAL_camera_device_release,
+	HAL_camera_device_dump,
 };
-
-#undef SET_METHOD
 
 static int HAL_IspVideoStartPreview(uint32_t param1, uint32_t param2)
 {
