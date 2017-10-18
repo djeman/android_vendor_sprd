@@ -1200,8 +1200,10 @@ void SprdCameraHardware::releaseRecordingFrame(const void *opaque)
 	for (int i = 0; i < mMetaBufCount; i++) {
 		if (mMetadataHeap[i]->data == opaque) {
 #ifdef USE_MEDIA_EXTENSIONS
-                        VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)mMetadataHeap[i]->data;
-                        native_handle_close(packet->pHandle);
+			VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)mMetadataHeap[i]->data;
+			native_handle_close(packet->pHandle);
+			native_handle_delete(packet->pHandle);
+			packet->pHandle = NULL;
 #endif
 			index = i;
 			break;
