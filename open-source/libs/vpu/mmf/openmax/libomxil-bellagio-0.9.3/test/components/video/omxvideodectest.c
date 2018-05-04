@@ -397,9 +397,9 @@ int main(int argc1, char** argv1) {
   int argn_dec;
   OMX_STRING full_component_name;
   //int argc = 5;
-  //char *argv[] = { "omxdectest", "-t", "-o", "out.yuv", "/system/AVC_320x240.h264" };
+  //char *argv[] = { "omxdectest", "-t", "-o", "out.yuv", "/vendor/AVC_320x240.h264" };
   int argc = 4;
-  char *argv[] = { "omxdectest", "-o", "out.yuv", "/system/AVC_320x240.h264" };
+  char *argv[] = { "omxdectest", "-o", "out.yuv", "/vendor/AVC_320x240.h264" };
 
   if(argc < 2){
     display_help();

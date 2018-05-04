@@ -1,17 +1,16 @@
 LOCAL_PATH := $(call my-dir)
 
-#Building omxregister-bellagio binary which will be placed in the /system/bin folder
+#Building omxregister-bellagio binary which will be placed in the /vendor/bin folder
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
 	src/common.c \
-	src/omxregister.c \
-	src/omxregister.h 
+	src/omxregister.c
 
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := omxregister-bellagio
 
-LOCAL_CFLAGS := -DOMXILCOMPONENTSPATH=\"/system/lib\" -DCONFIG_DEBUG_LEVEL=0
+LOCAL_CFLAGS := -DOMXILCOMPONENTSPATH=\"/vendor/lib\" -DCONFIG_DEBUG_LEVEL=0
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/src \
@@ -22,6 +21,7 @@ LOCAL_SHARED_LIBRARIES :=       \
         libdl			\
 	liblog
 
+LOCAL_PROPRIETARY_MODULE := true
 	
 include $(BUILD_EXECUTABLE)
 
@@ -55,9 +55,11 @@ LOCAL_SRC_FILES := \
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libomxil-bellagio
 
-LOCAL_CFLAGS :=  -DOMXILCOMPONENTSPATH=\"/system/lib\" -DCONFIG_DEBUG_LEVEL=0 -DCNM_SPRD_PLATFORM
+LOCAL_CFLAGS :=  -DOMXILCOMPONENTSPATH=\"/vendor/lib\" -DCONFIG_DEBUG_LEVEL=0 -DCNM_SPRD_PLATFORM
 
 LOCAL_STATIC_LIBRARIES := 
+
+LOCAL_PROPRIETARY_MODULE := true
 
 #LOCAL_LDLIBS += -lpthread
 LOCAL_SHARED_LIBRARIES :=       \

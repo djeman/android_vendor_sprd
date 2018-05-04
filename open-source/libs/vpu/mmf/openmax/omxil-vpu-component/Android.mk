@@ -24,6 +24,7 @@ LOCAL_MODULE := libomxvpu
 #LOCAL_LDLIBS += -lpthread
 
 LOCAL_SHARED_LIBRARIES :=       \
+	liblog                  \
 	libvpu                  \
 	libomxil-bellagio       \
 	libutils                \
@@ -37,20 +38,21 @@ LOCAL_SHARED_LIBRARIES :=       \
 LOCAL_ADDITIONAL_DEPENDENCIES := \
     $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/src		\
-                    $(LOCAL_PATH)/vpp_deinterlace \
-					$(TOP)/vendor/sprd/open-source/libs/vpu/mmf/openmax/libomxil-bellagio-0.9.3/src \
-					$(TOP)/vendor/sprd/open-source/libs/vpu/mmf/openmax/libomxil-bellagio-0.9.3/src/base \
-					$(TOP)/vendor/sprd/open-source/libs/vpu \
-					$(TOP)/vendor/sprd/open-source/libs/vpu/vpuapi \
-					$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax \
-					$(TOP)/frameworks/av/media/libstagefright \
-					$(TOP)/frameworks/native/include/media/hardware \
-					$(TOP)/frameworks/base/include/media/stagefright/openmax \
-					$(TOP)/frameworks/base/include/media/stagefright \
-					$(TOP)/vendor/sprd/open-source/libs/gralloc \
-					$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
-					$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+LOCAL_C_INCLUDES := 	$(LOCAL_PATH)/src		\
+                    	$(LOCAL_PATH)/vpp_deinterlace \
+			$(TOP)/frameworks/native/libs/nativewindow/include/ \
+			$(TOP)/vendor/sprd/open-source/libs/vpu/mmf/openmax/libomxil-bellagio-0.9.3/src \
+			$(TOP)/vendor/sprd/open-source/libs/vpu/mmf/openmax/libomxil-bellagio-0.9.3/src/base \
+			$(TOP)/vendor/sprd/open-source/libs/vpu \
+			$(TOP)/vendor/sprd/open-source/libs/vpu/vpuapi \
+			$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax \
+			$(TOP)/frameworks/av/media/libstagefright \
+			$(TOP)/frameworks/native/include/media/hardware \
+			$(TOP)/frameworks/base/include/media/stagefright/openmax \
+			$(TOP)/frameworks/base/include/media/stagefright \
+			$(TOP)/vendor/sprd/open-source/libs/gralloc \
+			$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
+			$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
 					
 ifeq ($(strip $(TARGET_GPU_PLATFORM)),midgard)
 LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/midgard
@@ -67,5 +69,7 @@ LOCAL_C_INCLUDES += $(TOP)/external/libyuv/files/include
 LOCAL_COPY_HEADERS_TO := ./bellagio
 LOCAL_COPY_HEADERS := src/OMX_VPU_Index.h			\
 			src/OMX_VPU_Video.h
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)

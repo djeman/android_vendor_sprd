@@ -46,5 +46,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/src		\
 		$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
 		$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video \
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
