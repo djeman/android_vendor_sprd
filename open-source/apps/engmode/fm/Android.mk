@@ -8,10 +8,11 @@ LOCAL_SRC_FILES := fm_cmd_executer.cpp
 
 LOCAL_C_INCLUDES    += packages/apps/FMRadio/jni/fmr
 
-LOCAL_SHARED_LIBRARIES += libcutils   \
+LOCAL_SHARED_LIBRARIES += liblog \
+                          libcutils   \
                           libfmjni
 
 LOCAL_MODULE := libengfm
-LOCAL_MODULE_TAGS := debug
+LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_SHARED_LIBRARY)

@@ -13,7 +13,6 @@
 #include <fcntl.h>
 #include <cutils/properties.h>
 
-#include "hardware_legacy/wifi.h"
 #include "engopt.h"
 #include "eng_at.h"
 

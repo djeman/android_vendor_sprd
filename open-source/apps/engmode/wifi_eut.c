@@ -18,7 +18,7 @@
 #define WIFI_DRIVER_FW_PATH_PARAM	"sys/module/bcmdhd/parameters/firmware_path"
 #endif
 #ifndef WIFI_DRIVER_FW_PATH_MFG
-#define WIFI_DRIVER_FW_PATH_MFG "system/vendor/firmware/fw_bcmdhd_mfg.bin"
+#define WIFI_DRIVER_FW_PATH_MFG "/vendor/firmware/fw_bcmdhd_mfg.bin"
 #endif
 
 #ifdef STR(str)

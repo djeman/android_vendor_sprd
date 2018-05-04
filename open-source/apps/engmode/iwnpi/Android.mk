@@ -17,7 +17,8 @@ LOCAL_CFLAGS = $(IWNPI_CFLAGS)
 LOCAL_SRC_FILES = $(IWNPI_OBJS)
 LOCAL_C_INCLUDES = $(INCLUDES)
 LOCAL_STATIC_LIBRARIES += libnl
-LOCAL_SHARED_LIBRARIES += libcutils   \
+LOCAL_SHARED_LIBRARIES += liblog \
+                          libcutils \
                           libutils
 include $(BUILD_EXECUTABLE)
 endif
@@ -35,7 +36,8 @@ LIBIWNPI_CFLAGS += -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-
 #include dirs
 INCLUDES += external/libnl/include
 
-LOCAL_SHARED_LIBRARIES += libcutils   \
+LOCAL_SHARED_LIBRARIES += liblog \
+                          libcutils \
                           libutils
 
 LOCAL_MODULE := libiwnpi

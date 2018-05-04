@@ -65,7 +65,7 @@ static const bt_interface_t *sBtInterface = NULL;
 
 void *pdlHandle = NULL;
 static const bt_interface_t *(*p_get_bluetooth_interface)() = NULL;
-static tBTM_STATUS (*p_VendorSpecificCommand)(UINT16 opcode, UINT8 param_len, UINT8 *p_param_buf,
+static tBTM_STATUS (*p_VendorSpecificCommand)(uint16_t opcode, uint8_t param_len, uint8_t *p_param_buf,
                                               tBTM_VSC_CMPL_CB *p_cb) = NULL;
 
 static gid_t groups[] = { AID_NET_BT, AID_INET,      AID_NET_BT_ADMIN, AID_SYSTEM,
@@ -262,7 +262,7 @@ static BT_ENG_ERROR_E bteng_hal_load(void) {
     p_get_bluetooth_interface = NULL;
     p_VendorSpecificCommand = NULL;
     BTENG_LOGD("Loading HAL lib");
-    pdlHandle = dlopen("/system/lib/hw/bluetooth.default.so", RTLD_LAZY);
+    pdlHandle = dlopen("/vendor/lib/hw/bluetooth.default.so", RTLD_LAZY);
 
     if (pdlHandle == NULL) {
         BTENG_LOGD("Failedload library dlopen\n");
@@ -335,7 +335,7 @@ static void bteng_config_permissions(void) {
     prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
 
     setuid(AID_ROOT);
-    setgid(AID_NET_BT_STACK);
+    setgid(AID_NET_BT_ADMIN);
 
     header.version = _LINUX_CAPABILITY_VERSION;
 
@@ -627,7 +627,7 @@ static void btif_handle_nonsig_rx_data(tBTM_VSC_CMPL *p) {
     uint8_t result, rssi;
     uint32_t pkt_cnt, pkt_err_cnt;
     uint32_t bit_cnt, bit_err_cnt;
-    UINT8 *buf;
+    uint8_t *buf;
 
     BTENG_LOGD("%s", __FUNCTION__);
     BTENG_LOGD("opcode = 0x%x", p->opcode);

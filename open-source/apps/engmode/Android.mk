@@ -5,7 +5,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE    := false
 LOCAL_SHARED_LIBRARIES  := libcutils libsqlite libhardware libhardware_legacy libvbeffect libvbpga libnvexchange libatchannel libefuse libgpspc libbm \
-                           libeng-audio
+                           libeng-audio liblog
 
 LOCAL_STATIC_LIBRARIES  := libbt-utils
 LOCAL_LDLIBS        += -Idl
@@ -122,6 +122,7 @@ endif
 endif
 endif
 
+LOCAL_PROPRIETARY_MODULE := true
 LOCAL_MODULE := engpc
 LOCAL_MODULE_TAGS := optional
 LOCAL_MULTILIB := 32

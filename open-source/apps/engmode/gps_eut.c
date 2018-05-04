@@ -144,7 +144,7 @@ int start_gpssearch(char * result)
 
 static void *gpssearch_thread(){
     ALOGI("gpssearch_thread");
-    system("glgps -c /system/etc/gpsconfig.xml Periodic");
+    system("glgps -c /vendor/etc/gpsconfig.xml Periodic");
     return 0;
 }
 int end_gpssearch(char * result)
@@ -328,8 +328,8 @@ int set_gps_prn(int prn, char * result)
 }
 
 static void *gpsprn_thread(){
-    ALOGI("glgps -c /system/etc/gpsconfig.xml  Factory_High_SNR");
+    ALOGI("glgps -c /vendor/etc/gpsconfig.xml  Factory_High_SNR");
     eut_gps_state=1;
-    system("glgps -c /system/etc/gpsconfig.xml  Factory_High_SNR");
+    system("glgps -c /vendor/etc/gpsconfig.xml  Factory_High_SNR");
     return 0;
 }
