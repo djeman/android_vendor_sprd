@@ -21,6 +21,7 @@ else
 endif
 
 LOCAL_SHARED_LIBRARIES :=       \
+	liblog                  \
         libmemoryheapion        \
         libutils                \
         libcutils               \
@@ -30,6 +31,8 @@ LOCAL_SHARED_LIBRARIES :=       \
 LOCAL_MODULE := libstagefrighthw
 
 LOCAL_CFLAGS := -DLOG_TAG=\"$(TARGET_BOARD_PLATFORM).libstagefright\"
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 
