@@ -50,7 +50,7 @@ static int open_png(const char* name, png_structp* png_ptr, png_infop* info_ptr,
     unsigned char header[8];
     int result = 0;
 
-    snprintf(resPath, sizeof(resPath)-1, "/system/res/images/%s.png", name);
+    snprintf(resPath, sizeof(resPath)-1, "/vendor/res/images/%s.png", name);
     resPath[sizeof(resPath)-1] = '\0';
     FILE* fp = fopen(resPath, "rb");
     if (fp == NULL) {

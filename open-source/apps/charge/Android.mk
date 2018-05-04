@@ -8,12 +8,12 @@ define _add-charge-image
 include $$(CLEAR_VARS)
 LOCAL_MODULE := charge_$(notdir $(1))
 LOCAL_MODULE_STEM := $(notdir $(1))
-_img_modules += $$(LOCAL_MODULE)
+_img_modules += $(LOCAL_MODULE)
 LOCAL_SRC_FILES := $1
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
-TARGET_SYSTEM_OUT := $(PRODUCT_OUT)/system
-LOCAL_MODULE_PATH := $$(TARGET_SYSTEM_OUT)/res/images
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/res/images
+LOCAL_PROPRIETARY_MODULE := true
 include $$(BUILD_PREBUILT)
 endef
 
@@ -48,14 +48,14 @@ endif
 
 LOCAL_MODULE := charge 
 LOCAL_MODULE_TAGS := optional
-TARGET_SYSTEM_OUT_BIN := $(PRODUCT_OUT)/system/bin
 LOCAL_FORCE_STATIC_EXECUTABLE := true
-LOCAL_MODULE_PATH := $(TARGET_SYSTEM_OUT_BIN)
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_EXECUTABLES)
 LOCAL_UNSTRIPPED_PATH := $(TARGET_ROOT_OUT_BIN_UNSTRIPPED)
 
 LOCAL_STATIC_LIBRARIES := libliteui libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc libz liblog libm libmtdutils
 LOCAL_REQUIRED_MODULES := charge_res_images
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_EXECUTABLE)
 
