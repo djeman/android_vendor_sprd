@@ -363,9 +363,9 @@ int bt_getPskeyFromFile(void *pData)
 
 #ifdef HW_ADC_ADAPT_SUPPORT
     char *CFG_2351_PATH[] = {
-        "/system/etc/connectivity_configure_hw100.ini",
-        "/system/etc/connectivity_configure_hw102.ini",
-        "/system/etc/connectivity_configure_hw104.ini"
+        "/vendor/etc/connectivity_configure_hw100.ini",
+        "/vendor/etc/connectivity_configure_hw102.ini",
+        "/vendor/etc/connectivity_configure_hw104.ini"
     };
     char *CFG_2351_PRODUCTINFO_PATH[] = {
         "/productinfo/connectivity_configure_hw100.ini",
@@ -374,7 +374,7 @@ int bt_getPskeyFromFile(void *pData)
     };
 #else
     char *CFG_2351_PATH[] = {
-        "/system/etc/connectivity_configure.ini"
+        "/vendor/etc/connectivity_configure.ini"
     };
     char *CFG_2351_PRODUCTINFO_PATH[] = {
         "/productinfo/connectivity_configure.ini"

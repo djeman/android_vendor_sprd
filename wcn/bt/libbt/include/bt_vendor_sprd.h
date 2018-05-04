@@ -51,8 +51,8 @@
 
 /* Run-time configuration file */
 #ifndef VENDOR_LIB_CONF_FILE
-#define VENDOR_LIB_CONF_FILE "/system/etc/connectivity_configure.ini"
-#define VENDOR_BA_LIB_CONF_FILE  "/system/etc/marlinba/connectivity_configure.ini"
+#define VENDOR_LIB_CONF_FILE "/vendor/etc/connectivity_configure.ini"
+#define VENDOR_BA_LIB_CONF_FILE  "/vendor/etc/marlinba/connectivity_configure.ini"
 #endif
 
 /* Device port name where Bluetooth controller attached */

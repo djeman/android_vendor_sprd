@@ -65,8 +65,8 @@ extern bt_vendor_callbacks_t *bt_vendor_cbacks;
  #define BT_RAND_MAC_LENGTH   17
 
  // used to store BT pskey structure and default values
- #define BT_PSKEY_STRUCT_FILE "/system/lib/modules/pskey_bt.txt"
- #define BT_PSKEY_FILE  "/system/lib/modules/pskey_bt.txt"
+ #define BT_PSKEY_STRUCT_FILE "/vendor/lib/modules/pskey_bt.txt"
+ #define BT_PSKEY_FILE  "/vendor/lib/modules/pskey_bt.txt"
 
  typedef unsigned char uint8;
  typedef unsigned int uint32;

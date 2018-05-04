@@ -19,9 +19,9 @@
 #define _FILE_PARSE_DEBUG_
 #define  CMD_ITEM_TABLE(ITEM, MEM_OFFSET, TYPE)    { ITEM,   (unsigned long)( &(  ((BT_PSKEY_CONFIG_T *)(0))->MEM_OFFSET )),   TYPE }
 
-#define PSKEY_PATH_SYSTEM  "/system/etc/connectivity_configure.ini"
+#define PSKEY_PATH_SYSTEM  "/vendor/etc/connectivity_configure.ini"
 #define PSKEY_PATH_PRODUCTINFO  "/productinfo/connectivity_configure.ini"
-#define PSKEY_PATH_SYSTEM_BA  "/system/etc/marlinba/connectivity_configure.ini"
+#define PSKEY_PATH_SYSTEM_BA  "/vendor/etc/marlinba/connectivity_configure.ini"
 #define PSKEY_PATH_PRODUCTINFO_BA  "/productinfo/marlinba/connectivity_configure.ini"
 #define MARLIN_HW_VER_AA  "AA"
 #define MARLIN_HW_VER_BA  "BA"

@@ -35,7 +35,7 @@
 
 #define MARLIN_HW_VER_BA "BA"
 #define VENDOR_BA_LIB_CONF_FILE \
-  "/system/etc/marlinba/connectivity_configure.ini"
+  "/vendor/etc/marlinba/connectivity_configure.ini"
 
 /*  start bt with dual/classic/ble mode */
 enum { DUAL_MODE = 0, CLASSIC_MODE, LE_MODE };

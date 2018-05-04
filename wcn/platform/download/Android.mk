@@ -5,7 +5,8 @@ LOCAL_SRC_FILES:= \
 	download.c packet.c crc16.c connectivity_rf_parameters.c
 
 LOCAL_SHARED_LIBRARIES := \
-	libcutils
+	libcutils \
+	liblog
 
 ifeq ($(PRODUCT_BRAND),samsung)
 LOCAL_CFLAGS += -DSAMSUNG
@@ -31,6 +32,8 @@ LOCAL_MODULE := download
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_EXECUTABLE)
 
 #build for gnss
@@ -51,6 +54,8 @@ endif
 LOCAL_MODULE := gnss_download
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_EXECUTABLE)
 endif

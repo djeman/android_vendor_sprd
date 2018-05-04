@@ -16,16 +16,17 @@ LOCAL_SRC_FILES:= \
 	wcnd_cmd.c \
 	wcnd_worker.c \
 	wcnd_sm.c \
-	wcnd_eng_cmd_executer.c \
 	wcnd_download.c \
 	wcnd_util.c
+#	wcnd_eng_cmd_executer.c \
 
 LOCAL_SHARED_LIBRARIES := \
+	liblog \
 	libcutils \
 	libiwnpi \
-	libengbt \
-	libengfm \
 	libnetutils
+#	libengbt \
+#	libengfm \
 
 
 ifeq ($(BOARD_WLAN_DEVICE), bcmdhd)
@@ -45,6 +46,8 @@ LOCAL_MODULE_TAGS := optional
 
 LOCAL_REQUIRED_MODULES := wcnd_cli
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_EXECUTABLE)
 
 
@@ -61,5 +64,7 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_MODULE := wcnd_cli
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_EXECUTABLE)

@@ -1428,7 +1428,7 @@ static void prepare_cp2_recovery(WcndManager *pWcndManger)
 	//kill supplicant
 	//property_set("ctl.stop", "wpa_supplicant");
 	//property_set("ctl.stop", "p2p_supplicant");
-	wcnd_kill_process_by_name("/system/bin/wpa_supplicant", SIGINT);
+	wcnd_kill_process_by_name("/vendor/bin/hw/wpa_supplicant", SIGINT);
 
 	wcnd_wait_for_supplicant_stopped();
 

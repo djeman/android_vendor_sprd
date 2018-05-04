@@ -41,6 +41,7 @@ LOCAL_MODULE := libbt-vendor
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_MODULE_OWNER := sprd
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(LOCAL_PATH)/vnd_buildcfg.mk
 

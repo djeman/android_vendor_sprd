@@ -7,6 +7,7 @@ LOCAL_STATIC_LIBRARIES := libcutils
 LOCAL_MODULE_TAGS := optional
 #LOCAL_LDLIBS += -lpthread
 LOCAL_SHARED_LIBRARIES := liblog libz
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 CUSTOM_MODULES += hcidump

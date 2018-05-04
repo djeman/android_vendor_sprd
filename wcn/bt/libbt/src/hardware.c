@@ -42,7 +42,6 @@
 #include <string.h>
 #include "bt_hci_bdroid.h"
 #include "bt_vendor_sprd.h"
-#include "hci_audio.h"
 #include "userial.h"
 #include "userial_vendor.h"
 #include "comm.h"

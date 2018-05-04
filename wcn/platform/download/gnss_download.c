@@ -118,7 +118,7 @@ struct image_info download_image_info[] = {
 		#ifdef PARTITION_PATH_4.4
 		"/dev/block/platform/sprd-sdhci.3/by-name/gnssfdl",
 		#else
-		"/system/etc/gnssfdl.bin",
+		"/vendor/etc/gnssfdl.bin",
 		#endif
 		0x1400,
 		0x200120,
@@ -129,7 +129,7 @@ struct image_info download_image_info[] = {
 		#ifdef PARTITION_PATH_4.4
 		"/dev/block/platform/sprd-sdhci.3/by-name/gnssmodem",
 		#else
-		"/system/etc/gnssmodem.bin",
+		"/vendor/etc/gnssmodem.bin",
 		#endif
 		0x57800,
 		0x200120,
@@ -906,9 +906,9 @@ static int gnss_get_image_path(void)
 		#endif
 	}else{
 		if(0 == strncmp(mode,"gps_beidou", sizeof("gps_beidou"))){
-			memcpy(gPath,"/system/etc/gnssbdmodem.bin",sizeof("/system/etc/gnssbdmodem.bin"));
+			memcpy(gPath,"/vendor/etc/gnssbdmodem.bin",sizeof("/vendor/etc/gnssbdmodem.bin"));
 		}else{
-			memcpy(gPath,"/system/etc/gnssmodem.bin",sizeof("/system/etc/gnssmodem.bin"));
+			memcpy(gPath,"/vendor/etc/gnssmodem.bin",sizeof("/vendor/etc/gnssmodem.bin"));
 		}
 	}
 	download_image_info[1].image_path = gPath;

@@ -38,12 +38,12 @@ typedef struct
 	int  num;
 } nvm_cali_cmd;
 
-static char *SYSTEM_WIFI_CONFIG_FILE = "/system/etc/connectivity_configure.ini";
-static char *SYSTEM_WIFI_CALI_FILE = "/system/etc/connectivity_calibration.ini";
+static char *SYSTEM_WIFI_CONFIG_FILE = "/vendor/etc/connectivity_configure.ini";
+static char *SYSTEM_WIFI_CALI_FILE = "/vendor/etc/connectivity_calibration.ini";
 static char *PRODUCTINFO_WIFI_CONFIG_FILE = "/productinfo/connectivity_configure.ini";
 static char *PRODUCTINFO_WIFI_CALI_FILE = "/productinfo/connectivity_calibration.ini";
-static char *SYSTEM_WIFI_BA_CONFIG_FILE = "/system/etc/marlinba/connectivity_configure.ini";
-static char *SYSTEM_WIFI_BA_CALI_FILE = "/system/etc/marlinba/connectivity_calibration.ini";
+static char *SYSTEM_WIFI_BA_CONFIG_FILE = "/vendor/etc/marlinba/connectivity_configure.ini";
+static char *SYSTEM_WIFI_BA_CALI_FILE = "/vendor/etc/marlinba/connectivity_calibration.ini";
 static char *WIFI_CALI_FILE_WRITE_BACK ="/productinfo/connectivity_calibration.back.ini";
 
 #ifdef GET_MARLIN_CHIPID
