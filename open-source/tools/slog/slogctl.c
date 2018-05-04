@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 		ftsOptions = FTS_PHYSICAL;
 		gmsPath[0] = "/sdcard/gms";
 		gmsPath[1] = NULL;
-		if ((fts = fts_open(__UNCONST(gmsPath), FTS_PHYSICAL, NULL)) == NULL) {
+		if ((fts = fts_open(gmsPath, FTS_PHYSICAL, NULL)) == NULL) {
 			printf("open /sdcard/gms/ failed. Please ensure it exist and can be read.\n");
 			return -1;
 		}
