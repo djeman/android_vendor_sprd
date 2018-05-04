@@ -5681,13 +5681,13 @@ static void adev_config_start(void *data, const XML_Char *elem,
 
     if (property_get(FM_DIGITAL_SUPPORT_PROPERTY, value, "0") && strcmp(value, "1") == 0)
     {
-        dev_names = dev_names_digitalfm;
-        dev_num = sizeof(dev_names_digitalfm) / sizeof(dev_names_digitalfm[0]);
+        dev_names = &dev_names_digitalfm;
+        dev_num = sizeof(&dev_names_digitalfm) / sizeof(dev_names_digitalfm[0]);
     }
     else
     {
-        dev_names = dev_names_linein;
-        dev_num = sizeof(dev_names_linein) / sizeof(dev_names_linein[0]);
+        dev_names = &dev_names_linein;
+        dev_num = sizeof(&dev_names_linein) / sizeof(dev_names_linein[0]);
     }
 
     /* default if not set it 0 */
@@ -5840,7 +5840,7 @@ static int adev_config_parse(struct tiny_audio_device *adev)
     int len;
 
     //property_get("ro.product.device", property, "tiny_hw");
-    snprintf(file, sizeof(file), "/system/etc/%s", "tiny_hw.xml");
+    snprintf(file, sizeof(file), "/vendor/etc/%s", "tiny_hw.xml");
 
     ALOGV("Reading configuration from %s\n", file);
     f = fopen(file, "r");

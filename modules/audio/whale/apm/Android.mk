@@ -30,6 +30,8 @@ include $(CLEAR_VARS)
   LOCAL_C_INCLUDES += \
     frameworks/av/services/volumemanager
 
+  LOCAL_PROPRIETARY_MODULE := true
+
   include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -47,6 +49,8 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libaudiopolicy_legacy
 
 LOCAL_SHARED_LIBRARIES += libaudiopolicy
+
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_MODULE := audio_policy.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw

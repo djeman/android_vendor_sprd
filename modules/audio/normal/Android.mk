@@ -125,7 +125,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libexpat libdl \
 	libvbeffect libvbpga libnvexchange libdumpdata\
 	libhardware_legacy \
-	libmedia libutils \
+	libaudioclient libutils \
 	libFMHalSource \
 	libresample48kto44k \
         libAudioCustomMmi
@@ -165,6 +165,8 @@ LOCAL_SHARED_LIBRARIES += libnxppa	\
 endif
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

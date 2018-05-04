@@ -15,10 +15,6 @@ LOCAL_C_INCLUDES := \
     $(TOPDIR)frameworks/av/services/audiopolicy/common/include \
     $(TOPDIR)frameworks/av/services/audiopolicy/common/managerdefinitions/include
 
-
-
-
-
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
@@ -31,6 +27,7 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_MODULE := libaudiopolicymanager
 
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

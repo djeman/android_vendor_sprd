@@ -46,6 +46,8 @@ LOCAL_MODULE := libvbeffect
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
 

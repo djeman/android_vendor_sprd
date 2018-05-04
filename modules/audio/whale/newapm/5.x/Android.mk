@@ -20,6 +20,7 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_MODULE := libaudiopolicymanager
 
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

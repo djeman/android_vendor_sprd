@@ -19,7 +19,7 @@ include $(CLEAR_VARS)
   LOCAL_STATIC_LIBRARIES := \
     libmedia_helper
 
-  LOCAL_WHOLE_STATIC_LIBRARIES += libaudiopolicy_legacy
+#  LOCAL_WHOLE_STATIC_LIBRARIES += libaudiopolicy_legacy
 
   LOCAL_SHARED_LIBRARIES := \
     libcutils \
@@ -29,6 +29,8 @@ include $(CLEAR_VARS)
 
   LOCAL_C_INCLUDES += \
     frameworks/av/services/volumemanager
+
+  LOCAL_PROPRIETARY_MODULE := true
 
   include $(BUILD_SHARED_LIBRARY)
 
@@ -43,8 +45,8 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_STATIC_LIBRARIES := \
     libmedia_helper
 
-LOCAL_WHOLE_STATIC_LIBRARIES := \
-    libaudiopolicy_legacy
+#LOCAL_WHOLE_STATIC_LIBRARIES := \
+#    libaudiopolicy_legacy
 
 LOCAL_SHARED_LIBRARIES += libaudiopolicy
 
@@ -52,5 +54,7 @@ LOCAL_MODULE := audio_policy.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_RELATIVE_PATH := hw
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)

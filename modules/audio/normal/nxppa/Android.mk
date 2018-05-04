@@ -36,6 +36,8 @@ LOCAL_MODULE := libnxppa
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -66,6 +68,8 @@ LOCAL_PRELINK_MODULE := false
 
 LOCAL_MODULE:= libpaFmTrack
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -87,6 +91,7 @@ LOCAL_SHARED_LIBRARIES := liblog libc libcutils liblog libtinyalsa libaudioutils
 LOCAL_MODULE_TAGS := optional
 LOCAL_PRELINK_MODULE := false
 
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_MODULE:= libfminterface
 

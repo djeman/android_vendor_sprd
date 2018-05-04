@@ -75,4 +75,6 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_MODULE =	audio_param_tool
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_EXECUTABLE)

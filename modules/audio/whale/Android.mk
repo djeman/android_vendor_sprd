@@ -74,6 +74,8 @@ LOCAL_STATIC_LIBRARIES := libSprdRecordNrProcess
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -88,6 +90,8 @@ LOCAL_MODULE:= libsprd_audio
 
 LOCAL_SHARED_LIBRARIES := \
 	liblog
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

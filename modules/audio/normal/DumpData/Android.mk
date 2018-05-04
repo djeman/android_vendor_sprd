@@ -15,7 +15,7 @@ LOCAL_SRC_FILES     :=   dumpdata.c
 
 LOCAL_SHARED_LIBRARIES :=  liblog libcutils libexpat libdl 
 
-
+LOCAL_PROPRIETARY_MODULE := true
 
 
 LOCAL_MODULE:= libdumpdata
