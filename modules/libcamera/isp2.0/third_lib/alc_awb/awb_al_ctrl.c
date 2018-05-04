@@ -1433,9 +1433,9 @@ char* al_libversion_choice(uint32_t version_id)
 	switch (version_id)
 	{
 		case AL_AWB_LIB_VERSION_0:
-			return "/system/lib/libAl_Awb_ov13850r2a.so";
+			return "/vendor/lib/libAl_Awb_ov13850r2a.so";
 		case AL_AWB_LIB_VERSION_1:
-			return "/system/lib/libAl_Awb_t4kb3.so";
+			return "/vendor/lib/libAl_Awb_t4kb3.so";
 	}
 
 	return NULL;

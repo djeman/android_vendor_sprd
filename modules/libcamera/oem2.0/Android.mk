@@ -41,7 +41,7 @@ LOCAL_SRC_FILES += $(shell find $(LOCAL_SRC_DIR) -name '*.c' | sed s:^$(LOCAL_PA
 
 LOCAL_CFLAGS += -D_VSP_LINUX_ -D_VSP_
 
-LOCAL_SHARED_LIBRARIES := libutils libcutils libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
+LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
 
 ifneq ($(strip $(TARGET_BOARD_CAMERA_FACE_BEAUTY)),false)
   LOCAL_SHARED_LIBRARIES += libts_face_beautify_hal
@@ -77,6 +77,7 @@ endif
 LOCAL_MODULE := libcamoem
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

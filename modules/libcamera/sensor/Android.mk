@@ -108,10 +108,11 @@ LOCAL_SRC_FILES += \
                 $(CUR_DIR)/isp/isp_v1_param_file_update.c
 endif
 
-LOCAL_SHARED_LIBRARIES := libcutils libcamcommon
+LOCAL_SHARED_LIBRARIES := liblog libcutils libcamcommon
 LOCAL_MODULE := libcamsensor
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

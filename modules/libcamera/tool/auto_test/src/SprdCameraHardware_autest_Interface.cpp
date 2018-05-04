@@ -1431,7 +1431,7 @@ static cmr_int autotest_load_hal_lib(void)
 		oem_module_t *omi;
 
 		mHalOem = (oem_module_t *)malloc(sizeof(oem_module_t));
-		handle = dlopen("/system/lib/libcamoem.so", RTLD_NOW);
+		handle = dlopen("/vendor/lib/libcamoem.so", RTLD_NOW);
 
 	if (handle == NULL) {
 		char const *err_str = dlerror();

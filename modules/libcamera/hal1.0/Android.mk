@@ -55,9 +55,10 @@ LOCAL_SRC_FILES += $(shell find $(LOCAL_SRC_DIR) -name '*.cpp' | sed s:^$(LOCAL_
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_SHARED_LIBRARIES := libutils libmemoryheapion libcamera_client libcutils libhardware libcamera_metadata libdl
-LOCAL_SHARED_LIBRARIES += libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
+LOCAL_SHARED_LIBRARIES += liblog libgui libui libbinder libcamcommon libcamsensor libcamisp$(ISP_HW_VER)
 
 ifneq ($(strip $(TARGET_BOARD_CAMERA_FACE_BEAUTY)),false)
   LOCAL_SHARED_LIBRARIES += libts_face_beautify_hal

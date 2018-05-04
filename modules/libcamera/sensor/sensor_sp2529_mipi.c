@@ -812,7 +812,7 @@ return 1;
 	SENSOR_TRACE("hello:_sp5408_sdcard(start)\n");
 
 	memset(data_buff,0,sizeof(data_buff));//before use the buffer,clean
-	fp = fopen("/system/lib/sp2529_sd", "r");
+	fp = fopen("/vendor/lib/sp2529_sd", "r");
 
 	if(NULL == fp){
 		SENSOR_TRACE("open file error\n");
@@ -1011,7 +1011,7 @@ static SENSOR_REG_TAB_INFO_T s_SP2529_resolution_Tab_YUV[]=
 LOCAL SENSOR_TRIM_T s_SP2529_Resolution_Trim_Tab[] = {
 	{0, 0, 1600, 1200, 0, 0, 0, {0, 0, 1600, 1200}},
 	{0, 0, 1600, 1200, 219, 240, 1208, {0, 0, 1600, 1200}}, //{0, 0, 800, 600, 68, 500, 608, {0, 0, 800, 600}},
-	{0, 0, 1600, 1200, 219, 240, 1208, {0, 0, 1600, 1200}},  //第5个是Linetime，第6个Mipi_pclk,第7个frame line
+	{0, 0, 1600, 1200, 219, 240, 1208, {0, 0, 1600, 1200}},  //\B5\DA5\B8\F6\CA\C7Linetime\A3\AC\B5\DA6\B8\F6Mipi_pclk,\B5\DA7\B8\F6frame line
 	{0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0}},
 	{0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0}},
 	{0, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0}},

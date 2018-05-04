@@ -82,7 +82,7 @@ LOCAL_CFLAGS += -DAE_WORK_MOD_V0 #AE_WORK_MOD_V0: Old ae algorithm + slow conver
 				#AE_WORK_MOD_V1: new ae algorithm + slow converge
 				#AE_WORK_MOD_V2: new ae algorithm + fast converge
 
-LOCAL_SHARED_LIBRARIES := libutils libcutils libhardware libcamcommon libcamsensor
+LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libhardware libcamcommon libcamsensor
 LOCAL_SHARED_LIBRARIES += libspaf libawb liblsc libcalibration libae
 LOCAL_SHARED_LIBRARIES += libAF libsft_af_ctrl libaf_tune
 
@@ -119,6 +119,7 @@ endif
 LOCAL_MODULE := libcamisp2.0
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 
