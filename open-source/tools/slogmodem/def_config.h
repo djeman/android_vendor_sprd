@@ -10,7 +10,7 @@
 #ifndef _DEF_CONFIG_H_
 #define _DEF_CONFIG_H_
 
-#define CP_LOG_CONFIG_FILE "/system/etc/slog_modem.conf"
+#define CP_LOG_CONFIG_FILE "/vendor/etc/slog_modem.conf"
 #define CP_LOG_TMP_CONFIG_FILE "/data/local/tmp/slogmodem/slog_modem.conf"
 #define TMP_SLOG_CONFIG "/data/local/tmp/slog/slog.conf"
 

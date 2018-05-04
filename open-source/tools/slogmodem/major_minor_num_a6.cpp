@@ -19,11 +19,11 @@ int StorageManager::get_major_minor_in_mount(const uint8_t* mount_info,
     return err;
   }
 
-  const uint8_t* major_str = static_cast<uint8_t*>(memchr(mount_info, ':', len));
+  const uint8_t* major_str = static_cast<const uint8_t*>(memchr(mount_info, ':', len));
 
   if (major_str) {
     const uint8_t* minor_str =
-        static_cast<uint8_t*>(memchr(major_str + 1, ',',
+        static_cast<const uint8_t*>(memchr(major_str + 1, ',',
                                      len - (major_str + 1 - mount_info)));
 
     if (minor_str) {

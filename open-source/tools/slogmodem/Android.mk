@@ -67,6 +67,7 @@ LOCAL_SHARED_LIBRARIES := libc \
               libutils
 LOCAL_CFLAGS += -DLOG_TAG=\"SLOGCP\"
 LOCAL_CPPFLAGS += -std=c++11
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -77,6 +78,7 @@ LOCAL_SHARED_LIBRARIES := libc \
               liblog \
               libutils
 LOCAL_CFLAGS += -DLOG_TAG=\"CPLOG_FLUSH\"
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -87,6 +89,7 @@ LOCAL_SHARED_LIBRARIES := libc \
               liblog \
               libutils
 LOCAL_CFLAGS += -DLOG_TAG=\"CPLOG_CTL\"
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 CUSTOM_MODULES += slogmodem flush_slog_modem cplogctl
