@@ -23,6 +23,7 @@ LOCAL_PATH := $(call my-dir)
 # hw/<OVERLAY_HARDWARE_MODULE_ID>.<ro.product.board>.so
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
+LOCAL_PROPRIETARY_MODULE := true
 
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 21 && echo OK),OK)
 	LOCAL_MODULE_RELATIVE_PATH := hw
@@ -39,7 +40,7 @@ LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 ifneq (,$(wildcard $(MALI_DDK_TEST_PATH)))
 # Mali-T6xx DDK
 MALI_DDK_PATH := vendor/arm/mali6xx
-LOCAL_SHARED_LIBRARIES := liblog libcutils libGLESv1_CM libGLES_mali libion
+LOCAL_SHARED_LIBRARIES := libui liblog libcutils libGLESv1_CM libGLES_mali libion
 
 # All include files are accessed from the DDK root
 DDK_PATH := $(LOCAL_PATH)/../../..
@@ -52,7 +53,7 @@ else
 MALI_DDK_PATH := vendor/sprd/modules/libgpu
 #SHARED_MEM_LIBS := libUMP
 SHARED_MEM_LIBS := libion libhardware
-LOCAL_SHARED_LIBRARIES := liblog libcutils libGLESv1_CM $(SHARED_MEM_LIBS)
+LOCAL_SHARED_LIBRARIES := libui liblog libcutils libGLESv1_CM $(SHARED_MEM_LIBS)
 
 LOCAL_C_INCLUDES := system/core/include/ $(MALI_DDK_PATH)/include 
 # Include the UMP header files

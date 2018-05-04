@@ -102,7 +102,9 @@ private_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
         return NULL;
     }
 
-    GraphicBufferAllocator::get().allocate(mWidth, mHeight, mFormat, mPlaneUsage, (buffer_handle_t*)&BufHandle, &stride, getUniqueId(), "[HWC]");
+    GraphicBufferAllocator::get().allocate(mWidth, mHeight, mFormat, 1,
+            mPlaneUsage, (buffer_handle_t*)&BufHandle, &stride, getUniqueId(), "[HWC]");
+
     if (BufHandle == NULL)
     {
         ALOGE("SprdDisplayPlane cannot alloc buffer");

@@ -50,6 +50,8 @@ LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/utgard
 endif
 
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)	
 
 endif

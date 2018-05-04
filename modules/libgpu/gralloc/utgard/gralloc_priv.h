@@ -78,7 +78,7 @@ typedef int ion_user_handle_t;
 
 #endif
 
-static int mDebug=0;
+static int mDebug=1;
 
 /* mali 400 use tile buffer to get high DDR access performance when use 720P LCD.
  */

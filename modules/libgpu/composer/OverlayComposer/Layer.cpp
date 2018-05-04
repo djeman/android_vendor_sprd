@@ -33,6 +33,7 @@
 #include "GLErro.h"
 #include "OverlayComposer.h"
 #include <hardware/hwcomposer.h>
+#include <system/window.h>
 
 
 namespace android
@@ -164,8 +165,8 @@ bool Layer::wrapGraphicBuffer()
 
     getSizeStride(mPrivH->width, mPrivH->height, mPrivH->format, size, stride);
 
-    mGFXBuffer = new GraphicBuffer(mPrivH->width, mPrivH->height,
-                                   mPrivH->format, GraphicBuffer::USAGE_HW_TEXTURE,
+    mGFXBuffer = new GraphicBuffer(mPrivH->width, mPrivH->height, mPrivH->format, 1,
+                                   GraphicBuffer::USAGE_HW_TEXTURE,
                                    stride,
                                    (native_handle_t*)mPrivH, false);
     if (mGFXBuffer->initCheck() != NO_ERROR)

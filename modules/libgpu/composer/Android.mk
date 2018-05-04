@@ -42,6 +42,7 @@ LOCAL_SRC_FILES := SprdHWComposer.cpp \
 		   SprdUtil.cpp \
                    dump.cpp
 LOCAL_C_INCLUDES := \
+	$(TOP)/frameworks/native/libs/nativewindow/include/ \
 	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video \
 
@@ -194,6 +195,8 @@ ifeq ($(strip $(TARGET_DEBUG_CAMERA_SHAKE_TEST)), true)
 endif
 
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
 endif

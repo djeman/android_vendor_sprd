@@ -34,7 +34,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES := \
 
 LOCAL_MODULE := sprd_gsp.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_RELATIVE_PATH := hw
-
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_SHARED_LIBRARIES := liblog libEGL libbinder libutils libcutils libGLESv1_CM libGLESv2 libhardware libui libsync
 LOCAL_SRC_FILES := GSPBase.cpp GSPImpl.cpp GSPNImpl.cpp gsp_hal.cpp ../dump.cpp

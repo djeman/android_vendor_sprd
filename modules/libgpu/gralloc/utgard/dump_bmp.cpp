@@ -2,11 +2,13 @@
 #include <assert.h>
 
 #include <hardware/gralloc.h>
-#include <ui/GraphicBuffer.h>
 #include <cutils/properties.h>
 #include <utils/Log.h>
 #include <linux/fb.h>
 #include <sys/stat.h>
+
+#include <ui/GraphicBuffer.h>
+
 #include "gralloc_priv.h"
 
 

@@ -122,6 +122,7 @@ endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MULTILIB := both
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_SRC_FILES := \
 	gralloc_module.cpp \
