@@ -29,5 +29,6 @@ else
 LOCAL_MODULE := power.$(TARGET_BOARD_PLATFORM)
 endif
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
 endif
