@@ -20,5 +20,7 @@ LOCAL_MODULE := libatci
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_PROPRIETARY_MODULE := true
+
 include $(BUILD_SHARED_LIBRARY)
 
