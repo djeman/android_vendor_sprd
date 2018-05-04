@@ -10,6 +10,7 @@ LOCAL_SHARED_LIBRARIES := libc libcutils libnetutils
 LOCAL_CFLAGS := -DMODULE \
                 -DREDIRECT_SYSLOG_TO_ANDROID_LOGCAT \
                 -DANDROID_CHANGES
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -24,6 +25,7 @@ LOCAL_C_INCLUDES := bionic/libc/dns/include
 LOCAL_CFLAGS := -DMODULE \
                 -DREDIRECT_SYSLOG_TO_ANDROID_LOGCAT \
                 -DANDROID_CHANGES
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -36,6 +38,7 @@ LOCAL_SHARED_LIBRARIES := libc libcutils libnetutils
 LOCAL_CFLAGS := -DMODULE \
                 -DREDIRECT_SYSLOG_TO_ANDROID_LOGCAT \
                 -DANDROID_CHANGES
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -48,4 +51,5 @@ LOCAL_SHARED_LIBRARIES := libc libcutils libnetutils
 LOCAL_CFLAGS := -DMODULE \
                 -DREDIRECT_SYSLOG_TO_ANDROID_LOGCAT \
                 -DANDROID_CHANGES
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
