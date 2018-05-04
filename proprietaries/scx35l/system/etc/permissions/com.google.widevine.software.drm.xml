@@ -4,5 +4,5 @@
 -->
 <permissions>
     <library name="com.google.widevine.software.drm"
-        file="/system/framework/com.google.widevine.software.drm.jar"/>
+        file="/vendor/framework/com.google.widevine.software.drm.jar"/>
 </permissions>
