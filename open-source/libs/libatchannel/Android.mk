@@ -20,11 +20,13 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES :=  IAtChannel.cpp \
 			AtChannel.cpp
 
-LOCAL_SHARED_LIBRARIES := libcutils libbinder libutils
+LOCAL_SHARED_LIBRARIES := liblog libcutils libbinder libutils
 
 LOCAL_MODULE := libatchannel
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -32,4 +34,5 @@ include $(CLEAR_VARS)
 LOCAL_SHARED_LIBRARIES := liblog libcutils libatchannel libutils
 LOCAL_SRC_FILES := AtChannelTest.cpp
 LOCAL_MODULE := AtChannelTest
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
