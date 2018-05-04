@@ -13,8 +13,8 @@
 #define LOG_TAG "sprd_res_monitor"
 #endif
 
-#define MONITOR_USER_CONFIG "/system/etc/sprd_monitor-user.conf"
-#define MONITOR_USERDEBUG_CONFIG "/system/etc/sprd_monitor-userdebug.conf"
+#define MONITOR_USER_CONFIG "/vendor/etc/sprd_monitor-user.conf"
+#define MONITOR_USERDEBUG_CONFIG "/vendor/etc/sprd_monitor-userdebug.conf"
 #define MONITOR_CONFIG_FILE "/data/local/tmp/sprd_monitor.conf"
 #define MAX_FEATURE_CNT 6
 

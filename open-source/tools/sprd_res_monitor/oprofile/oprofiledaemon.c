@@ -28,7 +28,7 @@
 static void do_oprofile(unsigned long profiletime)
 {
    char profile[256];
-   sprintf(profile , "/system/bin/capture_oprofile.sh %lu" , profiletime);
+   sprintf(profile , "/vendor/bin/capture_oprofile.sh %lu" , profiletime);
    system(profile);
 }
 

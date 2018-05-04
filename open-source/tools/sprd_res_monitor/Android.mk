@@ -6,12 +6,14 @@ LOCAL_SRC_FILES:= \
 	res-monitor/res_mon.c \
 	res-monitor/lsof.c
 LOCAL_SHARED_LIBRARIES := \
+    liblog \
     libcutils \
     libc \
     liboprofiledaemon
 
 LOCAL_MODULE := sprd_res_monitor
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
@@ -20,6 +22,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
@@ -28,6 +31,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
+LOCAL_PROPRIETARY_MODULE := true
 include $(BUILD_PREBUILT)
 
 CUSTOM_MODULES += sprd_monitor-userdebug.conf

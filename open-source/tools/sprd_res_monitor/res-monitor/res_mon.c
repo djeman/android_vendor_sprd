@@ -26,7 +26,7 @@
 #define LS_THREAD_LEAK 0x4
 
 #define isdigit(c) ((c) > '0' && (c) <= '9')
-#define MONITOR_CONFIG_FILE "/system/etc/monitor.conf"
+#define MONITOR_CONFIG_FILE "/vendor/etc/monitor.conf"
 #define LOG_DIR "/data/sprd_res_monitor"
 #define USERPROC_PATH "/sys/kernel/debug/sprd_debug/mem/userprocmem"
 #define MONITOR_PROP "monitor.ctrl"
