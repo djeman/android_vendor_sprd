@@ -649,7 +649,7 @@ int get_init_mode(void)
 		int i = 0;
 
 		D("begin gps init\n");
-		if(access("/system/etc/GPSenseEngine.xml",0) == -1)
+		if(access("/vendor/etc/GPSenseEngine.xml",0) == -1)
 		{
 			//GreenEye2
 			chip_id = GREENEYE_II;
@@ -684,7 +684,7 @@ int get_init_mode(void)
 		}
 		
 		D("before dlopen");
-		handle = dlopen("/system/lib/hw/gps.default.so", RTLD_LAZY);
+		handle = dlopen("/vendor/lib/hw/gps.default.so", RTLD_LAZY);
 		if (!handle) {
 		   E("%s\n", dlerror());
 		   return INIT_MODE;
