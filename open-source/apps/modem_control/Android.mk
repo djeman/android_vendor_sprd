@@ -15,6 +15,7 @@ ifeq ($(BOARD_SECURE_BOOT_ENABLE), true)
 endif
 
 LOCAL_SHARED_LIBRARIES := \
+	liblog \
 	libcutils \
 	libhardware_legacy
 
@@ -32,5 +33,7 @@ endif
 LOCAL_MODULE := modem_control
 
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_EXECUTABLE)

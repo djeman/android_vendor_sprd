@@ -72,7 +72,7 @@ static int  client_fd[MAX_CLIENT_NUM];
 static MODEM_STA_E modem_state = MODEM_STA_SHUTDOWN;
 static int flash_less_flag = 0xff;
 
-#define MONITOR_APP	"/system/bin/sprd_monitor"
+#define MONITOR_APP	"/vendor/bin/sprd_monitor"
 static int reset_modem_if_assert(void)
 {
         char prop[PROPERTY_VALUE_MAX]= {0};
