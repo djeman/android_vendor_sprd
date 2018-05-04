@@ -11,6 +11,7 @@ LOCAL_C_INCLUDES := \
 	frameworks/native/include/utils \
 	frameworks/native/include/media/hardware \
 	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include \
+	$(TOP)/frameworks/av/media/libstagefright/omx/include/media/stagefright/omx \
 	$(TOP)/vendor/sprd/open-source/libs/libstagefrighthw/include/openmax \
 	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
@@ -25,13 +26,15 @@ LOCAL_CFLAGS := -DOSCL_EXPORT_REF= -DOSCL_IMPORT_REF=
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES := \
-        libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw libutils libui libmemoryheapion libdl liblog
+        libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw \
+	libutils libui libmemoryheapion libdl liblog libmedia
 
 LOCAL_ADDITIONAL_DEPENDENCIES := \
     $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 LOCAL_MODULE := libstagefright_sprd_soft_h264dec
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

@@ -18,11 +18,13 @@ LOCAL_CFLAGS := -DOSCL_EXPORT_REF= -DOSCL_IMPORT_REF=
 LOCAL_LDFLAGS += -Wl,--no-warn-shared-textrel
 
 LOCAL_SHARED_LIBRARIES := \
-          libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw libutils libui libmemoryheapion libdl libcutils liblog 
+	libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw \
+	libutils libui libmemoryheapion libdl libcutils liblog libmedia
 
 
 LOCAL_MODULE := libstagefright_sprd_mp3dec
 LOCAL_MODULE_TAGS := optional
 LOCAL_32_BIT_ONLY := true
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)

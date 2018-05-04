@@ -25,9 +25,11 @@
 #include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MediaErrors.h>
 #include <media/IOMX.h>
+#include <SimpleSoftOMXComponent.h>
 
 #include <dlfcn.h>
 #include <media/hardware/HardwareAPI.h>
+#include <ui/Rect.h>
 #include <ui/GraphicBufferMapper.h>
 
 #include "ion_sprd.h"

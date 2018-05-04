@@ -27,13 +27,15 @@ LOCAL_CFLAGS := -DOSCL_EXPORT_REF= -DOSCL_IMPORT_REF=
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES := \
-        libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw libutils  libui libmemoryheapion libdl liblog
+        libstagefright libstagefright_omx libstagefright_foundation libstagefrighthw \
+	libutils libui libmemoryheapion libdl liblog libmedia
 
 LOCAL_ADDITIONAL_DEPENDENCIES := \
     $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 LOCAL_MODULE := libstagefright_sprd_vpxdec
 LOCAL_MODULE_TAGS := optional
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 

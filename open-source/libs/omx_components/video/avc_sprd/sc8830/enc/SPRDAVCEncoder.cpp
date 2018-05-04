@@ -26,6 +26,7 @@
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/Utils.h>
 #include <media/IOMX.h>
+#include <SimpleSoftOMXComponent.h>
 
 #include <MetadataBufferType.h>
 #include <HardwareAPI.h>
