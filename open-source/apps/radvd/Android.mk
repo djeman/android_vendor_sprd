@@ -7,5 +7,6 @@ LOCAL_MODULE := radvd
 
 LOCAL_CFLAGS := -O2 -g -DINET6=1 -Wall -Wno-unused-function
 LOCAL_SYSTEM_SHARED_LIBRARIES := libc libcutils
+LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_EXECUTABLE)
