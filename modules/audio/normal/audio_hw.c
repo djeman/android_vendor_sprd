@@ -5681,13 +5681,13 @@ static void adev_config_start(void *data, const XML_Char *elem,
 
     if (property_get(FM_DIGITAL_SUPPORT_PROPERTY, value, "0") && strcmp(value, "1") == 0)
     {
-        dev_names = &dev_names_digitalfm;
-        dev_num = sizeof(&dev_names_digitalfm) / sizeof(dev_names_digitalfm[0]);
+        dev_names = dev_names_digitalfm;
+        dev_num = sizeof(dev_names_digitalfm) / sizeof(dev_names_digitalfm[0]);
     }
     else
     {
-        dev_names = &dev_names_linein;
-        dev_num = sizeof(&dev_names_linein) / sizeof(dev_names_linein[0]);
+        dev_names = dev_names_linein;
+        dev_num = sizeof(dev_names_linein) / sizeof(dev_names_linein[0]);
     }
 
     /* default if not set it 0 */
