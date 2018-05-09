@@ -121,6 +121,24 @@ static void timeline_free_pt(struct sync_pt *pt)
 
 static void timeline_release(struct sync_timeline *sync_timeline)
 {
+	struct mali_sync_timeline_container *mali_sync_tl = NULL;
+	struct mali_timeline *mali_tl = NULL;
+
+	MALI_DEBUG_ASSERT_POINTER(sync_timeline);
+
+	mali_sync_tl = to_mali_sync_tl_container(sync_timeline);
+	MALI_DEBUG_ASSERT_POINTER(mali_sync_tl);
+
+	mali_tl = mali_sync_tl->timeline;
+
+	/* always signaled timeline didn't have mali container */
+	if (mali_tl) {
+		if (NULL != mali_tl->spinlock) {
+			mali_spinlock_reentrant_term(mali_tl->spinlock);
+		}
+		_mali_osk_free(mali_tl);
+	}
+
 	module_put(THIS_MODULE);
 }
 
