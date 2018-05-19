@@ -42,7 +42,7 @@
 #include <ion/ion.h>
 #endif
 
-#include <video/ion_sprd.h>
+#include <ion_sprd.h>
 
 int g_useTileAlign = 0;
 

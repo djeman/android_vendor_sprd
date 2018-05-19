@@ -77,7 +77,14 @@ LOCAL_STATIC_LIBRARIES += libadf libadfhwc libutils
 LOCAL_CFLAGS += -DTARGET_SUPPORT_ADF_DISPLAY
 endif
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../../../../frameworks/base/libs/hwui/
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../../../../../frameworks/base/libs/hwui/
+
+LOCAL_ADDITIONAL_DEPENDENCIES += \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+
+LOCAL_C_INCLUDES:= \
+	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
 
 ifeq ($(strip $(USE_RGB_VIDEO_LAYER)) , true)
 ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8810)
