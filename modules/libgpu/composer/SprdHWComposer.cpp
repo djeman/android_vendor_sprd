@@ -823,7 +823,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name, s
 #ifdef __LP64__
     HWC->hwc_composer_device_1_t::setCursorPositionAsync = hwc_setCursorPositionAsync;
 #endif
-    HWC->hwc_composer_device_1_t::getBuiltInDisplayNum = hwc_getBuiltInDisplayNum;
+    //HWC->hwc_composer_device_1_t::getBuiltInDisplayNum = hwc_getBuiltInDisplayNum;
 
     *device = &HWC->hwc_composer_device_1_t::common;
 
