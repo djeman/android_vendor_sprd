@@ -51,6 +51,10 @@
 #define GPU_OVER_FREQ_512M
 #endif
 
+#ifdef CONFIG_TSHARK3_OVERCLOCK
+#define TSHARK3_OVERCLOCK
+#endif
+
 #define GPU_GLITCH_FREE_DFS		0
 
 #define UP_THRESHOLD			9/10
@@ -370,6 +374,16 @@ int mali_platform_device_init(struct platform_device *pdev)
 		of_property_read_u32_index(np, "freq-lists", 3*i+2, &gpu_dfs_ctx.freq_list[i].div);
 		gpu_dfs_ctx.freq_list[i].up_threshold =  gpu_dfs_ctx.freq_list[i].freq * UP_THRESHOLD;
 	}
+
+#ifdef TSHARK3_OVERCLOCK
+	#define GPLL_CLOCK_614M 614000000
+	struct clk *clk_gpupll;
+	clk_gpupll = clk_get_sys(NULL, "clk_gpll");
+	WARN(!clk_gpupll, "%s: can't get clk\n", __func__);
+	clk_set_rate(clk_gpupll, GPLL_CLOCK_614M*2);
+
+	gpu_dfs_ctx.freq_list[4].freq  = 614000;
+#endif
 
 	of_property_read_u32(np, "freq-default", &i);
 	gpu_dfs_ctx.freq_default = &gpu_dfs_ctx.freq_list[i];

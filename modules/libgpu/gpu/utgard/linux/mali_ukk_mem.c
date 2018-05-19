@@ -61,6 +61,7 @@ int mem_term_wrapper(struct mali_session_data *session_data, _mali_uk_term_mem_s
     {
         return map_errcode(err);
     }
+	return err;
 }
 
 int mem_alloc_wrapper(struct mali_session_data *session_data, _mali_uk_alloc_mem_s __user *uargs)
