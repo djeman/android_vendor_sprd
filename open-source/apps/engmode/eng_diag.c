@@ -40,13 +40,13 @@
 #include "gps_pc_mode.h"
 #include "eng_busmonitor.h"
 
-#if defined(HUAWEI_BT_ENGMODE)
+/*#if defined(HUAWEI_BT_ENGMODE)
 #if defined(SPRD_WCNBT_MARLIN) || defined(SPRD_WCNBT_SR2351)
 #include "bt_engpc_sprd_if.h"
 #endif
 #else
 #include "bt_eut_sprd.h"
-#endif
+#endif*/
 
 #define NUM_ELEMS(x) (sizeof(x)/sizeof(x[0]))
 #define NVITEM_ERROR_E  int
@@ -1760,7 +1760,7 @@ int eng_atdiag_euthdlr(char *buf, int len, char *rsp, int module_index)
 
 #if defined(HUAWEI_BT_ENGMODE)
     if (BT_MODULE_INDEX == module_index || BLE_MODULE_INDEX == module_index) {
-        bt_eut_parse(buf, rsp);
+        //bt_eut_parse(buf, rsp);
         return 0;
     }
 #endif
