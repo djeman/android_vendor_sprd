@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <cutils/log.h>
 
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 
 
 namespace android {
@@ -49,7 +49,9 @@ struct LayerRect {
     uint32_t bottom;
 };
 
+#ifndef ALIGN
 #define ALIGN(value, base) (((value) + ((base) - 1)) & ~((base) - 1))
+#endif
 
 extern void getSizeStride(uint32_t width, uint32_t height, uint32_t format, uint32_t &size, uint32_t &stride);
 

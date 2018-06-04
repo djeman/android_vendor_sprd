@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -50,8 +49,7 @@
 #include <sys/mman.h>
 
 #include "sprd_fb.h"
-#include "gralloc_priv.h"
-
+#include "gralloc_public.h"
 
 using namespace android;
 
@@ -82,4 +80,4 @@ typedef struct _FrameBufferInfo {
 extern int loadFrameBufferHAL(FrameBufferInfo **fbInfo);
 extern void closeFrameBufferHAL(FrameBufferInfo *fbInfo);
 
-#endif
+#endif  // #ifndef _SPRD_FRAME_BUFFER_HAL_H_

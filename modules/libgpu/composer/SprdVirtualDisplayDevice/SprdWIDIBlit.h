@@ -108,10 +108,10 @@ private:
     GLuint loadShader(GLenum shaderType, const char* pSource);
     GLuint createProgram(const char* pVertexSource, const char* pFragmentSource);
 
-    sp<GraphicBuffer> wrapGraphicsBuffer(private_handle_t *handle);
+    sp<GraphicBuffer> wrapGraphicsBuffer(native_handle_t *handle);
     int setupGraphics();
     void destoryGraphics();
-    int setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handle_t *TragetHandle, sp<GraphicBuffer>& Source, sp<GraphicBuffer>& Target);
+    int setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, native_handle_t *TragetHandle, sp<GraphicBuffer>& Source, sp<GraphicBuffer>& Target);
     int renderImage(sp<GraphicBuffer> Source, sp<GraphicBuffer> Target);
 };
 

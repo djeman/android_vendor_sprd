@@ -45,7 +45,7 @@
 #include <utils/RefBase.h>
 #include <cutils/atomic.h>
 #include <cutils/log.h>
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 
 #include "../SprdHWLayer.h"
 #include "../dump.h"

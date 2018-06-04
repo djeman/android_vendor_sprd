@@ -28,9 +28,7 @@
 #include <sys/types.h>
 
 #include <system/graphics.h>
-#include "gralloc_priv.h"
 #include "gsp_hal.h"
-
 
 static int debugenable = 0;
 //#define ALL_EVEN
@@ -813,31 +811,24 @@ exit:
     return status;
 }
 
-
-
-
 static struct hw_module_methods_t gsp_module_methods = {
-open:
-    open_gsp
+    .open = open_gsp
 };
-
 
 /*
  * The COPYBIT Module
  */
 gsp_module_t HAL_MODULE_INFO_SYM = {
-common:
-    {
-        tag: HARDWARE_MODULE_TAG,
-        version_major: 1,
-        version_minor: 0,
-        id: GSP_HARDWARE_MODULE_ID,
-        name: "SPRD 2D Accelerate Module",
-        author: "Google, Inc.",
-        methods: &gsp_module_methods,
-        dso: 0,
-        reserved: {0},
+    .common = {
+        .tag = HARDWARE_MODULE_TAG,
+        .version_major = 1,
+        .version_minor = 0,
+        .id = GSP_HARDWARE_MODULE_ID,
+        .name = "SPRD 2D Accelerate Module",
+        .author = "Google, Inc.",
+        .methods = &gsp_module_methods,
+        .dso = 0,
+        .reserved = {0},
     }
 };
-
 

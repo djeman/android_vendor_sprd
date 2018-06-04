@@ -57,6 +57,7 @@ SprdHWLayerList::~SprdHWLayerList()
         delete [] mOSDLayerList;
         mOSDLayerList = NULL;
     }
+
     if (mVideoLayerList)
     {
         delete [] mVideoLayerList;
@@ -118,6 +119,14 @@ bool SprdHWLayerList::IsHWCLayer(hwc_layer_1_t *AndroidLayer)
     return true;
 }
 
+/*
+ *  function:updateGeometry
+ *	check the list whether can be process by these accelerator.
+ *	this function will init local layer object mLayerList from hwc_display_contents_1_t.
+ *	it focus mainly on single layer check.
+ *  accelerator:available accelerator for this display.
+ *  list:the app layer list that will be composited and show out.
+ * */
 int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int accelerator)
 {
     mLayerCount = 0;
@@ -136,6 +145,10 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
         ALOGE("updateGeometry input parameter list is NULL");
         return -1;
     }
+
+    /*
+     *  store the list to local.
+     * */
     mList = list;
 
     if (mLayerList)
@@ -156,9 +169,6 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
         mVideoLayerList = NULL;
     }
 
-
-    //SprdUtil::test_color_for_prepare(mList);
-
     queryDebugFlag(&mDebugFlag);
     queryDumpFlag(&mDumpFlag);
     if (HWCOMPOSER_DUMP_ORIGINAL_LAYERS & mDumpFlag)
@@ -174,6 +184,9 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
         return 0;
     }
 
+    /*
+     *  list->numHwLayers includes the FramebufferTarget layer.
+     * */
     mLayerCount = list->numHwLayers;
 
     mLayerList = new SprdHWLayer[mLayerCount];
@@ -207,7 +220,7 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
     {
         hwc_layer_1_t *layer = &list->hwLayers[i];
 
-        ALOGI_IF(mDebugFlag,"process LayerList[%d/%d]", i, mLayerCount - 1);
+        ALOGI_IF(mDebugFlag,"process LayerList[%d/%d]", i, (mLayerCount - 1));
         dump_layer(layer);
 
         mLayerList[i].setAndroidLayer(layer);
@@ -225,8 +238,6 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
             mFBTargetLayer = layer;
             continue;
         }
-
-        //layer->compositionType = HWC_FRAMEBUFFER;
         resetOverlayFlag(&(mLayerList[i]));
 
         prepareOSDLayer(&(mLayerList[i]));
@@ -552,6 +563,11 @@ void SprdHWLayerList:: forceOverlay(SprdHWLayer *l)
 
 }
 
+/*
+ *  resetOverlayFlag
+ *  set hwc_layer_1_t::compositionType to HWC_FRAMEBUFFER,
+ *  means the default composition should execute in SF.
+ * */
 void SprdHWLayerList:: resetOverlayFlag(SprdHWLayer *l)
 {
     if (l == NULL)
@@ -587,11 +603,15 @@ void SprdHWLayerList:: resetOverlayFlag(SprdHWLayer *l)
     }
 }
 
+/*
+ *  prepareOSDLayer
+ *  if it's rgb format,init SprdHWLayer obj from hwc_layer_1_t
+ *  and check whether these accelerator can process or not.
+ * */
 int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
 {
     hwc_layer_1_t *layer = l->getAndroidLayer();
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t *)layer->handle;
     struct sprdRect *srcRect = l->getSprdSRCRect();
     struct sprdRect *FBRect  = l->getSprdFBRect();
 
@@ -609,6 +629,9 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
         return -1;
     }
 
+    /*
+     *  if it's not rgb format,leave it to prepareVideoLayer().
+     * */
     if (!(l->checkRGBLayerFormat()))
     {
         ALOGI_IF(mDebugFlag, "prepareOSDLayer NOT RGB format layer Line:%d", __LINE__);
@@ -617,21 +640,24 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
 
     mRGBLayerCount++;
 
-    if ((privateH->usage & GRALLOC_USAGE_PROTECTED) == GRALLOC_USAGE_PROTECTED)
+    if ((ADP_USAGE(privateH) & GRALLOC_USAGE_PROTECTED) == GRALLOC_USAGE_PROTECTED)
     {
         ALOGI_IF(mDebugFlag, "prepareOSDLayer do not process RGB DRM Line:%d", __LINE__);
         return 0;
     }
 
-    if (privateH->usage & GRALLOC_USAGE_HW_TILE_ALIGN)
+    if (ADP_USAGE(privateH) & GRALLOC_USAGE_HW_TILE_ALIGN)
     {
         ALOGI_IF(mDebugFlag, "prepareOSDLayer do not support Tile align layer Line:%d", __LINE__);
         return 0;
     }
 
-    l->setLayerFormat(privateH->format);
+    l->setLayerFormat(ADP_FORMAT(privateH));
     l->resetAccelerator();
-
+    /*
+     *  first we set SprdHWLayer::mAccelerator to overlay-GPU,
+     *  then we will check DISPC&GSP capability.
+     * */
     if (mAcceleratorMode & ACCELERATOR_OVERLAYCOMPOSER)
     {
         l->setLayerAccelerator(ACCELERATOR_OVERLAYCOMPOSER);
@@ -684,8 +710,8 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
 
     srcRect->x = MAX(sourceLeft, 0);
     srcRect->y = MAX(sourceTop, 0);
-    srcRect->w = MIN(sourceRight - sourceLeft, privateH->width);
-    srcRect->h = MIN(sourceBottom - sourceTop, privateH->height);
+    srcRect->w = MIN(sourceRight - sourceLeft, ADP_WIDTH(privateH));
+    srcRect->h = MIN(sourceBottom - sourceTop, ADP_HEIGHT(privateH));
 
     FBRect->x = MAX(layer->displayFrame.left, 0);
     FBRect->y = MAX(layer->displayFrame.top, 0);
@@ -761,11 +787,15 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
     return 0;
 }
 
+/*
+ *  prepareVideoLayer
+ *  if it's yuv format,init SprdHWLayer obj from hwc_layer_1_t
+ *  and check whether these accelerator can process or not.
+ * */
 int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
 {
     hwc_layer_1_t *layer = l->getAndroidLayer();
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t *)layer->handle;
     struct sprdRect *srcRect = l->getSprdSRCRect();
     struct sprdRect *FBRect  = l->getSprdFBRect();
 
@@ -783,7 +813,7 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
         return -1;
     }
 
-    if ((privateH->usage & GRALLOC_USAGE_PROTECTED) == GRALLOC_USAGE_PROTECTED)
+    if ((ADP_USAGE(privateH) & GRALLOC_USAGE_PROTECTED) == GRALLOC_USAGE_PROTECTED)
     {
         l->setProtectedFlag(true);
         mGlobalProtectedFlag = true;
@@ -802,17 +832,17 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
     if ((!(l->checkYUVLayerFormat()))
         && (l->getProtectedFlag() == false))
     {
-        ALOGI_IF(mDebugFlag, "prepareVideoLayer L%d,color format:0x%08x,ret 0", __LINE__, privateH->format);
+        ALOGI_IF(mDebugFlag, "prepareVideoLayer L%d,color format:0x%08x,ret 0", __LINE__, ADP_FORMAT(privateH));
         return 0;
     }
 
-    l->setLayerFormat(privateH->format);
+    l->setLayerFormat(ADP_FORMAT(privateH));
 
     mYUVLayerCount++;
 
     l->resetAccelerator();
 
-    if (privateH->usage & GRALLOC_USAGE_HW_TILE_ALIGN)
+    if (ADP_USAGE(privateH) & GRALLOC_USAGE_HW_TILE_ALIGN)
     {
         ALOGI_IF(mDebugFlag, "prepareVideoLayer do not support Tile align layer Line:%d", __LINE__);
         return 0;
@@ -834,7 +864,8 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
             }
             else
             {
-                ALOGI_IF(mDebugFlag, "prepareOverlayLayer L%d,no accelerator, flags: 0x%x, ret 0 \n", __LINE__, privateH->flags);
+                ALOGI_IF(mDebugFlag, "prepareOverlayLayer L%d,no accelerator, flags: 0x%x, ret 0 \n", 
+                    __LINE__, ADP_FLAGS(privateH));
                 return 0;
             }
         }
@@ -852,7 +883,8 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
 
     if(l->checkNotSupportOverlay(privateH))
     {
-        ALOGI_IF(mDebugFlag, "prepareOverlayLayer L%d, not support Ovelray, flags: 0x%x, ret 0 \n", __LINE__, privateH->flags);
+        ALOGI_IF(mDebugFlag, "prepareOverlayLayer L%d, not support Ovelray, flags: 0x%x, ret 0 \n", 
+            __LINE__, ADP_FLAGS(privateH));
         l->resetAccelerator();
         return 0;
     }
@@ -867,8 +899,8 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
 
     srcRect->x = MAX(sourceLeft, 0);
     srcRect->y = MAX(sourceTop, 0);
-    srcRect->w = MIN(sourceRight - sourceLeft, privateH->width);
-    srcRect->h = MIN(sourceBottom - sourceTop, privateH->height);
+    srcRect->w = MIN(sourceRight - sourceLeft, ADP_WIDTH(privateH));
+    srcRect->h = MIN(sourceBottom - sourceTop, ADP_HEIGHT(privateH));
 
     FBRect->x = MAX(layer->displayFrame.left, 0);
     FBRect->y = MAX(layer->displayFrame.top, 0);
@@ -886,8 +918,8 @@ int SprdHWLayerList:: prepareVideoLayer(SprdHWLayer *l)
     ALOGV("rects {%d,%d,%d,%d}, {%d,%d,%d,%d}", srcRect->x, srcRect->y, srcRect->w, srcRect->h,
           FBRect->x, FBRect->y, FBRect->w, FBRect->h);
 
-    if (privateH->format == HAL_PIXEL_FORMAT_YV12
-        ||privateH->yuv_info == MALI_YUV_BT709_NARROW)
+    if (ADP_FORMAT(privateH) == HAL_PIXEL_FORMAT_YV12
+        ||ADP_YINFO(privateH) == MALI_YUV_BT709_NARROW)
     {
          if (mAcceleratorMode & ACCELERATOR_OVERLAYCOMPOSER)
          {
@@ -962,8 +994,7 @@ int SprdHWLayerList::prepareForGXP(SprdHWLayer *l)
         return -1;
     }
 
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t *)layer->handle;
     if (privateH == NULL)
     {
         ALOGI_IF(mDebugFlag, "prepareForGXP input handle is NULL L:%d", __LINE__);
@@ -1050,7 +1081,7 @@ int SprdHWLayerList::prepareForGXP(SprdHWLayer *l)
         //for scaler input > 4x4
         if((srcWidth <= 4) || (srcHeight <= 4))
         {
-            ALOGI_IF(mDebugFlag,"prepareForGXP[%d], GXP do not support scaling input <= 4x4 ! %d",__LINE__);
+            ALOGI_IF(mDebugFlag,"prepareForGXP[%d], GXP do not support scaling input <= 4x4 !",__LINE__);
             l->setLayerAccelerator(ACCELERATOR_OVERLAYCOMPOSER);
             return 1;
         }
@@ -1059,7 +1090,7 @@ int SprdHWLayerList::prepareForGXP(SprdHWLayer *l)
     //for blend require the rect's height >= 32
     if((destHeight < 32) || (srcHeight < 32))
     {
-        ALOGI_IF(mDebugFlag,"prepareForGXP[%d], GXP do not support blend with rect height < 32 ! %d",__LINE__);
+        ALOGI_IF(mDebugFlag,"prepareForGXP[%d], GXP do not support blend with rect height < 32 !",__LINE__);
         l->setLayerAccelerator(ACCELERATOR_OVERLAYCOMPOSER);
         return 1;
     }
@@ -1143,6 +1174,10 @@ int SprdHWLayerList::prepareForGXP(SprdHWLayer *l)
 }
 
 #ifdef OVERLAY_COMPOSER_GPU
+/*
+ *  prepareOverlayComposerLayer
+ *  check GPU overlay limited.
+ * */
 int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
 {
     hwc_layer_1_t *layer = l->getAndroidLayer();
@@ -1183,8 +1218,10 @@ int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
     return 0;
 }
 
-int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWLayer *RGBLayer, int LayerCount, int *FBLayerCount, int *DisplayFlag)
+int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWLayer *RGBLayer, 
+                                                  int LayerCount, int *FBLayerCount, int *DisplayFlag)
 {
+    HWC_IGNORE(RGBLayer);
     int displayType = HWC_DISPLAY_MASK;
 
     /*
@@ -1299,15 +1336,14 @@ int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWL
 int SprdHWLayerList:: DCAMTransformPrepare(hwc_layer_1_t *layer, struct sprdRect *srcRect, struct sprdRect *FBRect)
 {
     hwc_layer_1_t *layer = l->getAndroidLayer();
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t *)layer->handle;
     struct sprdYUV srcImg;
     unsigned int mFBWidth  = mFBInfo->fb_width;
     unsigned int mFBHeight = mFBInfo->fb_height;
 
-    srcImg.format = privateH->format;
-    srcImg.w = privateH->width;
-    srcImg.h = privateH->height;
+    srcImg.format = ADP_FORMAT(privateH);
+    srcImg.w = ADP_WIDTH(privateH);
+    srcImg.h = ADP_HEIGHT(privateH);
 
     int rot_90_270 = (layer->transform & HAL_TRANSFORM_ROT_90) == HAL_TRANSFORM_ROT_90;
 

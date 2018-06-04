@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -34,14 +33,10 @@
  ** Author:         zhongjun.chen@spreadtrum.com                              *
  *****************************************************************************/
 
-
-
 #include "SprdOverlayPlane.h"
 #include "dump.h"
 
-
 using namespace android;
-
 
 SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo)
     : SprdDisplayPlane(),
@@ -54,8 +49,7 @@ SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo)
       mDisplayFormat(-1),
       mPlaneDisable(false),
       mDebugFlag(0),
-      mDumpFlag(0)
-{
+      mDumpFlag(0) {
 #ifdef VIDEO_LAYER_USE_RGB
     mDisplayFormat = HAL_PIXEL_FORMAT_RGBA_8888;
 #else
@@ -87,8 +81,7 @@ SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo, SprdPrimaryPlane *Pr
       mDisplayFormat(-1),
       mPlaneDisable(false),
       mDebugFlag(0),
-      mDumpFlag(0)
-{
+      mDumpFlag(0) {
 #ifdef VIDEO_LAYER_USE_RGB
     mDisplayFormat = HAL_PIXEL_FORMAT_RGBA_8888;
 #else
@@ -105,13 +98,9 @@ SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo, SprdPrimaryPlane *Pr
 }
 #endif
 
-SprdOverlayPlane::~SprdOverlayPlane()
-{
-    close();
-}
+SprdOverlayPlane::~SprdOverlayPlane() { close(); }
 
-private_handle_t* SprdOverlayPlane::dequeueBuffer()
-{
+native_handle_t* SprdOverlayPlane::dequeueBuffer() {
     bool ret = false;
 
     queryDebugFlag(&mDebugFlag);
@@ -122,8 +111,7 @@ private_handle_t* SprdOverlayPlane::dequeueBuffer()
 #else
     mBuffer = SprdDisplayPlane::dequeueBuffer();
 #endif
-    if (mBuffer == NULL)
-    {
+    if (mBuffer == NULL) {
         ALOGE("SprdOverlayPlane cannot get ION buffer");
         return NULL;
     }
@@ -132,21 +120,20 @@ private_handle_t* SprdOverlayPlane::dequeueBuffer()
 
     mFreePlaneCount = 1;
 
-    ALOGI_IF(mDebugFlag, "SprdOverlayPlane::dequeueBuffer phy addr:%p", (void *)mBuffer->phyaddr);
+    ALOGI_IF(mDebugFlag, "SprdOverlayPlane::dequeueBuffer phy addr:%p", 
+        (void *)ADP_PHYADDR(mBuffer));
 
     return mBuffer;
 }
 
-int SprdOverlayPlane::queueBuffer()
-{
+int SprdOverlayPlane::queueBuffer() {
 #ifdef BORROW_PRIMARYPLANE_BUFFER
     mPrimaryPlane->queueFriendBuffer();
 #else
     SprdDisplayPlane::queueBuffer();
 #endif
 
-    if(flush() == NULL)
-    {
+    if(flush() == NULL) {
         return -1;
     }
 
@@ -155,12 +142,10 @@ int SprdOverlayPlane::queueBuffer()
     return 0;
 }
 
-void SprdOverlayPlane::AttachOverlayLayer(SprdHWLayer *l)
-{
+void SprdOverlayPlane::AttachOverlayLayer(SprdHWLayer *l) {
     int ret = checkHWLayer(l);
 
-    if (ret != 0)
-    {
+    if (ret != 0) {
         ALOGE("Check OverlayLayer failed");
         return;
     }
@@ -168,26 +153,21 @@ void SprdOverlayPlane::AttachOverlayLayer(SprdHWLayer *l)
     mHWLayer = l;
 }
 
-bool SprdOverlayPlane::online()
-{
-    if (mFreePlaneCount == 0)
-    {
+bool SprdOverlayPlane::online() {
+    if (mFreePlaneCount == 0) {
         ALOGI_IF(mDebugFlag, "SprdOverlayPlane is not avaiable");
         return false;
     }
 
-    if (mPlaneDisable == false)
-    {
+    if (mPlaneDisable == false) {
         ALOGI_IF(mDebugFlag, "SprdOverlayPlane is disabled now.");
         return false;
     }
     return true;
 }
 
-int SprdOverlayPlane::checkHWLayer(SprdHWLayer *l)
-{
-    if (l == NULL)
-    {
+int SprdOverlayPlane::checkHWLayer(SprdHWLayer *l) {
+    if (l == NULL) {
         ALOGE("SprdOverlayPlane Failed to check the list, SprdHWLayer is NULL");
         return -1;
     }
@@ -195,13 +175,11 @@ int SprdOverlayPlane::checkHWLayer(SprdHWLayer *l)
     return 0;
 }
 
-enum PlaneFormat SprdOverlayPlane::getPlaneFormat()
-{
+enum PlaneFormat SprdOverlayPlane::getPlaneFormat() {
     enum PlaneFormat format;
     int displayFormat = mDisplayFormat;
 
-    switch(displayFormat)
-    {
+    switch (displayFormat) {
         case HAL_PIXEL_FORMAT_RGBA_8888:
             format = PLANE_FORMAT_RGB888;
             break;
@@ -222,14 +200,13 @@ enum PlaneFormat SprdOverlayPlane::getPlaneFormat()
     return format;
 }
 
-private_handle_t* SprdOverlayPlane::flush()
-{
+native_handle_t* SprdOverlayPlane::flush() {
     enum PlaneFormat format;
     struct overlay_setting *BaseContext = &(mContext->BaseContext);
 
     InvalidatePlaneContext();
 
-    private_handle_t* flushingBuffer = NULL;
+    native_handle_t* flushingBuffer = NULL;
 #ifdef BORROW_PRIMARYPLANE_BUFFER
     flushingBuffer = mPrimaryPlane->flushFriend();
 #else
@@ -240,23 +217,18 @@ private_handle_t* SprdOverlayPlane::flush()
 
     format = getPlaneFormat();
     if (format == PLANE_FORMAT_RGB888 ||
-        format == PLANE_FORMAT_RGB565)
-    {
+        format == PLANE_FORMAT_RGB565) {
         BaseContext->data_type = SPRD_DATA_FORMAT_RGB888;
         BaseContext->y_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
         BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
         BaseContext->rb_switch = 1;
-    }
-    else if (format == PLANE_FORMAT_YUV422)
-    {
+    } else if (format == PLANE_FORMAT_YUV422) {
         BaseContext->data_type = SPRD_DATA_FORMAT_YUV422;
         BaseContext->y_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
         //BaseContext->uv_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
         BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
         BaseContext->rb_switch = 0;
-    }
-    else if (format == PLANE_FORMAT_YUV420)
-    {
+    } else if (format == PLANE_FORMAT_YUV420) {
         BaseContext->data_type = SPRD_DATA_FORMAT_YUV420;
         BaseContext->y_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
         BaseContext->rb_switch = 0;
@@ -268,12 +240,11 @@ private_handle_t* SprdOverlayPlane::flush()
     BaseContext->rect.w = mFBInfo->fb_width;
     BaseContext->rect.h = mFBInfo->fb_height;
 
-    if (flushingBuffer == NULL)
-    {
+    if (flushingBuffer == NULL) {
         ALOGE("SprdOverlayPlane: Cannot get the display buffer");
         return NULL;
     }
-    BaseContext->buffer = (unsigned char *)(flushingBuffer->phyaddr);
+    BaseContext->buffer = (unsigned char *)(ADP_PHYADDR(flushingBuffer));
 
     ALOGI_IF(mDebugFlag, "SprdOverlayPlane::flush SET_OVERLAY parameter datatype = %d, x = %d, y = %d, w = %d, h = %d, buffer = 0x%p",
              BaseContext->data_type,
@@ -283,15 +254,13 @@ private_handle_t* SprdOverlayPlane::flush()
              BaseContext->rect.h,
              BaseContext->buffer);
 
-    if (HWCOMPOSER_DUMP_VIDEO_OVERLAY_FLAG & mDumpFlag)
-    {
+    if (HWCOMPOSER_DUMP_VIDEO_OVERLAY_FLAG & mDumpFlag) {
         const char *name = "OverlayVideo";
 
         dumpOverlayImage(flushingBuffer, name);
     }
 
-    if (ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext) == -1)
-    {
+    if (ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext) == -1) {
         ALOGE("fail video SPRD_FB_SET_OVERLAY");
         ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext);//Fix ME later
     }
@@ -299,18 +268,14 @@ private_handle_t* SprdOverlayPlane::flush()
     return flushingBuffer;
 }
 
-
-bool SprdOverlayPlane::open()
-{
+bool SprdOverlayPlane::open() {
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-    if (mPrimaryPlane == NULL)
-    {
+    if (mPrimaryPlane == NULL) {
         ALOGE("PrimaryPlane is NULL");
         return false;
     }
 #else
-    if (SprdDisplayPlane::open() == false)
-    {
+    if (SprdDisplayPlane::open() == false) {
         ALOGE("SprdOverlayPlane::open failed");
         return false;
     }
@@ -322,8 +287,7 @@ bool SprdOverlayPlane::open()
     return true;
 }
 
-bool SprdOverlayPlane::close()
-{
+bool SprdOverlayPlane::close() {
 #ifndef BORROW_PRIMARYPLANE_BUFFER
     SprdDisplayPlane::close();
 #endif
@@ -333,25 +297,16 @@ bool SprdOverlayPlane::close()
     return true;
 }
 
-void SprdOverlayPlane::enable()
-{
-    mPlaneDisable = true;
-}
+void SprdOverlayPlane::enable() { mPlaneDisable = true; }
 
-void SprdOverlayPlane::disable()
-{
-    mPlaneDisable = false;
-}
+void SprdOverlayPlane::disable() { mPlaneDisable = false; }
 
-void SprdOverlayPlane::InvalidatePlaneContext()
-{
+void SprdOverlayPlane::InvalidatePlaneContext() {
     memset(&(mContext->BaseContext), 0x00, sizeof(struct overlay_setting));
 }
 
-SprdHWLayer *SprdOverlayPlane::getOverlayLayer()
-{
-    if (mHWLayer == NULL)
-    {
+SprdHWLayer *SprdOverlayPlane::getOverlayLayer() const {
+    if (mHWLayer == NULL) {
         ALOGE("mHWLayer is NULL");
         return NULL;
     }
@@ -359,10 +314,8 @@ SprdHWLayer *SprdOverlayPlane::getOverlayLayer()
     return mHWLayer;
 }
 
-private_handle_t* SprdOverlayPlane::getPlaneBuffer()
-{
-    if (mBuffer == NULL)
-    {
+native_handle_t* SprdOverlayPlane::getPlaneBuffer() const {
+    if (mBuffer == NULL) {
         ALOGE("OverlayPlane buffer is NULL, dequeueBuffer failed");
         return NULL;
     }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -36,7 +35,6 @@
 #ifndef _SPRD_EXTERNAL_DISPLAY_DEVICE_H_
 #define _SPRD_EXTERNAL_DISPLAY_DEVICE_H_
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <hardware/hardware.h>
@@ -50,12 +48,9 @@
 #include "../AndroidFence.h"
 #include "../dump.h"
 
-
 using namespace android;
 
-
-class SprdExternalDisplayDevice
-{
+class SprdExternalDisplayDevice {
 public:
     SprdExternalDisplayDevice();
     ~SprdExternalDisplayDevice();
@@ -93,4 +88,4 @@ private:
     int mDumpFlag;
 };
 
-#endif
+#endif   // #ifndef _SPRD_EXTERNAL_DISPLAY_DEVICE_H_

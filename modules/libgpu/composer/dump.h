@@ -13,13 +13,14 @@
 #include <cutils/properties.h>
 #include <hardware/hwcomposer.h>
 #include <hardware/hardware.h>
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 #include "sprd_fb.h"
 
 #define BI_RGB          0
 #define BI_BITFIELDS    3
 #define MAX_DUMP_PATH_LENGTH 100
 #define MAX_DUMP_FILENAME_LENGTH 100
+
 typedef unsigned char BYTE, *PBYTE, *LPBYTE;
 typedef unsigned short WORD, *PWORD, *LPWORD;
 typedef int32_t DWORD, *PDWORD, *LPDWORD;
@@ -35,6 +36,7 @@ enum {
     DUMP_AT_HWCOMPOSER_HWC_SET,
     DUMP_AT_HWCOMPOSER_HWC_PREPARE
 };
+
 typedef struct tagBITMAPFILEHEADER {
   DWORD bfSize;
   WORD  bfReserved1;
@@ -77,6 +79,7 @@ typedef struct tagBITMAPINFO {
   BITMAPFILEHEADER bmfHeader;
   BITMAPINFOHEADER bmiHeader;
 } BITMAPINFO;
+
 typedef enum
 {
     HWCOMPOSER_DUMP_ORIGINAL_LAYERS = 0x01,
@@ -88,23 +91,17 @@ typedef enum
     HWCOMPOSER_DUMP_MULTI_LAYER_FLAG = 0x40 // when GSP process multi-layer by multi-times GSP calling, dump the middle result
 } dump_type;
 
-
+#ifndef HWC_IGNORE
+#define HWC_IGNORE(x) (void)x
+#endif
 extern void queryDebugFlag(int *debugFlag);
 
 extern void queryDumpFlag(int *dumpFlag);
 extern void queryIntFlag(const char* strProperty,int *IntFlag);
 
-
 extern int dumpImage(hwc_display_contents_1_t *list);
 
-extern int dumpOverlayImage(private_handle_t* buffer, const char* name);
+extern int dumpOverlayImage(native_handle_t* buffer, const char* name);
 
 void dumpFrameBuffer(char *virAddr, const char* ptype, int width, int height, int format);
-
-static uint64_t getUniqueId() {
-    static volatile int32_t nextId = 0;
-    uint64_t id = static_cast<uint64_t>(getpid()) << 32;
-    id |= static_cast<uint32_t>(android_atomic_inc(&nextId));
-    return id;
-}
 #endif

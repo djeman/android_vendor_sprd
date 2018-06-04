@@ -40,6 +40,10 @@
 
 using namespace android;
 
+/*
+ *  checkRGBLayerFormat
+ *  if it's rgb format,init SprdHWLayer from hwc_layer_1_t.
+ * */
 bool SprdHWLayer:: checkRGBLayerFormat()
 {
     hwc_layer_1_t *layer = mAndroidLayer;
@@ -48,17 +52,16 @@ bool SprdHWLayer:: checkRGBLayerFormat()
         return false;
     }
 
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t*)layer->handle;
 
-    if (pNativeHandle == NULL || privateH == NULL)
+    if (privateH == NULL)
     {
         return false;
     }
 
-    if ((privateH->format != HAL_PIXEL_FORMAT_RGBA_8888) &&
-        (privateH->format != HAL_PIXEL_FORMAT_RGBX_8888) &&
-        (privateH->format != HAL_PIXEL_FORMAT_RGB_565))
+    if ((ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBA_8888) &&
+        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBX_8888) &&
+        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGB_565))
     {
         return false;
     }
@@ -66,25 +69,28 @@ bool SprdHWLayer:: checkRGBLayerFormat()
     return true;
 }
 
+/*
+ *  checkYUVLayerFormat
+ *  if it's yuv format,init SprdHWLayer from hwc_layer_1_t.
+ * */
 bool SprdHWLayer:: checkYUVLayerFormat()
 {
     hwc_layer_1_t *layer = mAndroidLayer;
-    if (layer == NULL)
+    if (layer == NULL || layer->handle == NULL)
     {
         return false;
     }
 
-    const native_handle_t *pNativeHandle = layer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t*)layer->handle;
 
-    if (pNativeHandle == NULL || privateH == NULL)
+    if (privateH == NULL)
     {
         return false;
     }
 
-    if ((privateH->format != HAL_PIXEL_FORMAT_YCbCr_420_SP) &&
-        (privateH->format != HAL_PIXEL_FORMAT_YCrCb_420_SP) &&
-        (privateH->format != HAL_PIXEL_FORMAT_YV12))
+    if ((ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YCbCr_420_SP) &&
+        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YCrCb_420_SP) &&
+        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YV12))
     {
         return false;
     }

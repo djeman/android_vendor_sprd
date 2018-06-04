@@ -45,11 +45,21 @@
 #include <utils/RefBase.h>
 #include <cutils/atomic.h>
 #include <cutils/log.h>
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
+#include "dump.h"
 
 #include "SprdPrimaryDisplayDevice/SprdFrameBufferHAL.h"
 
 using namespace android;
+
+/*
+ *  Accelerator mode
+ * */
+#define ACCELERATOR_NON              (0x00000000)
+#define ACCELERATOR_GSP              (0x00000001)
+#define ACCELERATOR_GSP_IOMMU        (0x00000010)
+#define ACCELERATOR_OVERLAYCOMPOSER  (0x00000100)
+#define ACCELERATOR_DCAM             (0x00001000)
 
 /*
  *  YUV format layer info.
@@ -150,15 +160,16 @@ public:
         return &FBRect;
     }
 
-    inline bool checkContiguousPhysicalAddress(struct private_handle_t *privateH)
+    inline bool checkContiguousPhysicalAddress(native_handle_t *privateH)
     {
-        return (privateH->flags & private_handle_t::PRIV_FLAGS_USES_PHY);
+        return (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
     }
 
-    inline bool checkNotSupportOverlay(struct private_handle_t *privateH)
+    inline bool checkNotSupportOverlay(native_handle_t *privateH)
     {
+        HWC_IGNORE(privateH);
         return false;
-        //return (privateH->flags & private_handle_t::PRIV_FLAGS_NOT_OVERLAY);
+        //return (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_NOT_OVERLAY);
     }
 
     inline int getAccelerator()

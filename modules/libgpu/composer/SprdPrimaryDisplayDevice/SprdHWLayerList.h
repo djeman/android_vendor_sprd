@@ -45,8 +45,7 @@
 #include <utils/RefBase.h>
 #include <cutils/atomic.h>
 #include <cutils/log.h>
-#include "gralloc_priv.h"
-#include "sc8825/dcam_hal.h"
+#include "gralloc_public.h"
 
 #include "../SprdHWLayer.h"
 #include "SprdFrameBufferHAL.h"

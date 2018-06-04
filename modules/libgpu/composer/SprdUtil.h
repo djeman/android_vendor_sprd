@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -35,7 +34,6 @@
  ** Author:         zhongjun.chen@spreadtrum.com                              *
  *****************************************************************************/
 
-
 #ifndef _SPRD_UTIL_H_
 #define _SPRD_UTIL_H_
 
@@ -47,16 +45,16 @@
 #include <ui/Rect.h>
 
 #include "SprdHWLayer.h"
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 #include "SprdPrimaryDisplayDevice/SprdFrameBufferHAL.h"
 
 #ifdef PROCESS_VIDEO_USE_GSP
 #include "sc8830/gsp_hal.h"
 #endif
 
-//#ifdef TRANSFORM_USE_DCAM
+#ifdef TRANSFORM_USE_DCAM
 #include "sc8825/dcam_hal.h"
-//#endif
+#endif
 
 #ifdef TRANSFORM_USE_GPU
 #include "sc8810/gpu_transform.h"
@@ -64,22 +62,12 @@
 
 using namespace android;
 
-/*
- *  Accelerator mode
- * */
-#define ACCELERATOR_NON              (0x00000000)
-#define ACCELERATOR_GSP              (0x00000001)
-#define ACCELERATOR_GSP_IOMMU        (0x00000010)
-#define ACCELERATOR_OVERLAYCOMPOSER  (0x00000100)
-#define ACCELERATOR_DCAM             (0x00001000)
-
 #ifndef ALIGN
 #define ALIGN(value, base) (((value) + ((base) - 1)) & ~((base) - 1))
 #endif
 
 #ifdef PROCESS_VIDEO_USE_GSP
-typedef enum
-{
+typedef enum {
     GEN_COLOR_RED,
     GEN_COLOR_GREEN,
     GEN_COLOR_BLUE,
@@ -96,19 +84,18 @@ typedef enum
 /*
  *  Transform OSD layer.
  * */
-class OSDTransform: public Thread
-{
+class OSDTransform: public Thread {
 public:
     OSDTransform();
     ~OSDTransform();
 
-    void onStart(SprdHWLayer *l, private_handle_t* buffer);
+    void onStart(SprdHWLayer *l, native_handle_t* buffer);
     void onWait();
 
 private:
     SprdHWLayer *mL;
     FrameBufferInfo *mFBInfo;
-    private_handle_t* mBuffer;
+    native_handle_t* mBuffer;
     bool mInitFLag;
     int mDebugFlag;
 
@@ -137,8 +124,7 @@ private:
  *  SprdUtil is responsible for transform or composer HW layers with
  *  hardware devices, such as DCAM, GPU or GSP.
  * */
-class SprdUtil
-{
+class SprdUtil {
 public:
     SprdUtil(FrameBufferInfo *fbInfo)
         : mFBInfo(fbInfo),
@@ -164,13 +150,14 @@ public:
     ~SprdUtil();
 
     bool transformLayer(SprdHWLayer *l1, SprdHWLayer *l2,
-                        private_handle_t* buffer1, private_handle_t* buffer2);
+                        native_handle_t* buffer1, native_handle_t* buffer2);
 
 #ifdef PROCESS_VIDEO_USE_GSP
-    int composerLayers(SprdHWLayer *l1, SprdHWLayer *l2, GSP_CONFIG_INFO_T *pgsp_cfg_info, private_handle_t* dst_buffer,GSP_LAYER_DST_DATA_FMT_E dst_format);
+    int composerLayers(SprdHWLayer *l1, SprdHWLayer *l2, GSP_CONFIG_INFO_T *pgsp_cfg_info, 
+                          native_handle_t* dst_buffer,GSP_LAYER_DST_DATA_FMT_E dst_format);
     int composerLayerList(SprdHWLayer **videoLayerList, int videoLayerCount,
                           SprdHWLayer **osdLayerList, int osdLayerCount,
-                          private_handle_t* buffer1, private_handle_t* buffer2);
+                          native_handle_t* buffer1, native_handle_t* buffer2);
     /*
      *  Some device just want to use the specified address type
      * */
@@ -194,19 +181,19 @@ public:
     static void test_gen_white_boundary(char* base,uint32_t w,uint32_t h,uint16_t format);
     static void test_gen_color_block(char* base,uint16_t pitch_w,uint16_t pitch_h,uint16_t format, struct sprdRect *rect,GEN_COLOR color,uint16_t gray);
     static void test_gen_color_blocks(char* base,uint32_t pitch_w,uint32_t pitch_h,uint16_t format,uint16_t gray);
-    static void test_color(struct private_handle_t *private_h, GSP_LAYER_SRC_DATA_FMT_E img_format);
+    static void test_color(native_handle_t *private_h, GSP_LAYER_SRC_DATA_FMT_E img_format);
     static void test_color_for_prepare(hwc_display_contents_1_t *list);
 #endif
 
 private:
     FrameBufferInfo *mFBInfo;
 #ifdef TRANSFORM_USE_DCAM
-    private_handle_t* tmpDCAMBuffer;
+    native_handle_t* tmpDCAMBuffer;
     sp<OSDTransform>  mOSDTransform;
 #endif
 #ifdef PROCESS_VIDEO_USE_GSP
-    private_handle_t* tmpBuffer;
-    private_handle_t* copyTempBuffer;
+    native_handle_t* tmpBuffer;
+    native_handle_t* copyTempBuffer;
     gsp_device_t *mGspDev;
     int outBufferPhy;
     int outBufferSize;
@@ -218,21 +205,21 @@ private:
 
 #ifdef TRANSFORM_USE_GPU
     int getTransformInfo(SprdHWLayer *l1, SprdHWLayer *l2,
-                         private_handle_t* buffer1, private_handle_t* buffer2,
+                         native_handle_t* buffer1, native_handle_t* buffer2,
                          gpu_transform_info_t *transformInfo);
 #endif
 #ifdef PROCESS_VIDEO_USE_GSP
     int openGSPDevice();
-    int acquireTmpBuffer(int width, int height, int format, private_handle_t* friendBuffer, int *outBufferPhy, int *outBufferSize);
+    int acquireTmpBuffer(int width, int height, int format, native_handle_t* friendBuffer, int *outBufferPhy, int *outBufferSize);
 
     int gsp_osd_layer_config(SprdHWLayer *layer, GSP_CONFIG_INFO_T &gsp_cfg_info);
-    int gsp_dst_layer_config(GSP_CONFIG_INFO_T &gsp_cfg_info, private_handle_t* dst_buffer);
+    int gsp_dst_layer_config(GSP_CONFIG_INFO_T &gsp_cfg_info, native_handle_t* dst_buffer);
     int gsp_image_layer_config(SprdHWLayer *l1, GSP_CONFIG_INFO_T &gsp_cfg_info, GSP_CONFIG_INFO_T *pgsp_cfg_info);
 
     int64_t UtilGetSystemTime();
     int need_scaling_check(SprdHWLayer *layer);
     GSP_ROT_ANGLE_E rotationType_convert(int angle);
-    void gsp_intermedia_dump(private_handle_t* dst_buffer);
+    void gsp_intermedia_dump(native_handle_t* dst_buffer);
     int findAnIndependentLayer(SprdHWLayer **LayerList, int cnt);
     int scaling_up_twice_check(GSP_CONFIG_INFO_T &gsp_cfg_info);
     int gsp_split_pages_check(GSP_CONFIG_INFO_T &gsp_cfg_info);
@@ -242,9 +229,9 @@ private:
     int compositePointCheck(SprdHWLayer **LayerList,struct sprdRect *DstRegion);
     int full_screen_check(SprdHWLayer **LayerList, int cnt, FrameBufferInfo *FBInfo);
     int gsp_process_va_copy2_pa(GSP_CONFIG_INFO_T *pgsp_cfg_info);
-    int scalingup_twice(GSP_CONFIG_INFO_T &gsp_cfg_info, private_handle_t* dst_buffer);
+    int scalingup_twice(GSP_CONFIG_INFO_T &gsp_cfg_info, native_handle_t* dst_buffer);
 #endif
 };
 
 
-#endif
+#endif  // #ifndef _SPRD_UTIL_H_

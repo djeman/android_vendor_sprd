@@ -23,7 +23,16 @@ ifeq ($(strip $(USE_SPRD_HWCOMPOSER)),true)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_RELATIVE_PATH := hw
-LOCAL_SHARED_LIBRARIES := liblog libEGL libmemoryheapion libutils libcutils libGLESv1_CM libGLESv2 libhardware libui libsync
+LOCAL_SHARED_LIBRARIES := liblog \
+                          libEGL \
+                          libmemoryheapion \
+                          libutils \
+                          libcutils \
+                          libGLESv1_CM \
+                          libGLESv2 \
+                          libhardware \
+                          libui \
+                          libsync
 LOCAL_SRC_FILES := SprdHWComposer.cpp \
 		   SprdPrimaryDisplayDevice/SprdFrameBufferHAL.cpp \
 		   AndroidFence.cpp \
@@ -92,8 +101,6 @@ ifeq ($(strip $(DEVICE_WITH_GSP)),true)
 	LOCAL_CFLAGS += -DPROCESS_VIDEO_USE_GSP
 	LOCAL_CFLAGS += -DGSP_OUTPUT_USE_YUV420
 
-	# LOCAL_CFLAGS += -D_DMA_COPY_OSD_LAYER
-
 #
 # if GSP has not IOMMU, DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address;
 # if GSP has IOMMU, we can open DIRECT_DISPLAY_SINGLE_OSD_LAYER.
@@ -122,7 +129,6 @@ endif
 # and disable the GSP/GPP on Primary Display.
 ifeq ($(TARGET_FORCE_HWC_FOR_VIRTUAL_DISPLAYS),true)
 	LOCAL_CFLAGS += -DFORCE_HWC_COPY_FOR_VIRTUAL_DISPLAYS
-	#LOCAL_CFLAGS += -DFORCE_ADJUST_ACCELERATOR
 endif
 
 # OVERLAY_COMPOSER_GPU_CONFIG: Enable or disable OVERLAY_COMPOSER_GPU
@@ -150,7 +156,6 @@ endif
 endif
 
 ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8825)
-	#LOCAL_CFLAGS += -DTRANSFORM_USE_GPU
 	LOCAL_CFLAGS += -DSCAL_ROT_TMP_BUF
 
 	LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libcamera/sc8825/inc

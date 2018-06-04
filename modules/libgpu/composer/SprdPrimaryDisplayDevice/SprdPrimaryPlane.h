@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -33,7 +32,6 @@
  ** Author:         zhongjun.chen@spreadtrum.com                              *
  *****************************************************************************/
 
-
 #ifndef _SPRD_PRIMARY_PLANE_H_
 #define _SPRD_PRIMARY_PLANE_H_
 
@@ -47,12 +45,9 @@
 class SprdOverlayPlane;
 #endif
 
-
 using namespace android;
 
-
-class SprdPrimaryPlane: public SprdDisplayPlane
-{
+class SprdPrimaryPlane: public SprdDisplayPlane {
 public:
     SprdPrimaryPlane(FrameBufferInfo *fbInfo);
     virtual ~SprdPrimaryPlane();
@@ -62,10 +57,10 @@ public:
      *  dequeueBuffer: gain a available buffer for SprdPrimaryPlane.
      *  queueBuffer: display a buffer.
      * */
-    virtual private_handle_t* dequeueBuffer();
+    virtual native_handle_t* dequeueBuffer();
     virtual int queueBuffer();
-    virtual private_handle_t* getPlaneBuffer();
-    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format);
+    virtual native_handle_t* getPlaneBuffer() const;
+    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const;
     /**************************************************************************************/
 
     virtual bool open();
@@ -107,15 +102,11 @@ public:
      *  Here, let these layers displayed directly by SprdPrimaryPlane.
      * */
     bool SetDisplayParameters(hwc_layer_1_t *AndroidLayer);
-    SprdHWLayer *getPrimaryLayer();
+    SprdHWLayer *getPrimaryLayer() const;
 
-    int getPlaneImageFormat();
-    int getPlaneBufferIndex();
+    int getPlaneBufferIndex() const;
 
-    inline bool GetDirectDisplay()
-    {
-        return mDirectDisplayFlag;
-    }
+    inline bool GetDirectDisplay() { return mDirectDisplayFlag; }
 
     enum PlaneFormat getPlaneFormat();
 
@@ -125,7 +116,7 @@ private:
     unsigned int mPrimaryPlaneCount;
     unsigned int mFreePlaneCount;
     PlaneContext *mContext;
-    private_handle_t* mBuffer;
+    native_handle_t* mBuffer;
     int mBufferIndex;
     int mDefaultDisplayFormat;
     int mDisplayFormat;
@@ -139,26 +130,17 @@ private:
     int mDebugFlag;
     int mDumpFlag;
 
-    virtual private_handle_t* flush();
+    virtual native_handle_t* flush();
 
     void InvalidatePlaneContext();
 
     int checkHWLayer(SprdHWLayer *l);
 
-    inline unsigned int getFreePlane()
-    {
-        return mFreePlaneCount;
-    }
+    inline unsigned int getFreePlane() { return mFreePlaneCount; }
 
-    inline void addFreePlane()
-    {
-        mFreePlaneCount++;
-    }
+    inline void addFreePlane() { mFreePlaneCount++; }
 
-    inline void subFreePlane()
-    {
-        mFreePlaneCount--;
-    }
+    inline void subFreePlane() { mFreePlaneCount--; }
 
 #ifdef BORROW_PRIMARYPLANE_BUFFER
     /*
@@ -166,14 +148,14 @@ private:
      * */
     friend SprdOverlayPlane;
 
-    private_handle_t* dequeueFriendBuffer();
+    native_handle_t* dequeueFriendBuffer();
 
     int queueFriendBuffer();
 
-    private_handle_t* flushFriend();
+    native_handle_t* flushFriend();
 #endif
 
 };
 
 
-#endif
+#endif  // #ifndef _SPRD_PRIMARY_PLANE_H_

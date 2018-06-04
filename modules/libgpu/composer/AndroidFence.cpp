@@ -43,6 +43,7 @@
 #include <cutils/log.h>
 #include "SprdDisplayDevice.h"
 #include "SprdTrace.h"
+#include "dump.h"
 
 using namespace android;
 
@@ -362,6 +363,7 @@ int HWCBufferSyncBuildForVirtualDisplay(hwc_display_contents_1_t *list)
 
 int HWCBufferSyncReleaseForVirtualDisplay(hwc_display_contents_1_t *list)
 {
+    HWC_IGNORE(list);
     HWC_TRACE_CALL;
 
     if (releaseFenceFdForVirtualDisplay < 0)
