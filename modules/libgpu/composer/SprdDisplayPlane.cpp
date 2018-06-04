@@ -43,8 +43,11 @@
 using namespace android;
 
 SprdDisplayPlane::SprdDisplayPlane()
-    : mWidth(1), mHeight(1), mFormat(-1),
-      InitFlag(false), mContext(NULL),
+    : mContext(NULL),
+      mWidth(1),
+      mHeight(1),
+      mFormat(-1),
+      InitFlag(false),
       mBufferCount(PLANE_BUFFER_NUMBER),
       mPlaneUsage(GRALLOC_USAGE_OVERLAY_BUFFER),
       mDisplayBufferIndex(-1),
@@ -60,7 +63,7 @@ SprdDisplayPlane::SprdDisplayPlane()
     mContext = (PlaneContext *)malloc(sizeof(PlaneContext));
     if (mContext == NULL)
     {
-        ALOGE("Failed to malloc overlay_setting");
+        ALOGE("Failed to malloc PlaneContext");
         exit(-1);
     }
 
@@ -90,9 +93,9 @@ void SprdDisplayPlane::setGeometry(unsigned int width, unsigned int height, int 
     mFormat = format;
 }
 
-private_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
+native_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
 {
-    private_handle_t* BufHandle = NULL;
+    native_handle_t* BufHandle = NULL;
     uint32_t stride;
     size_t size;
 
@@ -109,17 +112,17 @@ private_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
         return NULL;
     }
 
-    MemoryHeapIon::Get_phy_addr_from_ion(BufHandle->share_fd, &(BufHandle->phyaddr), &size);
+    MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(BufHandle), &(ADP_PHYADDR(BufHandle)), &size);
 
-    mSlots[index].mIonBuffer = static_cast<private_handle_t* >(BufHandle);
+    mSlots[index].mIonBuffer = static_cast<native_handle_t* >(BufHandle);
 
     ALOGI("DisplayPlane createPlaneBuffer phy addr:%p, size:%zd",
-          (void *)(BufHandle->phyaddr), size);
+          (void *)(ADP_PHYADDR(BufHandle)), size);
 
     return BufHandle;
 }
 
-private_handle_t* SprdDisplayPlane::dequeueBuffer()
+native_handle_t* SprdDisplayPlane::dequeueBuffer()
 {
     bool repeat = true;
     int found = -1;
@@ -168,7 +171,7 @@ private_handle_t* SprdDisplayPlane::dequeueBuffer()
     }
 
     mSlots[found].mBufferState = BufferSlot::DEQUEUEED;
-    private_handle_t* buffer = mSlots[found].mIonBuffer;
+    native_handle_t* buffer = mSlots[found].mIonBuffer;
 
     if (buffer == NULL && mWidth > 1 && mHeight > 1)
     {
@@ -210,7 +213,7 @@ int SprdDisplayPlane::queueBuffer()
     return 0;
 }
 
-private_handle_t* SprdDisplayPlane::flush()
+native_handle_t* SprdDisplayPlane::flush()
 {
     if (mQueue.empty())
     {
@@ -220,7 +223,7 @@ private_handle_t* SprdDisplayPlane::flush()
 
     FIFO::iterator front(mQueue.begin());
     int index(*front);
-    private_handle_t* flushingBuffer = mSlots[index].mIonBuffer;
+    native_handle_t* flushingBuffer = mSlots[index].mIonBuffer;
 
     mQueue.erase(front);
 
@@ -277,7 +280,7 @@ private_handle_t* SprdDisplayPlane::flush()
 bool SprdDisplayPlane:: openBase()
 {
     bool success = false;
-    private_handle_t* buffer = NULL;
+    native_handle_t* buffer = NULL;
 
     for (int i = 0; i < mBufferCount; i++)
     {
@@ -304,7 +307,7 @@ bool SprdDisplayPlane:: openBase()
 
 bool SprdDisplayPlane::open()
 {
-    private_handle_t* buffer = NULL;
+    native_handle_t* buffer = NULL;
 #ifdef DYNAMIC_RELEASE_PLANEBUFFER
     int ret = -1;
     ret = mAlloc->requestAllocBuffer();
@@ -334,8 +337,9 @@ bool SprdDisplayPlane::close()
 
     for (int i = 0; i < mBufferCount; i++)
     {
-        private_handle_t* bufferHandle = mSlots[i].mIonBuffer;
-        ALOGI_IF(mDebugFlag, "SprdDisplayPlane::close free buffer phy: %p", (void *)(bufferHandle->phyaddr));
+        native_handle_t* bufferHandle = mSlots[i].mIonBuffer;
+        ALOGI_IF(mDebugFlag, "SprdDisplayPlane::close free buffer phy: %p", 
+            (void *)(ADP_PHYADDR(bufferHandle)));
         GraphicBufferAllocator::get().free((buffer_handle_t)bufferHandle);
         bufferHandle = NULL;
         mSlots[i].mIonBuffer = NULL;
@@ -349,14 +353,16 @@ bool SprdDisplayPlane::close()
     return true;
 }
 
-private_handle_t* SprdDisplayPlane::getPlaneBuffer()
+native_handle_t* SprdDisplayPlane::getPlaneBuffer() const
 {
     return NULL;
 }
 
-void SprdDisplayPlane::getPlaneGeometry(unsigned int *width, unsigned int *height, int *format)
+void SprdDisplayPlane::getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const
 {
-
+    *width = mWidth;
+    *height = mHeight;
+    *format = mFormat;
 }
 
 enum PlaneRunStatus SprdDisplayPlane:: queryPlaneRunStatus()

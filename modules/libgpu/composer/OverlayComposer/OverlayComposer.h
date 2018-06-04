@@ -83,7 +83,7 @@
 
 #include <ui/ANativeObjectBase.h>
 
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 
 #include "Utility.h"
 #include "../SprdPrimaryDisplayDevice/SprdFrameBufferHAL.h"

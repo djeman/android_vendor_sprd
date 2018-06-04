@@ -285,11 +285,15 @@ int SprdHWComposer:: blank(int disp, int blank)
 
 int SprdHWComposer:: query(int what, int* value)
 {
+    HWC_IGNORE(what);
+    HWC_IGNORE(value);
     return 0;
 }
 
 void SprdHWComposer:: dump(char *buff, int buff_len)
 {
+    HWC_IGNORE(buff);
+    HWC_IGNORE(buff_len);
 }
 
 int SprdHWComposer:: getDisplayConfigs(int disp, uint32_t* configs, size_t* numConfigs)
@@ -513,6 +517,7 @@ void SprdHWComposer:: registerProcs(hwc_procs_t const* procs)
 
 bool SprdHWComposer:: eventControl(int disp, int enabled)
 {
+    HWC_IGNORE(disp);
 
     /*
      *  At present, only Primary Display Device support

@@ -35,7 +35,7 @@
 
 #include <ui/ANativeObjectBase.h>
 #include <ui/Fence.h>
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 #include "Utility.h"
 
 #include "../SprdPrimaryDisplayDevice/SprdPrimaryPlane.h"
@@ -115,7 +115,7 @@ private:
     static int query(const ANativeWindow* window, int what, int* value);
     static int perform(ANativeWindow* window, int operation, ...);
 
-    static sp<NativeBuffer> CreateGraphicBuffer(private_handle_t* buffer);
+    static sp<NativeBuffer> CreateGraphicBuffer(native_handle_t* buffer);
 
     inline unsigned int round_up_to_page_size(unsigned int x)
     {

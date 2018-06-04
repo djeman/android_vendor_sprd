@@ -51,6 +51,7 @@ int SprdVDLayerList:: updateGeometry(hwc_display_contents_1_t *list)
     mOSDLayerCount = 0;
     mVideoLayerCount = 0;
     mLayerCount = 0;
+    mSkipMode = false;
 
     if (list == NULL)
     {
@@ -126,17 +127,17 @@ int SprdVDLayerList:: updateGeometry(hwc_display_contents_1_t *list)
          {
              mFBTargetLayer = &mLayerList[i];
 
-             struct private_handle_t *privateH = (struct private_handle_t *)(layer->handle);
+             native_handle_t *privateH = (native_handle_t *)(layer->handle);
              if (privateH == NULL)
              {
                  ALOGI_IF(mDebugFlag, "VirtualDisplay FBT layer privateH is NULL, privateH addr: %p", (void *)privateH);
                  continue;
              }
-             ALOGI_IF(mDebugFlag, "VirtualDisplay HWC_FBT layer, ignore it, format: 0x%x", privateH->format);
+             ALOGI_IF(mDebugFlag, "VirtualDisplay HWC_FBT layer, ignore it, format: 0x%x", ADP_FORMAT(privateH));
 
              if (mFBTargetLayer)
              {
-                 mFBTargetLayer->setLayerFormat(privateH->format);
+                 mFBTargetLayer->setLayerFormat(ADP_FORMAT(privateH));
              }
              else
              {
@@ -159,6 +160,7 @@ int SprdVDLayerList:: updateGeometry(hwc_display_contents_1_t *list)
 
 int SprdVDLayerList:: revistGeometry(hwc_display_contents_1_t *list)
 {
+    HWC_IGNORE(list);
 #ifdef FORCE_HWC_COPY_FOR_VIRTUAL_DISPLAYS
     SprdHWLayer *l = &(mLayerList[0]);
     hwc_layer_1_t *layer = l->getAndroidLayer();
@@ -174,19 +176,19 @@ int SprdVDLayerList:: revistGeometry(hwc_display_contents_1_t *list)
         return 0;
     }
 
-    struct private_handle_t *privateH = (struct private_handle_t *)(layer->handle);
+    native_handle_t *privateH = (native_handle_t *)(layer->handle);
     if (privateH == NULL)
     {
         ALOGI_IF(mDebugFlag, "SprdVDLayerList:: revistGeometry privateH is NULL");
         return 0;
     }
 
-    if ((privateH->format != HAL_PIXEL_FORMAT_YCbCr_420_SP)
-        && (privateH->format != HAL_PIXEL_FORMAT_RGBA_8888)
-        && (privateH->format != HAL_PIXEL_FORMAT_RGBX_8888)
-        && (privateH->format != HAL_PIXEL_FORMAT_BGRA_8888)
-        && (privateH->format != HAL_PIXEL_FORMAT_RGB_888)
-        && (privateH->format != HAL_PIXEL_FORMAT_RGB_565))
+    if ((ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YCbCr_420_SP)
+        && (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBA_8888)
+        && (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBX_8888)
+        && (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_BGRA_8888)
+        && (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGB_888)
+        && (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGB_565))
     {
         ALOGI_IF(mDebugFlag, "SprdVDLayerList:: revistGeometry not support format");
         return 0;
@@ -206,13 +208,13 @@ int SprdVDLayerList:: revistGeometry(hwc_display_contents_1_t *list)
 
 int SprdVDLayerList:: prepareOSDLayer(SprdHWLayer *l)
 {
-
+    HWC_IGNORE(l);
     return 0;
 }
 
 int SprdVDLayerList:: prepareVideoLayer(SprdHWLayer *l)
 {
-
+    HWC_IGNORE(l);
     return 0;
 }
 

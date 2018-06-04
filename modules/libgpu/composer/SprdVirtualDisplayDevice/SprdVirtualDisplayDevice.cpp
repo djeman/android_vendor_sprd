@@ -98,17 +98,20 @@ int SprdVirtualDisplayDevice:: Init()
 
 int SprdVirtualDisplayDevice:: getDisplayAttributes(DisplayAttributes *dpyAttributes)
 {
+    HWC_IGNORE(dpyAttributes);
     return 0;
 }
 
 int SprdVirtualDisplayDevice:: setCursorPositionAsync(int x_pos, int y_pos)
 {
-
+    HWC_IGNORE(x_pos);
+    HWC_IGNORE(y_pos);
     return 0;
 }
 
 int SprdVirtualDisplayDevice:: prepare(hwc_display_contents_1_t *list, unsigned int accelerator)
 {
+    HWC_IGNORE(accelerator);
     queryDebugFlag(&mDebugFlag);
     queryDumpFlag(&mDumpFlag);
 
@@ -171,9 +174,6 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
     }
     SprdFBTLayer->updateAndroidLayer(FBTargetLayer);
 
-    const native_handle_t *pNativeHandle = FBTargetLayer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
-
     ALOGI_IF(mDebugFlag, "Start Display VirtualDisplay FBT layer");
 
     if (FBTargetLayer->acquireFenceFd >= 0)
@@ -193,11 +193,11 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
 
     if (mHWCCopy)
     {
-        struct private_handle_t *outHandle = ((struct private_handle_t *)list->outbuf);
+        native_handle_t *outHandle = ((native_handle_t *)list->outbuf);
         bool TargetIsRGBFormat = false;
         if (outHandle
-            && (outHandle->format != HAL_PIXEL_FORMAT_YCbCr_420_SP)
-            && (outHandle->format != HAL_PIXEL_FORMAT_YCrCb_420_SP))
+            && (ADP_FORMAT(outHandle) != HAL_PIXEL_FORMAT_YCbCr_420_SP)
+            && (ADP_FORMAT(outHandle) != HAL_PIXEL_FORMAT_YCrCb_420_SP))
         {
             TargetIsRGBFormat = true;
         }

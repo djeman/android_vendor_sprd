@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -36,7 +35,6 @@
 #ifndef _SPRD_VIRTUAL_DISPLAY_DEVICE_H_
 #define _SPRD_VIRTUAL_DISPLAY_DEVICE_H_
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <hardware/hardware.h>
@@ -55,8 +53,7 @@
 
 using namespace android;
 
-class SprdVirtualDisplayDevice
-{
+class SprdVirtualDisplayDevice {
 public:
     SprdVirtualDisplayDevice();
     ~SprdVirtualDisplayDevice();
@@ -97,4 +94,4 @@ private:
 
 };
 
-#endif
+#endif  // #ifndef _SPRD_VIRTUAL_DISPLAY_DEVICE_H_

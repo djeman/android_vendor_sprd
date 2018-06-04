@@ -386,18 +386,19 @@ int dumpImage(hwc_display_contents_1_t *list)
     for (size_t i =0; i < list->numHwLayers; i++)
     {
         hwc_layer_1_t *l = &(list->hwLayers[i]);
-        struct private_handle_t *pH = (struct private_handle_t *)l->handle;
+        native_handle_t *pH = (native_handle_t *)l->handle;
         if (pH == NULL)
         {
             continue;
         }
 
-        Rect bounds(pH->stride, pH->height);
+        Rect bounds(ADP_STRIDE(pH), ADP_HEIGHT(pH));
         void* vaddr;
 
         GraphicBufferMapper::get().lock((buffer_handle_t)pH, GRALLOC_USAGE_SW_READ_OFTEN, bounds, &vaddr);
 
-        dump_layer(dumpPath, (char *)vaddr, "Layer", pH->width, pH->height, pH->format, GeometryChangedNum, index, i);
+        dump_layer(dumpPath, (char *)vaddr, "Layer", ADP_STRIDE(pH), ADP_HEIGHT(pH), 
+            ADP_FORMAT(l->handle), GeometryChangedNum, index, i);
 
         GraphicBufferMapper::get().unlock((buffer_handle_t)pH);
     }
@@ -407,20 +408,20 @@ int dumpImage(hwc_display_contents_1_t *list)
     return 0;
 }
 
-int dumpOverlayImage(private_handle_t* buffer, const char *name)
+int dumpOverlayImage(native_handle_t* buffer, const char *name)
 {
     static int index = 0;
 
     getDumpPath(dumpPath);
 
-    Rect bounds(buffer->width, buffer->height);
+    Rect bounds(ADP_STRIDE(buffer), ADP_HEIGHT(buffer));
     void* vaddr;
 
     GraphicBufferMapper::get().lock((buffer_handle_t)buffer, GRALLOC_USAGE_SW_READ_OFTEN, bounds, &vaddr);
 
     dump_layer(dumpPath, (char const*)vaddr, name,
-                   buffer->width, buffer->height,
-                   buffer->format, 0, index);
+                   ADP_STRIDE(buffer), ADP_HEIGHT(buffer),
+                   ADP_FORMAT(buffer), 0, index);
 
     GraphicBufferMapper::get().unlock((buffer_handle_t)buffer);
 

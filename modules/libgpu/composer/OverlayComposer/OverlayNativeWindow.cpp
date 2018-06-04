@@ -96,6 +96,7 @@ int OverlayNativeWindow:: releaseNativeBuffer()
 
 void OverlayNativeWindow:: notifyDirtyTarget(bool flag)
 {
+    HWC_IGNORE(flag);
     OverlayNativeWindow* self = getSelf(this);
     if (!(self->mDirtyTargetFlag))
     {
@@ -105,15 +106,16 @@ void OverlayNativeWindow:: notifyDirtyTarget(bool flag)
     }
 }
 
-sp<NativeBuffer> OverlayNativeWindow::CreateGraphicBuffer(private_handle_t* buffer)
+sp<NativeBuffer> OverlayNativeWindow::CreateGraphicBuffer(native_handle_t* buffer)
 {
     sp<NativeBuffer> nativeBuffer = NULL;
 
-    nativeBuffer = new NativeBuffer(buffer->width,
-                                    buffer->height,
-                                    buffer->format, GRALLOC_USAGE_HW_FB);
-    nativeBuffer->handle = buffer;
-    nativeBuffer->stride = buffer->width;
+    nativeBuffer = new NativeBuffer(ADP_WIDTH(buffer),
+                                    ADP_HEIGHT(buffer),
+                                    ADP_FORMAT(buffer),
+                                    GRALLOC_USAGE_HW_FB);
+    nativeBuffer->handle = (native_handle_t*)buffer;
+    nativeBuffer->stride = ADP_WIDTH(buffer);
 
     return nativeBuffer;
 }
@@ -131,7 +133,7 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
         self->mCondition.wait(self->mutex);
     }
 
-    private_handle_t* IONBuffer = self->mDisplayPlane->dequeueBuffer();
+    native_handle_t* IONBuffer = self->mDisplayPlane->dequeueBuffer();
     if (buffer == NULL)
     {
         ALOGE("Failed to get the Display plane buffer");
@@ -161,14 +163,15 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
 #ifdef INVALIDATE_WINDOW_TARGET
     if (self->mDirtyTargetFlag)
     {
-        IONBuffer->buf_idx = 0x100;
+        ADP_BUFINDEX(IONBuffer) = 0x100;
     }
 #endif
 
     *fenceFd = -1;
 
     queryDebugFlag(&mDebugFlag);
-    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::dequeueBuffer phy addr:%p", (void *)(((private_handle_t*)(*buffer)->handle)->phyaddr));
+    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::dequeueBuffer phy addr:%p", 
+        (void *)(ADP_PHYADDR((*buffer)->handle)));
     return 0;
 }
 
@@ -176,7 +179,7 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
 int OverlayNativeWindow::queueBuffer(ANativeWindow* window,
         ANativeWindowBuffer* buffer, int fenceFd)
 {
-    private_handle_t *hnd = (private_handle_t *)buffer->handle;
+    native_handle_t *hnd = (native_handle_t *)buffer->handle;
     OverlayNativeWindow* self = getSelf(window);
     Mutex::Autolock _l(self->mutex);
 
@@ -198,12 +201,13 @@ int OverlayNativeWindow::queueBuffer(ANativeWindow* window,
         self->mDirtyTargetFlag = false;
     }
 #ifdef INVALIDATE_WINDOW_TARGET
-    hnd->buf_idx = 0;
+    ADP_BUFINDEX(hnd) = 0;
 #endif
     self->mCondition.broadcast();
 
     queryDebugFlag(&mDebugFlag);
-    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::queueBuffer phy addr:%p", (void *)(((private_handle_t*)buffer->handle)->phyaddr));
+    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::queueBuffer phy addr:%p", 
+        (void *)(ADP_PHYADDR(buffer->handle)));
 
     return 0;
 }
@@ -228,6 +232,9 @@ int OverlayNativeWindow::lockBuffer(ANativeWindow* window,
 
 int OverlayNativeWindow::cancelBuffer(ANativeWindow* window, ANativeWindowBuffer* buffer, int fenceFd)
 {
+    HWC_IGNORE(buffer);
+    HWC_IGNORE(fenceFd);
+
     const OverlayNativeWindow* self = getSelf(window);
     Mutex::Autolock _l(self->mutex);
 
@@ -272,6 +279,12 @@ int OverlayNativeWindow::query(const ANativeWindow* window,
         case NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS:
             *value = 1;
             return NO_ERROR;
+        case NATIVE_WINDOW_DEFAULT_DATASPACE:
+            *value = 0;
+            return NO_ERROR;
+	case NATIVE_WINDOW_BUFFER_AGE:
+	    *value = 0;
+	    return NO_ERROR;
     }
     return BAD_VALUE;
 
@@ -280,6 +293,7 @@ int OverlayNativeWindow::query(const ANativeWindow* window,
 int OverlayNativeWindow::perform(ANativeWindow* window,
         int operation, ...)
 {
+    HWC_IGNORE(window);
     switch (operation) {
         case NATIVE_WINDOW_CONNECT:
         case NATIVE_WINDOW_DISCONNECT:
@@ -290,6 +304,7 @@ int OverlayNativeWindow::perform(ANativeWindow* window,
         case NATIVE_WINDOW_SET_BUFFERS_TRANSFORM:
         case NATIVE_WINDOW_API_CONNECT:
         case NATIVE_WINDOW_API_DISCONNECT:
+        case NATIVE_WINDOW_SET_BUFFERS_DATASPACE:
             // TODO: we should implement these
             return NO_ERROR;
 
@@ -308,6 +323,9 @@ int OverlayNativeWindow::perform(ANativeWindow* window,
 int OverlayNativeWindow::setSwapInterval(
         ANativeWindow* window, int interval)
 {
+    HWC_IGNORE(window);
+    HWC_IGNORE(interval);
+
     //hwc_composer_device_t* fb = getSelf(window)->hwc_dev;
   //  return fb->setSwapInterval(fb, interval);
     return 0;

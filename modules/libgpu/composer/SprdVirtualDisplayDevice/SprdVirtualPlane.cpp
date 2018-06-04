@@ -77,40 +77,40 @@ bool SprdVirtualPlane:: close()
     return true;
 }
 
-private_handle_t *SprdVirtualPlane:: dequeueBuffer()
+native_handle_t *SprdVirtualPlane:: dequeueBuffer()
 {
-    struct private_handle_t *outHandle = ((struct private_handle_t *)mAndroidLayerList->outbuf);
+    native_handle_t* outHandle = (native_handle_t*)mAndroidLayerList->outbuf;
     if (outHandle == NULL)
     {
         ALOGE("SprdVirtualPlane:: dequeueBuffer outHandle is NULL");
         return NULL;
     }
 
-    AttachDisplayBuffer((struct private_handle_t *)(mAndroidLayerList->outbuf));
+    AttachDisplayBuffer(outHandle);
 
     if (mDisplayBuffer == NULL)
     {
         ALOGE("SprdVirtualPlane:: dequeueBuffer failed");
         return NULL;
     }
-    struct private_handle_t *privateH = (struct private_handle_t *)mDisplayBuffer;
+    native_handle_t* privateH = mDisplayBuffer;
     if (privateH == NULL)
     {
         ALOGE("SprdVirtualPlane:: dequeueBuffer Display Buffer handle is NULL");
         return NULL;
     }
 
-    bool phyType = (privateH->flags & private_handle_t::PRIV_FLAGS_USES_PHY);
+    bool phyType = (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
 
     queryDebugFlag(&mDebugFlag);
 
-    mPlaneWidth = privateH->width;
-    mPlaneHeight = privateH->height;
+    mPlaneWidth = ADP_WIDTH(privateH);
+    mPlaneHeight = ADP_HEIGHT(privateH);
     mPlaneFormat = mDefaultPlaneFormat;
 
-    ALOGI_IF(mDebugFlag, "SprdVirtualPlane::dequeueBuffer width:%d, height: %d, vir addr: %p, phyAddr: %d, handle format: %d",
-             mPlaneWidth, mPlaneHeight, (void *)(privateH->base),
-             phyType, privateH->format);
+    ALOGI_IF(mDebugFlag, "SprdVirtualPlane::dequeueBuffer width:%d, height: %d, fd: %d, phyAddr: %d, handle format: %d",
+             mPlaneWidth, mPlaneHeight, ADP_BUFFD(privateH),
+             phyType, ADP_FORMAT(privateH));
 
     return mDisplayBuffer;
 }
@@ -171,12 +171,12 @@ int SprdVirtualPlane:: AttachVDFramebufferTargetLayer(SprdHWLayer *SprdFBTLayer)
     return 0;
 }
 
-void SprdVirtualPlane:: AttachDisplayBuffer(private_handle_t *outputBuffer)
+void SprdVirtualPlane:: AttachDisplayBuffer(native_handle_t *outputBuffer)
 {
     mDisplayBuffer = outputBuffer;
 }
 
-void SprdVirtualPlane:: getPlaneGeometry(unsigned int *width, unsigned int *height, int *format)
+void SprdVirtualPlane:: getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const
 {
     if (width == NULL || height == NULL || format == NULL)
     {
@@ -208,7 +208,7 @@ void SprdVirtualPlane:: AttachVDLayer(SprdHWLayer **videoLayerList, int videoLay
     mOSDLayerCount = osdLayerCount;
 }
 
-private_handle_t* SprdVirtualPlane:: getPlaneBuffer()
+native_handle_t* SprdVirtualPlane:: getPlaneBuffer() const
 {
     return mDisplayBuffer;
 }

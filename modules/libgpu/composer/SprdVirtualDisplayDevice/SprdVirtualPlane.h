@@ -61,10 +61,10 @@ public:
      *  dequeuebuffer: gain a available buffer for SprdVirtualPlane.
      *  queueBuffer: display a buffer.
      * */
-    virtual private_handle_t* dequeueBuffer();
+    virtual native_handle_t* dequeueBuffer();
     virtual int queueBuffer();
-    virtual private_handle_t* getPlaneBuffer();
-    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format);
+    virtual native_handle_t* getPlaneBuffer() const;
+    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const;
     /*****************************************************************************/
 
     virtual bool open();
@@ -84,32 +84,32 @@ public:
      * */
     int UpdateAndroidLayerList(hwc_display_contents_1_t *list);
 
-    inline int getPlaneFormat()
+    inline int getPlaneFormat() const
     {
         return mPlaneFormat;
     }
 
-    inline SprdHWLayer *getSprdHWSourceLayer()
+    inline SprdHWLayer *getSprdHWSourceLayer() const
     {
         return mFBTLayer;
     }
 
-    inline SprdHWLayer **getSourceVideoLayerList()
+    inline SprdHWLayer **getSourceVideoLayerList() const
     {
         return mVideoLayerList;
     }
 
-    inline int getSourceVideoLayerCount()
+    inline int getSourceVideoLayerCount() const
     {
         return mVideoLayerCount;
     }
 
-    inline SprdHWLayer **getSourceOSDLayerList()
+    inline SprdHWLayer **getSourceOSDLayerList() const
     {
         return mOSDLayerList;
     }
 
-    inline int getSourceOSDLayerCount()
+    inline int getSourceOSDLayerCount() const
     {
         return mOSDLayerCount;
     }
@@ -127,7 +127,7 @@ private:
     SprdHWLayer **mOSDLayerList;
     hwc_display_contents_1_t *mAndroidLayerList;
     SprdHWLayer *mFBTLayer;
-    private_handle_t *mDisplayBuffer;
+    native_handle_t *mDisplayBuffer;
     int mDebugFlag;
     int mDumpFlag;
 
@@ -136,7 +136,7 @@ private:
     /*
      *  Attach DisplayBuffer to SprdVirtualPlane. 
      * */
-    void AttachDisplayBuffer(private_handle_t *outputBuffer);
+    void AttachDisplayBuffer(native_handle_t *outputBuffer);
 };
 
 

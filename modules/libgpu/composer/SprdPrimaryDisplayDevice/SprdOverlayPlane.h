@@ -65,9 +65,9 @@ public:
      *  dequeueBuffer: gain a buffer for SprdOverlayPlane;
      *  queueBuffer: display a buffer.
      * */
-    virtual private_handle_t* dequeueBuffer();
+    virtual native_handle_t* dequeueBuffer();
     virtual int queueBuffer();
-    virtual private_handle_t* getPlaneBuffer();
+    virtual native_handle_t* getPlaneBuffer() const;
     /****************************************************/
 
     virtual bool open();
@@ -93,7 +93,7 @@ public:
      * */
     void enable();
 
-    SprdHWLayer *getOverlayLayer();
+    SprdHWLayer *getOverlayLayer() const;
 
     enum PlaneFormat getPlaneFormat();
 
@@ -106,7 +106,7 @@ private:
     unsigned int mOverlayPlaneCount;
     unsigned int mFreePlaneCount;
     PlaneContext *mContext;
-    private_handle_t* mBuffer;
+    native_handle_t* mBuffer;
     int mDisplayFormat;
     bool mPlaneDisable;
     int mDebugFlag;
@@ -116,7 +116,7 @@ private:
      * father classe SprdDisplayPlane interface.
      * flush: update the plane registers.
      * */
-    virtual private_handle_t* flush();
+    virtual native_handle_t* flush();
     //virtual void display();
     /********************************************/
 

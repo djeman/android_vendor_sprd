@@ -1,6 +1,6 @@
 #include <cutils/log.h>
 #include <hardware/gralloc.h>
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 #include <ui/GraphicBuffer.h>
 #include "gpu_transform.h"
 #include <pthread.h>

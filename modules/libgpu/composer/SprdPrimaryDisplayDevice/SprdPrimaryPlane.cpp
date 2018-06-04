@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /******************************************************************************
  **                   Edit    History                                         *
  **---------------------------------------------------------------------------*
@@ -33,11 +32,8 @@
  ** Author:         zhongjun.chen@spreadtrum.com                              *
  *****************************************************************************/
 
-
-
 #include "SprdPrimaryPlane.h"
 #include "dump.h"
-
 
 using namespace android;
 
@@ -60,13 +56,11 @@ SprdPrimaryPlane::SprdPrimaryPlane(FrameBufferInfo *fbInfo)
       mDirectDisplayPhyAddr(NULL),
       mThreadID(-1),
       mDebugFlag(0),
-      mDumpFlag(0)
-{
+      mDumpFlag(0) {
 #ifdef PRIMARYPLANE_USE_RGB565
     mDefaultDisplayFormat = HAL_PIXEL_FORMAT_RGB_565;
 #else
     mDefaultDisplayFormat = HAL_PIXEL_FORMAT_RGBA_8888;
-    //mDefaultDisplayFormat = HAL_PIXEL_FORMAT_RGBX_8888;
 #endif
 
     SprdDisplayPlane::setGeometry(mFBInfo->fb_width, mFBInfo->fb_height, mDefaultDisplayFormat);
@@ -84,13 +78,9 @@ SprdPrimaryPlane::SprdPrimaryPlane(FrameBufferInfo *fbInfo)
     mThreadID = gettid();
 }
 
-SprdPrimaryPlane::~SprdPrimaryPlane()
-{
-    close();
-}
+SprdPrimaryPlane::~SprdPrimaryPlane() { close(); }
 
-private_handle_t* SprdPrimaryPlane::dequeueBuffer()
-{
+native_handle_t* SprdPrimaryPlane::dequeueBuffer() {
     bool ret = false;
     int localThreadID = -1;
 
@@ -101,24 +91,18 @@ private_handle_t* SprdPrimaryPlane::dequeueBuffer()
 
     enable();
 
-    if (mDisplayFBTargetLayerFlag)
-    {
+    if (mDisplayFBTargetLayerFlag) {
         mPlaneBufferPhyAddr = mDisplayFBTargetPhyAddr;
-    }
-    else if (GetDirectDisplay())
-    {
+    } else if (GetDirectDisplay()) {
         mPlaneBufferPhyAddr = mDirectDisplayPhyAddr;
         ALOGI_IF(mDebugFlag, "SprdPrimaryPlane is in DirectDisplay Mode");
-    }
-    else
-    {
+    } else {
         mBuffer = SprdDisplayPlane::dequeueBuffer();
-        if (mBuffer == NULL)
-        {
+        if (mBuffer == NULL) {
             ALOGE("SprdPrimaryPlane cannot get ION buffer");
             return NULL;
         }
-        mPlaneBufferPhyAddr = (unsigned char *)(mBuffer->phyaddr);
+        mPlaneBufferPhyAddr = (unsigned char *)(ADP_PHYADDR(mBuffer));
     }
 
     mBufferIndex = SprdDisplayPlane:: getPlaneBufferIndex();
@@ -128,10 +112,8 @@ private_handle_t* SprdPrimaryPlane::dequeueBuffer()
     return mBuffer;
 }
 
-int SprdPrimaryPlane::queueBuffer()
-{
-    if ((mDisplayFBTargetLayerFlag || GetDirectDisplay()) == false)
-    {
+int SprdPrimaryPlane::queueBuffer() {
+    if ((mDisplayFBTargetLayerFlag || GetDirectDisplay()) == false) {
         SprdDisplayPlane::queueBuffer();
     }
 
@@ -142,35 +124,30 @@ int SprdPrimaryPlane::queueBuffer()
     return 0;
 }
 
-void SprdPrimaryPlane::AttachPrimaryLayer(SprdHWLayer *l, bool DirectDisplayFlag)
-{
+void SprdPrimaryPlane::AttachPrimaryLayer(SprdHWLayer *l, bool DirectDisplayFlag) {
     int ret = checkHWLayer(l);
 
-    if (ret != 0)
-    {
+    if (ret != 0) {
         ALOGE("Check Sprd PrimaryLayer failed");
         return;
     }
 
     mHWLayer = l;
 
-    if (DirectDisplayFlag)
-    {
+    if (DirectDisplayFlag) {
         hwc_layer_1_t *AndroidLayer = mHWLayer->getAndroidLayer();
         SetDisplayParameters(AndroidLayer);
     }
 }
 
-void SprdPrimaryPlane::AttachFramebufferTargetLayer(hwc_layer_1_t *FBTargetLayer)
-{
-    const native_handle_t *pNativeHandle = FBTargetLayer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+void SprdPrimaryPlane::AttachFramebufferTargetLayer(hwc_layer_1_t *FBTargetLayer) {
+    native_handle_t *privateH = (native_handle_t *)FBTargetLayer->handle;
     unsigned long phy_addr = 0;
     size_t size = 0;
 
-    mDisplayFormat = privateH->format;
+    mDisplayFormat = ADP_FORMAT(privateH);
 
-    MemoryHeapIon::Get_phy_addr_from_ion(privateH->share_fd, &phy_addr, &size);
+    MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(privateH), &phy_addr, &size);
 
     mDisplayFBTargetPhyAddr = (unsigned char *)phy_addr;
 
@@ -179,79 +156,68 @@ void SprdPrimaryPlane::AttachFramebufferTargetLayer(hwc_layer_1_t *FBTargetLayer
     ALOGI_IF(mDebugFlag, "FBTargetLayer FB addr:%p", (void *)mDisplayFBTargetPhyAddr);
 }
 
-bool SprdPrimaryPlane::SetDisplayParameters(hwc_layer_1_t *AndroidLayer)
-{
-    if (AndroidLayer == NULL)
-    {
+bool SprdPrimaryPlane::SetDisplayParameters(hwc_layer_1_t *AndroidLayer) {
+    if (AndroidLayer == NULL) {
         ALOGI_IF(mDebugFlag, "SprdHWLayer is NULL");
         mDirectDisplayFlag = false;
         return false;
     }
 
-    const native_handle_t *pNativeHandle = AndroidLayer->handle;
-    struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *privateH = (native_handle_t *)AndroidLayer->handle;
     unsigned long phy_addr = 0;
     size_t size = 0;
 
-    if (privateH == NULL)
-    {
+    if (privateH == NULL) {
         ALOGE("SetDisplayParameters privateH is NULL");
         mDirectDisplayFlag = false;
         return false;
     }
 
-    if ((privateH->format == HAL_PIXEL_FORMAT_YCbCr_420_SP) ||
-        (privateH->format == HAL_PIXEL_FORMAT_YCrCb_420_SP) ||
-        (privateH->format == HAL_PIXEL_FORMAT_YV12))
-    {
+    if ((ADP_FORMAT(privateH) == HAL_PIXEL_FORMAT_YCbCr_420_SP) ||
+        (ADP_FORMAT(privateH) == HAL_PIXEL_FORMAT_YCrCb_420_SP) ||
+        (ADP_FORMAT(privateH) == HAL_PIXEL_FORMAT_YV12)) {
         ALOGI("Current transform device and display device cannot support virtual adress");
         mDirectDisplayFlag = false;
         return false;
     }
 
-    if (!((privateH->flags) & (private_handle_t::PRIV_FLAGS_USES_PHY)))
-    {
+    if (!((ADP_FLAGS(privateH)) & (private_handle_t::PRIV_FLAGS_USES_PHY))) {
         ALOGI_IF(mDebugFlag, "Current device cannot support virtual adress");
         mDirectDisplayFlag = false;
         return false;
     }
 
-    if (AndroidLayer->transform != 0)
-    {
+    if (AndroidLayer->transform != 0) {
         ALOGI_IF(mDebugFlag, "This layer need to be transformed");
         mDirectDisplayFlag = false;
         return false;
     }
 
-    mDisplayFormat = privateH->format;
+    mDisplayFormat = ADP_FORMAT(privateH);
 
     mDirectDisplayFlag = true;
 
-    MemoryHeapIon::Get_phy_addr_from_ion(privateH->share_fd, &phy_addr, &size);
+    MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(privateH), &phy_addr, &size);
 
     mDirectDisplayPhyAddr = (unsigned char *)phy_addr;
 
     return mDirectDisplayFlag;
 }
 
-void SprdPrimaryPlane::display(bool DisplayOverlayPlane, bool DisplayPrimaryPlane, bool DisplayFBTarget)
-{
+void SprdPrimaryPlane::display(bool DisplayOverlayPlane, bool DisplayPrimaryPlane, bool DisplayFBTarget) {
     int PlaneType = 0;
     struct overlay_display_setting displayContext;
 
     displayContext.display_mode = SPRD_DISPLAY_OVERLAY_ASYNC;
 
-    if (DisplayOverlayPlane)
-    {
+    if (DisplayOverlayPlane) {
         PlaneType |= SPRD_LAYERS_IMG;
     }
 
     if (mPlaneDisable == false &&
-        (DisplayPrimaryPlane || DisplayFBTarget))
-    {
+        (DisplayPrimaryPlane || DisplayFBTarget)) {
         PlaneType |= SPRD_LAYERS_OSD;
-        if (GetDirectDisplay())
-        {
+        if (GetDirectDisplay()) {
             displayContext.display_mode = SPRD_DISPLAY_OVERLAY_SYNC;
         }
     }
@@ -276,44 +242,26 @@ void SprdPrimaryPlane::display(bool DisplayOverlayPlane, bool DisplayPrimaryPlan
     mDisplayFormat = mDefaultDisplayFormat;
 }
 
-void SprdPrimaryPlane::disable()
-{
-    mPlaneDisable = true;
-}
+void SprdPrimaryPlane::disable() { mPlaneDisable = true; }
 
-void SprdPrimaryPlane::enable()
-{
-    mPlaneDisable = false;
-}
+void SprdPrimaryPlane::enable() { mPlaneDisable = false; }
 
-bool SprdPrimaryPlane::online()
-{
-
-    if (mPlaneDisable)
-    {
+bool SprdPrimaryPlane::online() {
+    if (mPlaneDisable) {
         ALOGI_IF(mDebugFlag, "SprdPrimaryPlane has been disabled");
         return false;
     }
 
-    if (mFreePlaneCount == 0)
-    {
+    if (mFreePlaneCount == 0) {
         ALOGI_IF(mDebugFlag, "SprdPrimaryPlanens is not avaiable");
         return false;
     }
 
-    //if (mHWLayer == NULL || mDisplayFBTargetLayerFlag == false)
-    //{
-    //    ALOGI("SprdPrimaryPlane SprdHWLayer or FramebufferTarget layer is NULL");
-    //    return false;
-    //}
-
     return true;
 }
 
-int SprdPrimaryPlane::checkHWLayer(SprdHWLayer *l)
-{
-    if (l == NULL)
-    {
+int SprdPrimaryPlane::checkHWLayer(SprdHWLayer *l) {
+    if (l == NULL) {
         ALOGE("SprdPrimaryPlane Failed to check the list, SprdHWLayer is NULL");
         return -1;
     }
@@ -321,13 +269,11 @@ int SprdPrimaryPlane::checkHWLayer(SprdHWLayer *l)
     return 0;
 }
 
-enum PlaneFormat SprdPrimaryPlane::getPlaneFormat()
-{
+enum PlaneFormat SprdPrimaryPlane::getPlaneFormat() {
     enum PlaneFormat format;
     int displayFormat = mDisplayFormat;
 
-    switch(displayFormat)
-    {
+    switch (displayFormat) {
         case HAL_PIXEL_FORMAT_RGBX_8888:
         case HAL_PIXEL_FORMAT_RGBA_8888:
             format = PLANE_FORMAT_RGB888;
@@ -343,34 +289,29 @@ enum PlaneFormat SprdPrimaryPlane::getPlaneFormat()
     return format;
 }
 
-private_handle_t* SprdPrimaryPlane::flush()
-{
+native_handle_t* SprdPrimaryPlane::flush() {
     enum PlaneFormat format;
     struct overlay_setting *BaseContext = &(mContext->BaseContext);
-    private_handle_t* flushingBuffer = NULL;
+    native_handle_t* flushingBuffer = NULL;
 
     queryDebugFlag(&mDebugFlag);
     queryDumpFlag(&mDumpFlag);
 
     InvalidatePlaneContext();
 
-    if ((mDisplayFBTargetLayerFlag || GetDirectDisplay()) == false)
-    {
+    if ((mDisplayFBTargetLayerFlag || GetDirectDisplay()) == false) {
         flushingBuffer = SprdDisplayPlane::flush();
     }
 
     BaseContext->layer_index = SPRD_LAYERS_OSD;
 
     format = getPlaneFormat();
-    if (format == PLANE_FORMAT_RGB888)
-    {
+    if (format == PLANE_FORMAT_RGB888) {
         BaseContext->data_type = SPRD_DATA_FORMAT_RGB888;
         BaseContext->y_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
         BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
         BaseContext->rb_switch = 1;
-    }
-    else if (format ==  PLANE_FORMAT_RGB565)
-    {
+    } else if (format == PLANE_FORMAT_RGB565) {
         BaseContext->data_type = SPRD_DATA_FORMAT_RGB565;
         BaseContext->y_endian = SPRD_DATA_ENDIAN_B2B3B0B1;
         BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
@@ -382,24 +323,19 @@ private_handle_t* SprdPrimaryPlane::flush()
     BaseContext->rect.w = mFBInfo->fb_width;
     BaseContext->rect.h = mFBInfo->fb_height;
 
-    if (GetDirectDisplay() || mDisplayFBTargetLayerFlag)
-    {
-        if (mPlaneBufferPhyAddr == NULL)
-        {
+    if (GetDirectDisplay() || mDisplayFBTargetLayerFlag) {
+        if (mPlaneBufferPhyAddr == NULL) {
             ALOGE("mPlaneBufferPhyAddr is NULL");
             return NULL;
         }
         BaseContext->buffer = mPlaneBufferPhyAddr;
-    }
-    else
-    {
-        if (flushingBuffer == NULL)
-        {
+    } else {
+        if (flushingBuffer == NULL) {
             ALOGE("SprdPrimaryPlane::flush flushingBuffer error");
             return NULL;
         }
 
-        BaseContext->buffer = (unsigned char *)(flushingBuffer->phyaddr);
+        BaseContext->buffer = (unsigned char *)(ADP_PHYADDR(flushingBuffer));
     }
 
     ALOGI_IF(mDebugFlag, "SprdPrimaryPlane::flush  osd overlay parameter datatype = %d, x = %d, y = %d, w = %d, h = %d, buffer = 0x%p",
@@ -411,15 +347,13 @@ private_handle_t* SprdPrimaryPlane::flush()
              BaseContext->buffer);
 
     if ((HWCOMPOSER_DUMP_OSD_OVERLAY_FLAG & mDumpFlag)
-        && (flushingBuffer != NULL))
-    {
+        && (flushingBuffer != NULL)) {
         const char *name = "OverlayOSD";
 
         dumpOverlayImage(flushingBuffer, name);
     }
 
-    if (ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext) == -1)
-    {
+    if (ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext) == -1) {
         ALOGE("fail osd SPRD_FB_SET_OVERLAY");
         ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext);//Fix ME later
     }
@@ -427,10 +361,8 @@ private_handle_t* SprdPrimaryPlane::flush()
     return flushingBuffer;
 }
 
-bool SprdPrimaryPlane::open()
-{
-    if (SprdDisplayPlane::open() == false)
-    {
+bool SprdPrimaryPlane::open() {
+    if (SprdDisplayPlane::open() == false) {
         ALOGE("SprdPrimaryPlane::open failed");
         return false;
     };
@@ -441,8 +373,7 @@ bool SprdPrimaryPlane::open()
     return true;
 }
 
-bool SprdPrimaryPlane::close()
-{
+bool SprdPrimaryPlane::close() {
     SprdDisplayPlane::close();
 
     mFreePlaneCount = 0;
@@ -450,25 +381,16 @@ bool SprdPrimaryPlane::close()
     return true;
 }
 
-void SprdPrimaryPlane::InvalidatePlaneContext()
-{
+void SprdPrimaryPlane::InvalidatePlaneContext() {
     memset(&(mContext->BaseContext), 0x00, sizeof(struct overlay_setting));
 }
 
-SprdHWLayer *SprdPrimaryPlane::getPrimaryLayer()
-{
-    return mHWLayer;
-}
+SprdHWLayer *SprdPrimaryPlane::getPrimaryLayer() const { return mHWLayer; }
 
-int SprdPrimaryPlane::getPlaneBufferIndex()
-{
-    return mBufferIndex;
-}
+int SprdPrimaryPlane::getPlaneBufferIndex() const { return mBufferIndex; }
 
-private_handle_t* SprdPrimaryPlane::getPlaneBuffer()
-{
-    if (mBuffer == NULL)
-    {
+native_handle_t* SprdPrimaryPlane::getPlaneBuffer() const {
+    if (mBuffer == NULL) {
         ALOGE("Failed to get hte SprdPrimaryPlane buffer");
         return NULL;
     }
@@ -476,11 +398,8 @@ private_handle_t* SprdPrimaryPlane::getPlaneBuffer()
     return mBuffer;
 }
 
-
-void SprdPrimaryPlane::getPlaneGeometry(unsigned int *width, unsigned int *height, int *format)
-{
-    if (width == NULL || height == NULL || format == NULL)
-    {
+void SprdPrimaryPlane::getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const {
+    if (width == NULL || height == NULL || format == NULL) {
         ALOGE("getPlaneGeometry, input parameters are NULL");
         return;
     }
@@ -491,18 +410,15 @@ void SprdPrimaryPlane::getPlaneGeometry(unsigned int *width, unsigned int *heigh
 }
 
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-private_handle_t* SprdPrimaryPlane:: dequeueFriendBuffer()
-{
+native_handle_t* SprdPrimaryPlane::dequeueFriendBuffer() {
     return SprdDisplayPlane::dequeueBuffer();
 }
 
-int SprdPrimaryPlane:: queueFriendBuffer()
-{
+int SprdPrimaryPlane::queueFriendBuffer() {
     return SprdDisplayPlane::queueBuffer();
 }
 
-private_handle_t* SprdPrimaryPlane:: flushFriend()
-{
+native_handle_t* SprdPrimaryPlane::flushFriend() {
     return SprdDisplayPlane::flush();
 }
 #endif

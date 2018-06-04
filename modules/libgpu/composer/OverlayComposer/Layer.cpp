@@ -110,7 +110,7 @@ GLfloat mVertices[4][2];
 struct TexCoords texCoord[4];
 struct TexCoords vertices[4];
 
-Layer::Layer(OverlayComposer* composer, struct private_handle_t *h)
+Layer::Layer(OverlayComposer* composer, native_handle_t *h)
     : mComposer(composer), mPrivH(h),
       mImage(EGL_NO_IMAGE_KHR),
       mTexTarget(GL_TEXTURE_EXTERNAL_OES),
@@ -162,10 +162,10 @@ bool Layer::wrapGraphicBuffer()
     uint32_t size;
     uint32_t stride;
 
-    getSizeStride(mPrivH->width, mPrivH->height, mPrivH->format, size, stride);
+    getSizeStride(ADP_WIDTH(mPrivH), ADP_HEIGHT(mPrivH), ADP_FORMAT(mPrivH), size, stride);
 
-    mGFXBuffer = new GraphicBuffer(mPrivH->width, mPrivH->height,
-                                   mPrivH->format, GraphicBuffer::USAGE_HW_TEXTURE,
+    mGFXBuffer = new GraphicBuffer(ADP_WIDTH(mPrivH), ADP_HEIGHT(mPrivH),
+                                   ADP_FORMAT(mPrivH), GraphicBuffer::USAGE_HW_TEXTURE,
                                    stride,
                                    (native_handle_t*)mPrivH, false);
     if (mGFXBuffer->initCheck() != NO_ERROR)
@@ -387,10 +387,10 @@ bool Layer::prepareDrawData()
 {
     sp<GraphicBuffer>& buf(mGFXBuffer);
 
-    GLfloat left = GLfloat(mRect->left) / GLfloat(mPrivH->width);
-    GLfloat top = GLfloat(mRect->top) / GLfloat(mPrivH->height);
-    GLfloat right = GLfloat(mRect->right) / GLfloat(mPrivH->width);
-    GLfloat bottom = GLfloat(mRect->bottom) / GLfloat(mPrivH->height);
+    GLfloat left = GLfloat(mRect->left) / GLfloat(ADP_WIDTH(mPrivH));
+    GLfloat top = GLfloat(mRect->top) / GLfloat(ADP_HEIGHT(mPrivH));
+    GLfloat right = GLfloat(mRect->right) / GLfloat(ADP_WIDTH(mPrivH));
+    GLfloat bottom = GLfloat(mRect->bottom) / GLfloat(ADP_HEIGHT(mPrivH));
 
     texCoord[0].u = texCoord[1].u = left;
     texCoord[0].v = texCoord[3].v = top;

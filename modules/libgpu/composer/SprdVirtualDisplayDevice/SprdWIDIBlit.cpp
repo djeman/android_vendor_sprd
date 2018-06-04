@@ -143,7 +143,7 @@ bool SprdWIDIBlit:: threadLoop()
     bool SourcePhyAddrType = -1;
     bool DestPhyAddrType = -1;
     SprdHWLayer *SprdHWSourceLayer = NULL;
-    private_handle_t *DisplayHandle = NULL;
+    native_handle_t *DisplayHandle = NULL;
     struct sprdRect *SourceRect = NULL;
     unsigned int width = 0;
     unsigned int height = 0;
@@ -194,7 +194,7 @@ bool SprdWIDIBlit:: threadLoop()
         sem_post(&doneSem);
         return true;
     }
-    struct private_handle_t *privateH = (struct private_handle_t *)AndroidLayer->handle;
+    native_handle_t *privateH = (native_handle_t *)AndroidLayer->handle;
     if (privateH == NULL)
     {
         ALOGE("SprdWIDIBlit:: threadLoop private handle is NULL");
@@ -203,15 +203,15 @@ bool SprdWIDIBlit:: threadLoop()
     }
 
 #if HWC_USE_GXP_BLIT
-    SourcePhyAddrType = (privateH->flags & private_handle_t::PRIV_FLAGS_USES_PHY);
+    SourcePhyAddrType = (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
 
-    DestPhyAddrType = (DisplayHandle->flags & private_handle_t::PRIV_FLAGS_USES_PHY);
+    DestPhyAddrType = (ADP_FLAGS(DisplayHandle) & private_handle_t::PRIV_FLAGS_USES_PHY);
 
     ALOGI_IF(mDebugFlag, "SprdWIDIBlit:: threadLoop source handle addr: %p, flag: 0x%x, dest handle addr: %p, flag: 0x%x", (void *)privateH, privateH->flags, (void *)DisplayHandle, DisplayHandle->flags);
     if (SourcePhyAddrType && DestPhyAddrType)
     {
-        MemoryHeapIon::Get_phy_addr_from_ion(DisplayHandle->share_fd, &(DisplayHandle->phyaddr), &size);
-        MemoryHeapIon::Get_phy_addr_from_ion(privateH->share_fd, &(privateH->phyaddr), &size2);
+        MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(DisplayHandle), &(ADP_PHYADDR(DisplayHandle)), &size);
+        MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(privateH), &(ADP_PHYADDR(privateH)), &size2);
 
         mAccelerator->UpdateOutputFormat(GSP_DST_FMT_YUV420_2P);
 
@@ -281,9 +281,10 @@ bool SprdWIDIBlit:: threadLoop()
     mDisplayPlane->queueBuffer();
 
     queryDebugFlag(&mDebugFlag);
-    ALOGI_IF(mDebugFlag, "SprdWIDIBlit Source Layer width: %d, height: %d, format: %d, Destination width: %d, heigh: %d, format: %d",
-             privateH->width, privateH->height, privateH->format,
-             DisplayHandle->width, DisplayHandle->height, DisplayHandle->format);
+    ALOGI_IF(mDebugFlag, "SprdWIDIBlit Source Layer width: %d, height: %d, "
+			"format: %d, Destination width: %d, heigh: %d, format: %d",
+             ADP_WIDTH(privateH), ADP_HEIGHT(privateH), ADP_FORMAT(privateH),
+             ADP_WIDTH(DisplayHandle), ADP_HEIGHT(DisplayHandle), ADP_FORMAT(DisplayHandle));
 
     sem_post(&doneSem);
 
@@ -292,8 +293,10 @@ bool SprdWIDIBlit:: threadLoop()
     return true;
 }
 
-int SprdWIDIBlit:: NEONBlit(uint8_t *inrgb, uint8_t *outy, uint8_t *outuv, int32_t width_org, int32_t height_org, int32_t width_dst, int32_t height_dst)
+int SprdWIDIBlit:: NEONBlit(uint8_t *inrgb, uint8_t *outy, uint8_t *outuv, int32_t width_org, 
+                            int32_t height_org, int32_t width_dst, int32_t height_dst)
 {
+    HWC_IGNORE(height_dst);
     HWC_TRACE_CALL;
     if (inrgb == NULL || outy == NULL || outuv == NULL)
     {
@@ -764,7 +767,7 @@ GLuint SprdWIDIBlit:: createProgram(const char* pVertexSource, const char* pFrag
     return program;
 }
 
-sp<GraphicBuffer> SprdWIDIBlit:: wrapGraphicsBuffer(private_handle_t *handle)
+sp<GraphicBuffer> SprdWIDIBlit:: wrapGraphicsBuffer(native_handle_t *handle)
 {
     sp<GraphicBuffer> GFXBuffer = NULL;
 
@@ -774,8 +777,8 @@ sp<GraphicBuffer> SprdWIDIBlit:: wrapGraphicsBuffer(private_handle_t *handle)
         return NULL;
     }
 
-    GFXBuffer = new GraphicBuffer(handle->width, handle->height, handle->format,
-                               GraphicBuffer::USAGE_HW_TEXTURE, handle->stride,
+    GFXBuffer = new GraphicBuffer(ADP_WIDTH(handle), ADP_HEIGHT(handle), ADP_FORMAT(handle),
+                               GraphicBuffer::USAGE_HW_TEXTURE, ADP_STRIDE(handle),
                                (native_handle_t *)handle, false);
     if (GFXBuffer->initCheck() != NO_ERROR)
     {
@@ -1057,7 +1060,7 @@ void SprdWIDIBlit:: destoryGraphics()
     eglDestroyContext(dpy, context);
 }
 
-int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handle_t *TargetHandle, sp<GraphicBuffer>& Source, sp<GraphicBuffer>& Target)
+int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, native_handle_t *TargetHandle, sp<GraphicBuffer>& Source, sp<GraphicBuffer>& Target)
 {
     HWC_TRACE_CALL;
     if (AndroidLayer == NULL)
@@ -1065,7 +1068,7 @@ int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handl
         ALOGE("SprdWIDIBlit:: setupYuvTexSurface AndroidLayer is NULL");
         return -1;
     }
-    struct private_handle_t *SourceHandle = (struct private_handle_t *)AndroidLayer->handle;
+    native_handle_t *SourceHandle = (native_handle_t *)AndroidLayer->handle;
 
     if (SourceHandle == NULL || TargetHandle == NULL)
     {
@@ -1090,10 +1093,10 @@ int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handl
 #if Y_FIRST
         EGL_IMAGE_OFFSET_SPRD, 0,
 #else
-        EGL_IMAGE_OFFSET_SPRD, SourceHandle->width * SoruceHandle->height / 2,
+        EGL_IMAGE_OFFSET_SPRD, ADP_WIDTH(SourceHandle) * ADP_HEIGHT(SourceHandle) / 2,
 #endif
-        EGL_IMAGE_WIDTH_SPRD,  SourceHandle->width,
-        EGL_IMAGE_HEIGHT_SPRD, SourceHandle->height,
+        EGL_IMAGE_WIDTH_SPRD,  ADP_WIDTH(SourceHandle),
+        EGL_IMAGE_HEIGHT_SPRD, ADP_HEIGHT(SourceHandle),
         EGL_NONE
     };
 
@@ -1102,10 +1105,10 @@ int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handl
 #if Y_FIRST
         EGL_IMAGE_OFFSET_SPRD, 0,
 #else
-        EGL_IMAGE_OFFSET_SPRD, TargetHandle->width * TargetHandle->height / 2,
+        EGL_IMAGE_OFFSET_SPRD, ADP_WIDTH(TargetHandle) * ADP_HEIGHT(TargetHandle) / 2,
 #endif
-        EGL_IMAGE_WIDTH_SPRD,  TargetHandle->width,
-        EGL_IMAGE_HEIGHT_SPRD, TargetHandle->height,
+        EGL_IMAGE_WIDTH_SPRD,  ADP_WIDTH(TargetHandle),
+        EGL_IMAGE_HEIGHT_SPRD, ADP_HEIGHT(TargetHandle),
         EGL_NONE
     };
 
@@ -1187,22 +1190,22 @@ int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handl
 
     image_attrib_source[1] = EGL_IMAGE_FORMAT_A8L8_SPRD;
 #if Y_FIRST
-    image_attrib_source[3] = SourceHandle->width * SourceHandle->height;
+    image_attrib_source[3] = ADP_WIDTH(SourceHandle) * ADP_HEIGHT(SourceHandle);
 #else
     image_attrib_source[3] = 0;
 #endif
-    image_attrib_source[5] = SourceHandle->width / 2;
-    image_attrib_source[7] = SourceHandle->height / 2;
+    image_attrib_source[5] = ADP_WIDTH(SourceHandle) / 2;
+    image_attrib_source[7] = ADP_HEIGHT(SourceHandle) / 2;
 
 
     image_attrib[1] = EGL_IMAGE_FORMAT_A8L8_SPRD;
 #if Y_FIRST
-    image_attrib[3] = TargetHandle->width * TargetHandle->height;
+    image_attrib[3] = ADP_WIDTH(TargetHandle) * ADP_HEIGHT(TargetHandle);
 #else
     image_attrib[3] = 0;
 #endif
-    image_attrib[5] = TargetHandle->width / 2;
-    image_attrib[7] = TargetHandle->height / 2;
+    image_attrib[5] = ADP_WIDTH(TargetHandle) / 2;
+    image_attrib[7] = ADP_HEIGHT(TargetHandle) / 2;
 
     if (YUVToYUV)
     {
@@ -1247,10 +1250,10 @@ int SprdWIDIBlit:: setupYuvTexSurface(hwc_layer_1_t *AndroidLayer, private_handl
         1.0f, 1.0f,
         0.0f, 1.0f
     };
-    texcoord[0] = texcoord[6] = layer->sourceCropf.left / ((float)SourceHandle->width);
-    texcoord[1] = texcoord[3] = layer->sourceCropf.top / ((float)SourceHandle->height);
-    texcoord[2] = texcoord[4] = layer->sourceCropf.right / ((float)SourceHandle->width);
-    texcoord[5] = texcoord[7] = layer->sourceCropf.bottom / ((float)SourceHandle->height);
+    texcoord[0] = texcoord[6] = layer->sourceCropf.left / ((float)ADP_WIDTH(SourceHandle));
+    texcoord[1] = texcoord[3] = layer->sourceCropf.top / ((float)ADP_HEIGHT(SourceHandle));
+    texcoord[2] = texcoord[4] = layer->sourceCropf.right / ((float)ADP_WIDTH(SourceHandle));
+    texcoord[5] = texcoord[7] = layer->sourceCropf.bottom / ((float)ADP_HEIGHT(SourceHandle));
     ALOGI_IF(DebugGFX, "texture coordinates(%f, %f, %f, %f)", texcoord[0], texcoord[1], texcoord[2], texcoord[5]);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -1316,7 +1319,7 @@ int SprdWIDIBlit:: renderImage(sp<GraphicBuffer> Source, sp<GraphicBuffer> Targe
     int h2 = (int)((float)TargetRegion.h + 0.5) / 2.0;
 
     EGLDisplay dpy = eglGetCurrentDisplay();
-
+    HWC_IGNORE(Source);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);

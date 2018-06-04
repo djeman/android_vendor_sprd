@@ -41,7 +41,8 @@ namespace android
 OverlayComposer::OverlayComposer(SprdPrimaryPlane *displayPlane, sp<OverlayNativeWindow> NativeWindow)
     : mDisplayPlane(displayPlane),
       mList(NULL),
-      mNumLayer(0), InitFlag(0),
+      mNumLayer(0), 
+      InitFlag(0),
       mWindow(NativeWindow),
       mDisplay(EGL_NO_DISPLAY), mSurface(EGL_NO_SURFACE),
       mContext(EGL_NO_CONTEXT),
@@ -351,10 +352,9 @@ void OverlayComposer::caculateLayerRect(hwc_layer_1_t  *l, struct LayerRect *rec
         return;
     }
 
-    const native_handle_t *pNativeHandle = l->handle;
-    struct private_handle_t *private_h = (struct private_handle_t *)pNativeHandle;
+    native_handle_t *private_h = (native_handle_t *)l->handle;
 
-    if (pNativeHandle == NULL || private_h == NULL)
+    if (private_h == NULL)
     {
         ALOGE("overlayDevice::caculateLayerRect, buffer handle is NULL");
         return;
@@ -367,8 +367,8 @@ void OverlayComposer::caculateLayerRect(hwc_layer_1_t  *l, struct LayerRect *rec
 
     rect->left = MAX(sourceLeft, 0);
     rect->top = MAX(sourceTop, 0);
-    rect->right = MIN(sourceRight, private_h->width);
-    rect->bottom = MIN(sourceBottom, private_h->height);
+    rect->right = MIN(sourceRight, ADP_WIDTH(private_h));
+    rect->bottom = MIN(sourceBottom, ADP_HEIGHT(private_h));
 
     rV->left = l->displayFrame.left;
     rV->top = l->displayFrame.top;
@@ -443,7 +443,7 @@ int OverlayComposer::composerHWLayers()
             continue;
         }
 
-        struct private_handle_t *pH = (struct private_handle_t *)pL->handle;
+        native_handle_t *pH = (native_handle_t *)pL->handle;
         if (pH == NULL)
         {
             //ALOGD("%dth Layer handle is NULL", i);

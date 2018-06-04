@@ -43,11 +43,6 @@ LOCAL_CFLAGS:= -DLOG_TAG=\"GSPHAL\"
 #/home/apuser/work/shark_android2/device/sprd/common/libs/mali/src/ump/include/ump/ump.h
 MALI_DDK_PATH := device/sprd/common/libs
 LOCAL_C_INCLUDES := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
-ifeq ($(strip $(TARGET_GPU_PLATFORM)),midgard)
-LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/midgard
-else
-LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/utgard
-endif
 
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)	

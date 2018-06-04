@@ -241,6 +241,7 @@ int SprdPrimaryDisplayDevice:: AcceleratorProbe(void *pData)
 
 int SprdPrimaryDisplayDevice:: AcceleratorAdapt(int DisplayDeviceAccelerator)
 {
+    HWC_IGNORE(DisplayDeviceAccelerator);
     int value = ACCELERATOR_NON;
 
 #ifdef FORCE_ADJUST_ACCELERATOR
@@ -294,7 +295,7 @@ void SprdPrimaryDisplayDevice:: dumpCameraShakeTest(hwc_display_contents_1_t* li
 
             if (l && ((l->flags & HWC_DEBUG_CAMERA_SHAKE_TEST) == HWC_DEBUG_CAMERA_SHAKE_TEST))
             {
-                struct private_handle_t *privateH = (struct private_handle_t *)(l->handle);
+                native_handle_t *privateH = (native_handle_t *)l->handle;
                 if (privateH == NULL)
                 {
                     continue;
@@ -303,10 +304,10 @@ void SprdPrimaryDisplayDevice:: dumpCameraShakeTest(hwc_display_contents_1_t* li
                 void *cpuAddr = NULL;
                 int offset = 0;
                 int format = -1;
-                int width = privateH->width;
-                int height = privateH->stride;
-                cpuAddr = (void *)(privateH->base);
-                format = privateH->format;
+                int width = ADP_WIDTH(privateH);
+                int height = ADP_STRIDE(privateH);
+                cpuAddr = ADP_BASE(privateH);
+                format = ADP_FORMAT(privateH);
                 if (format == HAL_PIXEL_FORMAT_RGBA_8888)
                 {
                     int r = -1;
@@ -390,6 +391,7 @@ int SprdPrimaryDisplayDevice:: getDisplayAttributes(DisplayAttributes *dpyAttrib
 
 int SprdPrimaryDisplayDevice:: ActiveConfig(DisplayAttributes *dpyAttributes)
 {
+    HWC_IGNORE(dpyAttributes);
 
     return 0;
 }
@@ -483,6 +485,8 @@ int SprdPrimaryDisplayDevice:: setPowerMode(int mode)
 
 int SprdPrimaryDisplayDevice:: setCursorPositionAsync(int x_pos, int y_pos)
 {
+    HWC_IGNORE(x_pos);
+    HWC_IGNORE(y_pos);
 
     return 0;
 }
@@ -699,8 +703,8 @@ int SprdPrimaryDisplayDevice:: commit(hwc_display_contents_1_t* list)
     bool DisplayOverlayComposerGSP = false;
     bool DirectDisplayFlag = false;
     bool PrimaryPlane_Online_cond = false;
-    private_handle_t* buffer1 = NULL;
-    private_handle_t* buffer2 = NULL;
+    native_handle_t* buffer1 = NULL;
+    native_handle_t* buffer2 = NULL;
 
     hwc_layer_1_t *FBTargetLayer = NULL;
 
@@ -773,8 +777,7 @@ int SprdPrimaryDisplayDevice:: commit(hwc_display_contents_1_t* list)
             return -1;
         }
 
-        const native_handle_t *pNativeHandle = FBTargetLayer->handle;
-        struct private_handle_t *privateH = (struct private_handle_t *)pNativeHandle;
+        native_handle_t *privateH = (native_handle_t *)FBTargetLayer->handle;
 
         ALOGI_IF(mDebugFlag, "Start Displaying FramebufferTarget layer");
 
@@ -796,10 +799,9 @@ int SprdPrimaryDisplayDevice:: commit(hwc_display_contents_1_t* list)
 
 #ifdef SPRD_DITHER_ENABLE
         if(!((mLayerList->getVideoLayerCount() != 0) || (mLayerList->getYuvLayerCount() != 0))) {
-            privateH->flags |= private_handle_t::PRIV_FLAGS_SPRD_DITHER;
-        }
-        else {
-            privateH->flags &= ~(private_handle_t::PRIV_FLAGS_SPRD_DITHER);
+            ((private_handle_t *)privateH)->flags |= private_handle_t::PRIV_FLAGS_SPRD_DITHER;
+        }else {
+            ((private_handle_t *)privateH)->flags &= ~(private_handle_t::PRIV_FLAGS_SPRD_DITHER);
         }
 #endif
         mFBInfo->fbDev->post(mFBInfo->fbDev, privateH);

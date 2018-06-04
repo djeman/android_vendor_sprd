@@ -40,7 +40,7 @@
 #include <EGL/eglext.h>
 #include <ui/GraphicBuffer.h>
 
-#include "gralloc_priv.h"
+#include "gralloc_public.h"
 #include <hardware/gralloc.h>
 
 #include "Utility.h"
@@ -56,7 +56,7 @@ class OverlayComposer;
 class Layer
 {
 public:
-    Layer(OverlayComposer* composer, struct private_handle_t *h);
+    Layer(OverlayComposer* composer, native_handle_t *h);
     ~Layer();
 
     /* Hardware Layer draw function */
@@ -71,7 +71,7 @@ public:
 
 private:
     OverlayComposer* mComposer;
-    struct private_handle_t *mPrivH;
+    native_handle_t *mPrivH;
     EGLImageKHR mImage;
     GLenum mTexTarget;
     GLuint mTexName;
