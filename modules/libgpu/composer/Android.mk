@@ -51,9 +51,10 @@ LOCAL_SRC_FILES := SprdHWComposer.cpp \
 		   SprdUtil.cpp \
                    dump.cpp
 LOCAL_C_INCLUDES := \
-	$(TOP)/frameworks/native/libs/nativewindow/include/ \
-	$(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video \
+    $(TOP)/frameworks/native/libs/nativewindow/include/ \
+    $(TOP)/vendor/sprd/open-source/libs/libmemoryheapion \
+    $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video \
+    $(TOP)/vendor/sprd/modules/libgpu/gralloc
 
 ifeq ($(strip $(TARGET_GPU_PLATFORM)),midgard)
 LOCAL_C_INCLUDES += $(TOP)/vendor/sprd/modules/libgpu/gralloc/midgard
