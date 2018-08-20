@@ -25,7 +25,7 @@ LOCAL_C_INCLUDES += $(BLUEDROID_PATH)stack/include \
                     $(BLUEDROID_PATH)include
 
 LOCAL_MODULE := libengbt
-LOCAL_MODULE_TAGS := debug
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES += libcutils   \
                           libutils    \
@@ -56,7 +56,7 @@ endif
 
 
 LOCAL_MODULE := libengbt
-LOCAL_MODULE_TAGS := debug
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES += libcutils   \
                           libutils    \
