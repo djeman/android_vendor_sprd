@@ -40,7 +40,7 @@
 #include "gps_pc_mode.h"
 #include "eng_busmonitor.h"
 
-#if defined(HUAWEI_BT_ENGMODE)
+#if defined(HUAWEI_BT_ENGMODE) && defined(BUILD_VAR_ENG)
 #if defined(SPRD_WCNBT_MARLIN) || defined(SPRD_WCNBT_SR2351)
 #include "bt_engpc_sprd_if.h"
 #endif
@@ -1760,7 +1760,9 @@ int eng_atdiag_euthdlr(char *buf, int len, char *rsp, int module_index)
 
 #if defined(HUAWEI_BT_ENGMODE)
     if (BT_MODULE_INDEX == module_index || BLE_MODULE_INDEX == module_index) {
+#if defined(BUILD_VAR_ENG)
         bt_eut_parse(buf, rsp);
+#endif
         return 0;
     }
 #endif
