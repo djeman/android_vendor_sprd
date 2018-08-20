@@ -14,7 +14,7 @@
 #define LOOP_CHECK
 
 //Macro to enable the Wifi Engineer Mode
-#define WIFI_ENGINEER_ENABLE
+//#define WIFI_ENGINEER_ENABLE
 
 //Macro to enable CP2 power on/off
 #define WCND_CP2_POWER_ONOFF_ENABLE
@@ -42,7 +42,7 @@
 #define LOOP_CHECK
 
 //Macro to enable the Wifi Engineer Mode
-#define WIFI_ENGINEER_ENABLE
+//#define WIFI_ENGINEER_ENABLE
 
 //Macro to enable CP2 power on/off
 //#define WCND_CP2_POWER_ONOFF_ENABLE

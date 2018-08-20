@@ -16,17 +16,22 @@ LOCAL_SRC_FILES:= \
 	wcnd_cmd.c \
 	wcnd_worker.c \
 	wcnd_sm.c \
-	wcnd_eng_cmd_executer.c \
 	wcnd_download.c \
 	wcnd_util.c
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libiwnpi \
-	libengbt \
-	libengfm \
 	libnetutils
 
+ifeq ($(strip $(TARGET_BUILD_VARIANT)), eng)
+LOCAL_SRC_FILES += wcnd_eng_cmd_executer.c
+LOCAL_CFLAGS += -DWIFI_ENGINEER_ENABLE
+
+LOCAL_SHARED_LIBRARIES += \
+	libengbt \
+	libengfm
+endif
 
 ifeq ($(BOARD_WLAN_DEVICE), bcmdhd)
 LOCAL_CFLAGS += -DHAVE_SLEEPMODE_CONFIG
