@@ -107,8 +107,6 @@ LOCAL_CFLAGS        += -DWIFI_DRIVER_MODULE_NAME=\"$(WIFI_DRIVER_MODULE_NAME)\"
 endif
 
 ## bt
-ifeq ($(strip $(TARGET_BUILD_VARIANT)), eng)
-LOCAL_CFLAGS += -DBUILD_VAR_ENG
 LOCAL_SHARED_LIBRARIES += libengbt
 LOCAL_C_INCLUDES    +=  vendor/sprd/open-source/apps/engmode/bt/
 ### bt bqb
@@ -119,7 +117,6 @@ LOCAL_STATIC_LIBRARIES += \
 LOCAL_CFLAGS += -DCONFIG_BQBTEST
 LOCAL_SHARED_LIBRARIES  += libbt-vendor
 	LOCAL_SRC_FILES     += eng_controllerbqbtest.c
-endif
 endif
 endif
 endif
