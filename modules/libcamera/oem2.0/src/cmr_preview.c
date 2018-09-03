@@ -4200,7 +4200,9 @@ cmr_int prev_alloc_cap_buf(struct prev_handle *handle, cmr_u32 camera_id, cmr_u3
 			u_addr_vir = y_addr_vir;
 			frame_size = CMR_JPEG_SZIE(prev_cxt->actual_pic_size.width, prev_cxt->actual_pic_size.height);
 
-		} else if (IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt) {
+		} else if (IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || 
+				IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt ||
+				IMG_DATA_TYPE_YV12 == prev_cxt->cap_org_fmt) {
 
 			if (is_normal_cap) {
 				if ((IMG_ANGLE_0 != prev_cxt->prev_param.cap_rot) || prev_cxt->prev_param.is_cfg_rot_cap) {
@@ -4303,7 +4305,9 @@ cmr_int prev_alloc_cap_buf(struct prev_handle *handle, cmr_u32 camera_id, cmr_u3
 		buffer->addr_vir[i].addr_u = prev_cxt->cap_frm[i].addr_vir.addr_u;
 
 #ifdef CONFIG_MULTI_CAP_MEM
-	if ((IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt) && is_normal_cap/* && i > 0*/) {
+	if ((IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || 
+		IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt ||
+		IMG_DATA_TYPE_YV12 == prev_cxt->cap_org_fmt) && is_normal_cap/* && i > 0*/) {
 		/*prev_cxt->cap_frm[i].addr_phy.addr_y = prev_cxt->cap_phys_addr_path_array[i];
 		prev_cxt->cap_frm[i].addr_phy.addr_u = prev_cxt->cap_frm[i].addr_phy.addr_y + buffer_size;
 		prev_cxt->cap_frm[i].addr_phy.addr_v = 0;
