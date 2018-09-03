@@ -4145,7 +4145,9 @@ cmr_int prev_alloc_cap_buf(struct prev_handle *handle, cmr_u32 camera_id, cmr_u3
 			u_addr_vir = y_addr_vir;
 			frame_size = CMR_JPEG_SZIE(prev_cxt->actual_pic_size.width, prev_cxt->actual_pic_size.height);
 
-		} else if (IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt) {
+		} else if (IMG_DATA_TYPE_YUV420 == prev_cxt->cap_org_fmt || 
+				IMG_DATA_TYPE_YVU420 == prev_cxt->cap_org_fmt ||
+				IMG_DATA_TYPE_YV12 == prev_cxt->cap_org_fmt) {
 
 			if (is_normal_cap) {
 				if ((IMG_ANGLE_0 != prev_cxt->prev_param.cap_rot) || prev_cxt->prev_param.is_cfg_rot_cap) {
