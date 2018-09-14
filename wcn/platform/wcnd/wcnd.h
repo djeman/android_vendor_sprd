@@ -4,7 +4,6 @@
 
 #include "wcnd_config.h"
 
-#define WCND_DEBUG
 #define WCND_WIFI_CONFIG_FILE_PATH "/data/misc/wifi/wifimac.txt"
 #define WCND_WIFI_FACTORY_CONFIG_FILE_PATH "/efs/wifi/.mac.info"
 #define WCND_BT_CONFIG_FILE_PATH "/data/misc/bluedroid/btmac.txt"
@@ -15,8 +14,8 @@
 #define WCND_LOGD(x...) ALOGD( x )
 #define WCND_LOGE(x...) ALOGE( x )
 #else
-#define WCND_LOGD(x...) do {} while(0)
-#define WCND_LOGE(x...) do {} while(0)
+#define WCND_LOGD(x...)
+#define WCND_LOGE(x...)
 #endif
 
 #ifndef TEMP_FAILURE_RETRY

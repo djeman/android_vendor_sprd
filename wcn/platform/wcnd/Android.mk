@@ -11,6 +11,10 @@ endif
 
 LOCAL_CFLAGS += $(WCND_LOCAL_CFLAGS)
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+LOCAL_CFLAGS += -DWCND_DEBUG
+endif
+
 LOCAL_SRC_FILES:= \
 	wcnd.c \
 	wcnd_cmd.c \
@@ -57,6 +61,9 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= \
 	wcnd_cli.c
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+LOCAL_CFLAGS += -DWCND_DEBUG
+endif
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils
