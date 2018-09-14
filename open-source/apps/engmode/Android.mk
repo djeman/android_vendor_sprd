@@ -122,6 +122,10 @@ endif
 endif
 endif
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+LOCAL_CFLAGS += -DENG_TRACING
+endif
+
 LOCAL_MODULE := engpc
 LOCAL_MODULE_TAGS := optional
 LOCAL_MULTILIB := 32

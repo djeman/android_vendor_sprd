@@ -15,13 +15,10 @@ extern "C" {
 #include <utils/Log.h>
 #define ENG_AT_LOG  ALOGD
 
-#define ENG_TRACING
-
 #ifdef ENG_TRACING
-#define ENG_LOG  ALOGD
+#define ENG_LOG ALOGD
 #else
-    //#define ENG_LOG  ALOGD
-#define  ENG_LOG(format, ...)
+#define ENG_LOG
 #endif
 
 #define ENG_AT_CHANNEL
