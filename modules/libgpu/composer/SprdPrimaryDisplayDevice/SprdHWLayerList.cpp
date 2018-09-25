@@ -36,10 +36,7 @@
  ** Author:         zhongjun.chen@spreadtrum.com                              *
  *****************************************************************************/
 
-#include "SprdFrameBufferHAL.h"
 #include "SprdHWLayerList.h"
-#include "dump.h"
-#include "SprdUtil.h"
 
 using namespace android;
 
@@ -88,7 +85,7 @@ void SprdHWLayerList::dump_layer(hwc_layer_1_t const* l) {
              l->planeAlpha);
 }
 
-void SprdHWLayerList:: HWCLayerPreCheck()
+void SprdHWLayerList::HWCLayerPreCheck()
 {
     char value[PROPERTY_VALUE_MAX];
 
@@ -130,7 +127,6 @@ bool SprdHWLayerList::IsHWCLayer(hwc_layer_1_t *AndroidLayer)
 int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int accelerator)
 {
     mLayerCount = 0;
-    mRGBLayerCount = 0;
     mYUVLayerCount = 0;
     mOSDLayerCount = 0;
     mVideoLayerCount = 0;
@@ -250,7 +246,7 @@ int SprdHWLayerList:: updateGeometry(hwc_display_contents_1_t *list, int acceler
     return 0;
 }
 
-int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice *mPrimary)
+int SprdHWLayerList:: revisitGeometry(int& DisplayFlag, SprdPrimaryDisplayDevice *mPrimary)
 {
     SprdHWLayer *YUVLayer = NULL;
     SprdHWLayer *RGBLayer = NULL;
@@ -349,8 +345,7 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
          *  another layer cannot be processed by GXP,
          *  we should disable all OSD Overlay.
          * */
-        if ((mPrivateFlag[0] == 1)
-            && (mVideoLayerCount == 0)
+        if ((mVideoLayerCount == 0)
             && (mOSDLayerCount > 0))
         {
             resetOverlayFlag(mOSDLayerList[i]);
@@ -455,21 +450,15 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
     ret = mPrimary->reclaimPlaneBuffer(holdCond);
     if (ret == 1)
     {
-        resetOverlayFlag(YUVLayer);
-        mFBLayerCount++;
-        YUVLayer = NULL;
-        ALOGI_IF(mDebugFlag, "alloc plane buffer failed, reset video layer");
-
-        if (RGBLayer)
+        for (int i = 0; i < LayerCount; i++)
         {
-            resetOverlayFlag(RGBLayer);
+            SprdHWLayer *l = &(mLayerList[i]);
+            resetOverlayFlag(l);
             mFBLayerCount++;
-            RGBLayer = NULL;
-            ALOGI_IF(mDebugFlag, "alloc plane buffer failed, reset OSD layer");
+            ALOGI_IF(mDebugFlag, "alloc plane buffer failed, goto FB");
         }
     }
 #endif
-
 
     if ((YUVLayer != NULL) && (accelerateVideoByGSP == false))
     {
@@ -497,7 +486,7 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
         }
         mFBLayerCount++;
 #else
-        revisitOverlayComposerLayer(YUVLayer, RGBLayer, LayerCount, &mFBLayerCount, DisplayFlag);
+        revisitOverlayComposerLayer(DisplayFlag);
 #endif
     }
 
@@ -560,7 +549,6 @@ void SprdHWLayerList:: forceOverlay(SprdHWLayer *l)
 
     hwc_layer_1_t *layer = l->getAndroidLayer();
     layer->compositionType = HWC_OVERLAY;
-
 }
 
 /*
@@ -637,8 +625,6 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
         ALOGI_IF(mDebugFlag, "prepareOSDLayer NOT RGB format layer Line:%d", __LINE__);
         return 0;
     }
-
-    mRGBLayerCount++;
 
     if ((ADP_USAGE(privateH) & GRALLOC_USAGE_PROTECTED) == GRALLOC_USAGE_PROTECTED)
     {
@@ -723,7 +709,6 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
         mFBWidth,mFBHeight,
         FBRect->x,FBRect->y,FBRect->w,FBRect->h);
 
-
     /*
      * Mark full screen layer flag.
      * */
@@ -770,14 +755,6 @@ int SprdHWLayerList:: prepareOSDLayer(SprdHWLayer *l)
      *  can be accerlated by OverlayComposer,
      *  Should use a flag to record this thing.
      * */
-    if (l->getAccelerator() == ACCELERATOR_OVERLAYCOMPOSER)
-    {
-        mPrivateFlag[0] = 1;
-    }
-    else
-    {
-         mPrivateFlag[0] = 0;
-    }
 
     l->setLayerType(LAYER_OSD);
     ALOGI_IF(mDebugFlag, "prepareOSDLayer[L%d],set type OSD, accelerator: 0x%x", __LINE__, l->getAccelerator());
@@ -1194,10 +1171,9 @@ int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
 
     if (layer->displayFrame.left < 0 ||
         layer->displayFrame.top < 0 ||
-        layer->displayFrame.left > mFBInfo->fb_width ||
-        layer->displayFrame.top > mFBInfo->fb_height ||
-        layer->displayFrame.right > mFBInfo->fb_width ||
-        layer->displayFrame.bottom > mFBInfo->fb_height){
+        layer->displayFrame.right - layer->displayFrame.left > mFBInfo->fb_width ||
+        layer->displayFrame.bottom - layer->displayFrame.top > mFBInfo->fb_height)
+    {
         mSkipLayerFlag = true;
         return -1;
     }
@@ -1206,10 +1182,8 @@ int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
         sourceTop < 0 ||
         sourceBottom < 0 ||
         sourceRight < 0 ||
-        sourceLeft > mFBInfo->fb_width ||
-        sourceTop > mFBInfo->fb_height ||
-        sourceBottom-sourceTop > mFBInfo->fb_height ||
-        sourceRight -sourceLeft > mFBInfo->fb_width)
+        sourceBottom - sourceTop > mFBInfo->fb_height ||
+        sourceRight - sourceLeft > mFBInfo->fb_height)
     {
         mSkipLayerFlag = true;
         return -1;
@@ -1218,10 +1192,9 @@ int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
     return 0;
 }
 
-int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWLayer *RGBLayer, 
-                                                  int LayerCount, int *FBLayerCount, int *DisplayFlag)
+int SprdHWLayerList:: revisitOverlayComposerLayer(int& DisplayFlag)
 {
-    HWC_IGNORE(RGBLayer);
+    int LayerCount = mLayerCount;
     int displayType = HWC_DISPLAY_MASK;
 
     /*
@@ -1229,7 +1202,7 @@ int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWL
      *  And OverlayComposer do not handle cropped RGB layer except DRM video.
      *  DRM video must go into Overlay.
      * */
-    if (YUVLayer == NULL)
+    if (mVideoLayerCount <= 0)
     {
         ALOGI_IF(mDebugFlag, "revisitOverlayComposerLayer must include video layer");
         mSkipLayerFlag = true;
@@ -1288,7 +1261,7 @@ int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWL
                 ALOGI_IF(mDebugFlag, "Force layer format:%d go into OVC", format);
                 setOverlayFlag(SprdLayer, j);
 
-                (*FBLayerCount)--;
+                mFBLayerCount--;
             }
         }
         displayType |= HWC_DISPLAY_OVERLAY_COMPOSER_GPU;
@@ -1307,7 +1280,7 @@ int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWL
             if (SprdLayer->InitCheck())
             {
                 resetOverlayFlag(SprdLayer);
-                (*FBLayerCount)++;
+                mFBLayerCount--;
             }
         }
     }
@@ -1324,7 +1297,7 @@ int SprdHWLayerList:: revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWL
          displayType &= ~HWC_DISPLAY_OVERLAY_COMPOSER_GPU;
      }
 
-     *DisplayFlag |= displayType;
+     DisplayFlag |= displayType;
 
       mSkipLayerFlag = false;
 

@@ -38,9 +38,9 @@
 
 using namespace android;
 
-SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo)
+SprdOverlayPlane::SprdOverlayPlane()
     : SprdDisplayPlane(),
-      mFBInfo(fbInfo),
+      mFBInfo(NULL),
       mHWLayer(NULL),
       mOverlayPlaneCount(1),
       mFreePlaneCount(1),
@@ -59,19 +59,15 @@ SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo)
     mDisplayFormat = HAL_PIXEL_FORMAT_YCbCr_422_SP;
 #endif
 #endif
-    SprdDisplayPlane::setGeometry(mFBInfo->fb_width, mFBInfo->fb_height, mDisplayFormat);
 
     SprdDisplayPlane::setPlaneRunThreshold(300);
-
-    mContext = SprdDisplayPlane::getPlaneContext();
-
-    open();
+    mContext = SprdDisplayPlane::getPlaneBaseContext();
 }
 
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo, SprdPrimaryPlane *PrimaryPlane)
+SprdOverlayPlane::SprdOverlayPlane(SprdPrimaryPlane *PrimaryPlane)
     : SprdDisplayPlane(),
-      mFBInfo(fbInfo),
+      mFBInfo(NULL),
       mPrimaryPlane(PrimaryPlane),
       mHWLayer(NULL),
       mOverlayPlaneCount(1),
@@ -92,24 +88,52 @@ SprdOverlayPlane::SprdOverlayPlane(FrameBufferInfo *fbInfo, SprdPrimaryPlane *Pr
 #endif
 #endif
 
-    mContext = SprdDisplayPlane::getPlaneContext();
-
-    open();
+    mContext = SprdDisplayPlane::getPlaneBaseContext();
 }
 #endif
 
 SprdOverlayPlane::~SprdOverlayPlane() { close(); }
 
-native_handle_t* SprdOverlayPlane::dequeueBuffer() {
+void SprdOverlayPlane::updateFBInfo(FrameBufferInfo *fbInfo) {
+    if (fbInfo == NULL) {
+        ALOGE("SprdOverlayPlane:: updateFBInfo input para is NULL");
+        return;
+    }
+
+    mFBInfo = fbInfo;
+
+    SprdDisplayPlane::setGeometry(mFBInfo->fb_width, mFBInfo->fb_height,
+                                  mDisplayFormat, GRALLOC_USAGE_OVERLAY_BUFFER);
+
+    open();
+}
+
+int SprdOverlayPlane::setPlaneContext(void *context) {
+    if (mContext == NULL) {
+        ALOGE("SprdOverlayPlane::setPlaneContext mContext is NULL");
+        return -1;
+    }
+
+    if (context == NULL) {
+        ALOGE("SprdOverlayPlane::setPlaneContext input contxt is NULL");
+        return -1;
+    }
+
+    mContext->BaseContext = context;
+
+    return 0;
+}
+
+native_handle_t* SprdOverlayPlane::dequeueBuffer(int *fenceFd) {
     bool ret = false;
 
     queryDebugFlag(&mDebugFlag);
     queryDumpFlag(&mDumpFlag);
 
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-    mBuffer = mPrimaryPlane->dequeueFriendBuffer();
+    mBuffer = mPrimaryPlane->dequeueFriendBuffer(fenceFd);
 #else
-    mBuffer = SprdDisplayPlane::dequeueBuffer();
+    mBuffer = SprdDisplayPlane::dequeueBuffer(fenceFd);
 #endif
     if (mBuffer == NULL) {
         ALOGE("SprdOverlayPlane cannot get ION buffer");
@@ -117,25 +141,17 @@ native_handle_t* SprdOverlayPlane::dequeueBuffer() {
     }
 
     enable();
-
     mFreePlaneCount = 1;
-
-    ALOGI_IF(mDebugFlag, "SprdOverlayPlane::dequeueBuffer phy addr:%p", 
-        (void *)ADP_PHYADDR(mBuffer));
 
     return mBuffer;
 }
 
-int SprdOverlayPlane::queueBuffer() {
+int SprdOverlayPlane::queueBuffer(int fenceFd) {
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-    mPrimaryPlane->queueFriendBuffer();
+    mPrimaryPlane->queueFriendBuffer(fenceFd);
 #else
-    SprdDisplayPlane::queueBuffer();
+    SprdDisplayPlane::queueBuffer(fenceFd);
 #endif
-
-    if(flush() == NULL) {
-        return -1;
-    }
 
     mFreePlaneCount = 0;
 
@@ -150,6 +166,7 @@ void SprdOverlayPlane::AttachOverlayLayer(SprdHWLayer *l) {
         return;
     }
 
+    mContext->DirectDisplay = false;
     mHWLayer = l;
 }
 
@@ -175,94 +192,31 @@ int SprdOverlayPlane::checkHWLayer(SprdHWLayer *l) {
     return 0;
 }
 
-enum PlaneFormat SprdOverlayPlane::getPlaneFormat() {
-    enum PlaneFormat format;
-    int displayFormat = mDisplayFormat;
+int SprdOverlayPlane::getPlaneFormat() const { return mDisplayFormat; }
 
-    switch (displayFormat) {
-        case HAL_PIXEL_FORMAT_RGBA_8888:
-            format = PLANE_FORMAT_RGB888;
-            break;
-        case HAL_PIXEL_FORMAT_RGB_565:
-            format = PLANE_FORMAT_RGB565;
-            break;
-        case HAL_PIXEL_FORMAT_YCbCr_422_SP:
-            format = PLANE_FORMAT_YUV422;
-            break;
-        case HAL_PIXEL_FORMAT_YCbCr_420_SP:
-            format = PLANE_FORMAT_YUV420;
-            break;
-        default:
-            format = PLANE_FORMAT_NONE;
-            break;
+native_handle_t* SprdOverlayPlane::flush(int *fenceFd) {
+    if (mContext == NULL /* || mContext->BaseContext == NULL*/) {
+        ALOGE("SprdOverlayPlane::flush get display context failed");
+        return NULL;
     }
-
-    return format;
-}
-
-native_handle_t* SprdOverlayPlane::flush() {
-    enum PlaneFormat format;
-    struct overlay_setting *BaseContext = &(mContext->BaseContext);
-
-    InvalidatePlaneContext();
 
     native_handle_t* flushingBuffer = NULL;
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-    flushingBuffer = mPrimaryPlane->flushFriend();
+    flushingBuffer = mPrimaryPlane->flushFriend(fenceFd);
 #else
-    flushingBuffer = SprdDisplayPlane::flush();
+    flushingBuffer = SprdDisplayPlane::flush(fenceFd);
 #endif
-
-    BaseContext->layer_index = SPRD_LAYERS_IMG;
-
-    format = getPlaneFormat();
-    if (format == PLANE_FORMAT_RGB888 ||
-        format == PLANE_FORMAT_RGB565) {
-        BaseContext->data_type = SPRD_DATA_FORMAT_RGB888;
-        BaseContext->y_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
-        BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
-        BaseContext->rb_switch = 1;
-    } else if (format == PLANE_FORMAT_YUV422) {
-        BaseContext->data_type = SPRD_DATA_FORMAT_YUV422;
-        BaseContext->y_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
-        //BaseContext->uv_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
-        BaseContext->uv_endian = SPRD_DATA_ENDIAN_B0B1B2B3;
-        BaseContext->rb_switch = 0;
-    } else if (format == PLANE_FORMAT_YUV420) {
-        BaseContext->data_type = SPRD_DATA_FORMAT_YUV420;
-        BaseContext->y_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
-        BaseContext->rb_switch = 0;
-        BaseContext->uv_endian = SPRD_DATA_ENDIAN_B3B2B1B0;
-    }
-
-    BaseContext->rect.x = 0;
-    BaseContext->rect.y = 0;
-    BaseContext->rect.w = mFBInfo->fb_width;
-    BaseContext->rect.h = mFBInfo->fb_height;
 
     if (flushingBuffer == NULL) {
         ALOGE("SprdOverlayPlane: Cannot get the display buffer");
         return NULL;
     }
-    BaseContext->buffer = (unsigned char *)(ADP_PHYADDR(flushingBuffer));
 
-    ALOGI_IF(mDebugFlag, "SprdOverlayPlane::flush SET_OVERLAY parameter datatype = %d, x = %d, y = %d, w = %d, h = %d, buffer = 0x%p",
-             BaseContext->data_type,
-             BaseContext->rect.x,
-             BaseContext->rect.y,
-             BaseContext->rect.w,
-             BaseContext->rect.h,
-             BaseContext->buffer);
-
-    if (HWCOMPOSER_DUMP_VIDEO_OVERLAY_FLAG & mDumpFlag) {
+    if ((HWCOMPOSER_DUMP_VIDEO_OVERLAY_FLAG & mDumpFlag) &&
+            flushingBuffer != NULL) {
         const char *name = "OverlayVideo";
 
-        dumpOverlayImage(flushingBuffer, name);
-    }
-
-    if (ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext) == -1) {
-        ALOGE("fail video SPRD_FB_SET_OVERLAY");
-        ioctl(mFBInfo->fbfd, SPRD_FB_SET_OVERLAY, BaseContext);//Fix ME later
+        dumpOverlayImage(flushingBuffer, name, (*fenceFd));
     }
 
     return flushingBuffer;
@@ -301,8 +255,13 @@ void SprdOverlayPlane::enable() { mPlaneDisable = true; }
 
 void SprdOverlayPlane::disable() { mPlaneDisable = false; }
 
-void SprdOverlayPlane::InvalidatePlaneContext() {
-    memset(&(mContext->BaseContext), 0x00, sizeof(struct overlay_setting));
+void SprdOverlayPlane::InvalidatePlane() {
+    if (mContext == NULL /* || mContext->BaseContext == NULL*/) {
+        ALOGE("SprdOverlayPlane::InvalidatePlane display context is NULL");
+        return;
+    }
+
+    mContext->DirectDisplay = false;
 }
 
 SprdHWLayer *SprdOverlayPlane::getOverlayLayer() const {
@@ -321,4 +280,16 @@ native_handle_t* SprdOverlayPlane::getPlaneBuffer() const {
     }
 
     return mBuffer;
+}
+
+PlaneContext *SprdOverlayPlane::getPlaneContext() const { return mContext; }
+
+int SprdOverlayPlane::addFlushReleaseFence(int fenceFd) {
+#ifndef BORROW_PRIMARYPLANE_BUFFER
+    SprdDisplayPlane::addFlushReleaseFence(fenceFd);
+#else
+    mPrimaryPlane->addFriendFlushReleaseFence(fenceFd);
+#endif
+
+    return 0;
 }

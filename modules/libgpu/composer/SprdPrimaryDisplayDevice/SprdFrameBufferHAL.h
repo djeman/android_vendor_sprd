@@ -48,7 +48,6 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
-#include "sprd_fb.h"
 #include "gralloc_public.h"
 
 using namespace android;
@@ -64,20 +63,12 @@ using namespace android;
  * FrameBuffer information.
  * */
 typedef struct _FrameBufferInfo {
-    int fbfd;
     int fb_width;
     int fb_height;
     float xdpi;
     float ydpi;
     int stride;
-    void *fb_virt_addr;
-    char *pFrontAddr;
-    char *pBackAddr;
     int format;
-    framebuffer_device_t* fbDev;
 } FrameBufferInfo;
-
-extern int loadFrameBufferHAL(FrameBufferInfo **fbInfo);
-extern void closeFrameBufferHAL(FrameBufferInfo *fbInfo);
 
 #endif  // #ifndef _SPRD_FRAME_BUFFER_HAL_H_

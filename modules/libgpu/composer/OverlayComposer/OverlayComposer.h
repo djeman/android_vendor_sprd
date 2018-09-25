@@ -99,7 +99,7 @@ namespace android
 class OverlayComposer: public Thread
 {
 public:
-    OverlayComposer(SprdPrimaryPlane *displayPlane, sp<OverlayNativeWindow> NativeWindow);
+    OverlayComposer(SprdDisplayPlane *displayPlane, sp<OverlayNativeWindow> NativeWindow);
     ~OverlayComposer();
 
     SprdDisplayPlane* getDisplayPlane() { return mDisplayPlane; }
@@ -110,14 +110,17 @@ public:
     /* Start display the composered Overlay Buffer */
     void onDisplay();
 
+    int getReleaseFence();
+
 private:
 
     /* Overlay composer Info */
-    SprdPrimaryPlane *mDisplayPlane;
+    SprdDisplayPlane *mDisplayPlane;
 
     /* Hardware Layer Info */
     hwc_display_contents_1_t* mList;
     unsigned int     mNumLayer;
+    int mReleaseFenceFd;
 
    /* Graphics Info */
     int InitFlag;

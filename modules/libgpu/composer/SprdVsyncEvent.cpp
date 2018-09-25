@@ -40,68 +40,30 @@
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 
-#include "SprdFrameBufferHAL.h"
-#include "../SprdDisplayDevice.h"
-#include "../SprdTrace.h"
+#include "SprdDisplayDevice.h"
+#include "SprdTrace.h"
 
-
-namespace android
-{
+namespace android {
 extern "C" int clock_nanosleep(clockid_t clock_id, int flags,
                            const struct timespec *request,
                            struct timespec *remain);
 
-
-SprdVsyncEvent::SprdVsyncEvent()
-    : mProcs(NULL), mEnabled(false)
-{
-    char const * const device_template[] =
-    {
-        "/dev/graphics/fb%u",
-        "/dev/fb%u",
-        NULL
-    };
-    int fd = -1;
-    int i = 0;
-    char name[64];
-    while ((fd == -1) && device_template[i])
-    {
-        snprintf(name, 64, device_template[i], 0);
-        fd = open(name, O_RDWR, 0);
-        i++;
-    }
-    if (fd < 0)
-    {
-        ALOGE("fail to open fb");
-    }
-    mFbFd = fd;
+SprdVsyncEvent::SprdVsyncEvent(SprdDisplayCore *core, int fd)
+    : mDisplayCore(core), mEnabled(false), mFbFd(fd) {
     getVSyncPeriod();
 }
-SprdVsyncEvent::~SprdVsyncEvent()
-{
-    if (mFbFd >= 0)
-        close(mFbFd);
-}
+
+SprdVsyncEvent::~SprdVsyncEvent() {}
 
 void SprdVsyncEvent::onFirstRef() {
     run("SprdVSyncThread", PRIORITY_URGENT_DISPLAY + PRIORITY_MORE_FAVORABLE);
 }
+
 void SprdVsyncEvent::setEnabled(bool enabled) {
     HWC_TRACE_CALL;
     Mutex::Autolock _l(mLock);
     mEnabled = enabled;
     mCondition.signal();
-}
-
-void SprdVsyncEvent::setVsyncEventProcs(const hwc_procs_t *procs)
-{
-    if (procs == NULL)
-    {
-        ALOGE("The procs is NULL");
-        return;
-    }
-
-    mProcs = procs;
 }
 
 bool SprdVsyncEvent::threadLoop() {
@@ -115,7 +77,7 @@ bool SprdVsyncEvent::threadLoop() {
     //8810 use sleep mode
 #ifdef _VSYNC_USE_SOFT_TIMER
     static nsecs_t netxfakevsync = 0;
-    const nsecs_t period = mVSyncPeriod;;
+    const nsecs_t period = mVSyncPeriod;
     const nsecs_t now = systemTime(CLOCK_MONOTONIC);
     nsecs_t next_vsync = netxfakevsync;
     nsecs_t sleep = next_vsync - now;
@@ -136,11 +98,8 @@ bool SprdVsyncEvent::threadLoop() {
     } while (err<0 && errno == EINTR);
 
     if (err == 0) {
-    if(!mProcs || !mProcs->vsync)
-    {
-        return true;
-    }
-        mProcs->vsync(mProcs, DISPLAY_PRIMARY, next_vsync);
+        SprdEventHandle::SprdHandleVsyncReport(mDisplayCore, DISPLAY_PRIMARY,
+                                               next_vsync);
     }
 #else //8825 use driver vsync mode now use sleep for temporaryly
 #ifndef USE_FB_HW_VSYNC
@@ -165,32 +124,19 @@ bool SprdVsyncEvent::threadLoop() {
         err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &spec, NULL);
     } while (err<0 && errno == EINTR);
 
-    if (err == 0)
-    {
-        if(!mProcs || !mProcs->vsync)
-        {
-            return true;
-        }
-
-        mProcs->vsync(mProcs, DISPLAY_PRIMARY, next_vsync);
+    if (err == 0) {
+        SprdEventHandle::SprdHandleVsyncReport(mDisplayCore, DISPLAY_PRIMARY,
+                                               next_vsync);
     }
     //may open when driver ready
 #else
     HWC_TRACE_BEGIN_VSYNC;
 
-    if (ioctl(mFbFd, FBIO_WAITFORVSYNC, NULL) == -1)
-    {
+    if (ioctl(mFbFd, FBIO_WAITFORVSYNC, NULL) == -1) {
         ALOGE("fail to wait vsync , mFbFd:%d" , mFbFd);
-    }
-    else
-    {
-        if(!mProcs || !mProcs->vsync)
-        {
-            ALOGW("device procs or vsync is null procs:%p , vsync:%p",
-                  (void *)mProcs , mProcs ? (void *)(mProcs->vsync):NULL);
-            return true;
-        }
-        mProcs->vsync(mProcs, 0, systemTime(CLOCK_MONOTONIC));
+    } else {
+        SprdEventHandle::SprdHandleVsyncReport(mDisplayCore, DISPLAY_PRIMARY,
+                                               systemTime(CLOCK_MONOTONIC));
     }
 
     HWC_TRACE_END;
@@ -199,30 +145,24 @@ bool SprdVsyncEvent::threadLoop() {
 
     return true;
 }
-int SprdVsyncEvent::getVSyncPeriod()
-{
+
+int SprdVsyncEvent::getVSyncPeriod() {
     struct fb_var_screeninfo info;
-    if (ioctl(mFbFd, FBIOGET_VSCREENINFO, &info) == -1)
-    {
+    if (ioctl(mFbFd, FBIOGET_VSCREENINFO, &info) == -1) {
         return -errno;
     }
 
     int refreshRate = 0;
-    if ( info.pixclock > 0 )
-    {
-        refreshRate = 1000000000000000LLU /
-            (
-             uint64_t(info.upper_margin + info.lower_margin + info.yres)
-             * (info.left_margin  + info.right_margin + info.xres)
-                 * info.pixclock);
-    }
-    else
-    {
+    if (info.pixclock > 0) {
+        refreshRate = 
+            1000000000000000LLU /
+            (uint64_t(info.upper_margin + info.lower_margin + info.yres)
+             * (info.left_margin  + info.right_margin + info.xres) * info.pixclock);
+    } else {
         ALOGW( "fbdev pixclock is zero for fd: %d", mFbFd );
     }
 
-    if (refreshRate == 0)
-    {
+    if (refreshRate == 0) {
         ALOGW("getVsyncPeriod refreshRate use fake rate, 60HZ");
         refreshRate = 60*1000;  // 60 Hz
     }
@@ -230,5 +170,4 @@ int SprdVsyncEvent::getVSyncPeriod()
     mVSyncPeriod = nsecs_t(1e9 / fps);
     return 0;
 }
-
-}
+}   // namespace android

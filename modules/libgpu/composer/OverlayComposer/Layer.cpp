@@ -32,6 +32,7 @@
 #include "Layer.h"
 #include "GLErro.h"
 #include "OverlayComposer.h"
+#include "../AndroidFence.h"
 #include <hardware/hwcomposer.h>
 #include <system/window.h>
 
@@ -111,14 +112,16 @@ GLfloat mVertices[4][2];
 struct TexCoords texCoord[4];
 struct TexCoords vertices[4];
 
-Layer::Layer(OverlayComposer* composer, native_handle_t *h)
+Layer::Layer(OverlayComposer* composer, native_handle_t *h, int acquireFenceFd)
     : mComposer(composer), mPrivH(h),
+      mAcquireFenceFd(-1),
       mImage(EGL_NO_IMAGE_KHR),
       mTexTarget(GL_TEXTURE_EXTERNAL_OES),
       mTexName(-1U), mTransform(0),
       mAlpha(0.0),
       mSkipFlag(false)
 {
+    mAcquireFenceFd = acquireFenceFd;
     bool ret = init();
     if (!ret)
     {
@@ -210,6 +213,12 @@ bool Layer::createTextureImage()
     checkGLErrors();
     glBindTexture(mTexTarget, mTexName);
     checkGLErrors();
+    if (mAcquireFenceFd >= 0)
+    {
+        String8 name;
+        name.append("OVCLayer");
+        FenceWaitForever(name, mAcquireFenceFd);
+    }
     glEGLImageTargetTexture2DOES(mTexTarget, (GLeglImageOES)mImage);
     checkGLErrors();
     while ((error = glGetError()) != GL_NO_ERROR)
@@ -552,6 +561,30 @@ int Layer::draw()
 
     status = 0;
     return status;
+}
+
+int Layer:: getReleaseFenceFd()
+{
+    EGLDisplay display = eglGetCurrentDisplay();
+    EGLSyncKHR sync = eglCreateSyncKHR(display,
+                          EGL_SYNC_NATIVE_FENCE_ANDROID, NULL);
+    if (sync == EGL_NO_SYNC_KHR)
+    {
+        ALOGE("Layer:: getReleaseFenceFd: error creating EGL fence: %#x",
+               eglGetError());
+        return -1;
+    }
+
+    int fenceFd = eglDupNativeFenceFDANDROID(display, sync);
+    eglDestroySyncKHR(display, sync);
+    if (fenceFd == EGL_NO_NATIVE_FENCE_FD_ANDROID)
+    {
+        ALOGE("Layer:: getReleaseFenceFd: error dup'ing native fence fd: %#x",
+              eglGetError());
+        return -1;
+    }
+
+    return fenceFd;
 }
 
 };

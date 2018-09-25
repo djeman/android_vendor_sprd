@@ -38,10 +38,11 @@ namespace android
 {
 
 
-OverlayComposer::OverlayComposer(SprdPrimaryPlane *displayPlane, sp<OverlayNativeWindow> NativeWindow)
+OverlayComposer::OverlayComposer(SprdDisplayPlane *displayPlane, sp<OverlayNativeWindow> NativeWindow)
     : mDisplayPlane(displayPlane),
       mList(NULL),
-      mNumLayer(0), 
+      mNumLayer(0),
+      mReleaseFenceFd(-1),
       InitFlag(0),
       mWindow(NativeWindow),
       mDisplay(EGL_NO_DISPLAY), mSurface(EGL_NO_SURFACE),
@@ -103,15 +104,17 @@ bool OverlayComposer::threadLoop()
 
     composerHWLayers();
 
-    glFinish();
+    //glFinish();
 
-    sem_post(&doneSem);
+    //sem_post(&doneSem);
 
     /* *******************************
      * waiting display
      * *******************************/
-    sem_wait(&displaySem);
+    //sem_wait(&displaySem);
     swapBuffers();
+
+    sem_post(&doneSem);
 
     return true;
 }
@@ -454,7 +457,7 @@ int OverlayComposer::composerHWLayers()
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        Layer *L = new Layer(this, pH);
+        Layer *L = new Layer(this, pH, pL->acquireFenceFd);
         if (L == NULL)
         {
             ALOGE("The %dth Layer object is NULL", numLayer);
@@ -514,20 +517,27 @@ bool OverlayComposer::onComposer(hwc_display_contents_1_t* l)
 
 void OverlayComposer::onDisplay()
 {
-    exhaustAllSem();
-    sem_post(&displaySem);
+    //exhaustAllSem();
+    //sem_post(&displaySem);
 
     /*
      *  Sync thread.
      *  return until OverlayNativeWindow::queueBuffer finished
      * */
-    semWaitTimedOut(1000);
+    //semWaitTimedOut(1000);
 }
 
 bool OverlayComposer::swapBuffers()
 {
     eglSwapBuffers(mDisplay, mSurface);
 
+    /*
+     *  Here, We generate a release fence fd for all Source Android
+     *  Layers
+     * */
+    mReleaseFenceFd = Layer::getReleaseFenceFd();
+    ALOGI_IF(g_debugFlag,"<02-2> OverlayComposerScheldule() return, src rlsFd:%d",
+            mReleaseFenceFd);
 
     /* delete some layer object from list
      * Now, these object are useless
@@ -543,6 +553,21 @@ bool OverlayComposer::swapBuffers()
     mDrawLayerList.clear();
 
     return true;
+}
+
+int  OverlayComposer::getReleaseFence()
+{
+    int fenceFd = -1;
+    if (mReleaseFenceFd >= 0)
+    {
+        fenceFd = dup(mReleaseFenceFd);
+        ALOGI_IF(g_debugFlag,"<02-2> SF get src rlsFd:%d=dup(%d) from OverlayComposerThread, close(%d)",
+            fenceFd,mReleaseFenceFd,mReleaseFenceFd);
+        close(mReleaseFenceFd);
+        mReleaseFenceFd = -1;
+    }
+
+    return fenceFd;
 }
 
 };

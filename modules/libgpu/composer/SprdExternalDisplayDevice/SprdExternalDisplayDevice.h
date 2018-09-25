@@ -48,6 +48,8 @@
 #include "../AndroidFence.h"
 #include "../dump.h"
 
+#include "SprdDisplayCore.h"
+
 using namespace android;
 
 class SprdExternalDisplayDevice {
@@ -58,7 +60,7 @@ public:
     /*
      *  Display configure attribution.
      * */
-    int getDisplayAttributes(DisplayAttributes *dpyAttributes);
+    int syncAttributes(AttributesSet *dpyAttributes);
 
     /*
      *  Active the specified config
@@ -82,6 +84,13 @@ public:
      *  Post found layers to Virtual Display Device.
      * */
     int commit(hwc_display_contents_1_t *list);
+
+    /*
+     *  Build Sync data for SurfaceFligner
+     * */
+    int buildSyncData(hwc_display_contents_1_t *list, DisplayTrack *tracker);
+
+    bool Init(SprdDisplayCore *core);
 
 private:
     int mDebugFlag;

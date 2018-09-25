@@ -39,27 +39,26 @@
 
 #include <utils/threads.h>
 #include <hardware/hwcomposer.h>
+#include "SprdDisplayDevice.h"
+#include "SprdDisplayCore.h"
 
-namespace android
-{
+namespace android {
 
-class SprdVsyncEvent: public Thread
-{
-    const hwc_procs_t *mProcs;
+class SprdVsyncEvent : public Thread {
+    SprdDisplayCore *mDisplayCore;
     mutable Mutex mLock;
     Condition mCondition;
     bool mEnabled;
+    int mFbFd;
+    nsecs_t mVSyncPeriod;
     virtual void onFirstRef();
     virtual bool threadLoop();
     int getVSyncPeriod();
-    int mFbFd;
-    nsecs_t mVSyncPeriod;
 public:
-    SprdVsyncEvent();
+    SprdVsyncEvent(SprdDisplayCore *core, int fbfd);
     ~SprdVsyncEvent();
     void setEnabled(bool enabled);
-    void setVsyncEventProcs(const hwc_procs_t *procs);
 };
 
-}
-#endif
+}  // namespace android
+#endif  // #ifndef _SPRD_HW_VSYNC_H_

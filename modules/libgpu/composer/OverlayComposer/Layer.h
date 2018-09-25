@@ -56,7 +56,7 @@ class OverlayComposer;
 class Layer
 {
 public:
-    Layer(OverlayComposer* composer, native_handle_t *h);
+    Layer(OverlayComposer* composer, native_handle_t *h, int acquireFenceFd);
     ~Layer();
 
     /* Hardware Layer draw function */
@@ -69,9 +69,12 @@ public:
     void setLayerAlpha(float alpha);
     void setBlendFlag(int32_t blendFlag);
 
+    static int getReleaseFenceFd();
+
 private:
     OverlayComposer* mComposer;
     native_handle_t *mPrivH;
+    int mAcquireFenceFd;
     EGLImageKHR mImage;
     GLenum mTexTarget;
     GLuint mTexName;

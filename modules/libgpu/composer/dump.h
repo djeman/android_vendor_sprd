@@ -99,9 +99,10 @@ extern void queryDebugFlag(int *debugFlag);
 extern void queryDumpFlag(int *dumpFlag);
 extern void queryIntFlag(const char* strProperty,int *IntFlag);
 
+extern int g_debugFlag;
 extern int dumpImage(hwc_display_contents_1_t *list);
 
-extern int dumpOverlayImage(native_handle_t* buffer, const char* name);
+extern int dumpOverlayImage(native_handle_t* buffer, const char* name, int fencefd);
 
 void dumpFrameBuffer(char *virAddr, const char* ptype, int width, int height, int format);
 #endif

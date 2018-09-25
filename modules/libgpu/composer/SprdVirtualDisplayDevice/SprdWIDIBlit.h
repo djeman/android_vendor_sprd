@@ -81,6 +81,7 @@ public:
 private:
     SprdVirtualPlane *mDisplayPlane;
     SprdUtil         *mAccelerator;
+    SprdUtilTarget   *mAcceleratorTarget;
     FrameBufferInfo  *mFBInfo;
     int              mDebugFlag;
     sem_t            startSem;

@@ -77,7 +77,18 @@ bool SprdVirtualPlane:: close()
     return true;
 }
 
-native_handle_t *SprdVirtualPlane:: dequeueBuffer()
+void SprdVirtualPlane:: InvalidatePlane()
+{
+
+}
+
+int SprdVirtualPlane:: setPlaneContext(void *context)
+{
+    HWC_IGNORE(context);
+    return 0;
+}
+
+native_handle_t *SprdVirtualPlane:: dequeueBuffer(int *fenceFd)
 {
     native_handle_t* outHandle = (native_handle_t*)mAndroidLayerList->outbuf;
     if (outHandle == NULL)
@@ -100,24 +111,23 @@ native_handle_t *SprdVirtualPlane:: dequeueBuffer()
         return NULL;
     }
 
-    bool phyType = (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
-
     queryDebugFlag(&mDebugFlag);
 
     mPlaneWidth = ADP_WIDTH(privateH);
     mPlaneHeight = ADP_HEIGHT(privateH);
     mPlaneFormat = mDefaultPlaneFormat;
 
-    ALOGI_IF(mDebugFlag, "SprdVirtualPlane::dequeueBuffer width:%d, height: %d, fd: %d, phyAddr: %d, handle format: %d",
-             mPlaneWidth, mPlaneHeight, ADP_BUFFD(privateH),
-             phyType, ADP_FORMAT(privateH));
+    ALOGI_IF(mDebugFlag, "SprdVirtualPlane::dequeueBuffer width:%d, height: %d, format: 0x%x fd:%d",
+		mPlaneWidth, mPlaneHeight, mPlaneFormat, ADP_BUFFD(privateH));
+
+    *fenceFd = -1;
 
     return mDisplayBuffer;
 }
 
-int SprdVirtualPlane:: queueBuffer()
+int SprdVirtualPlane:: queueBuffer(int fenceFd)
 {
-    ALOGI_IF(mDebugFlag, "SprdVirtualPlane:: queueBuffer HWC has finished the blit operation");
+    ALOGI_IF(mDebugFlag, "SprdVirtualPlane:: queueBuffer HWC has finished the blit operation, fenceFd:%d", fenceFd);
 
     if (HWCBufferSyncReleaseForVirtualDisplay(mAndroidLayerList) < 0)
     {
@@ -130,7 +140,7 @@ int SprdVirtualPlane:: queueBuffer()
     {
         const char *name = "VirtualDisplayYUV";
 
-        dumpOverlayImage(mDisplayBuffer, name);
+        dumpOverlayImage(mDisplayBuffer, name, fenceFd);
     }
 
     resetPlaneGeometry();
@@ -211,4 +221,9 @@ void SprdVirtualPlane:: AttachVDLayer(SprdHWLayer **videoLayerList, int videoLay
 native_handle_t* SprdVirtualPlane:: getPlaneBuffer() const
 {
     return mDisplayBuffer;
+}
+
+PlaneContext *SprdVirtualPlane:: getPlaneContext() const
+{
+    return NULL;
 }

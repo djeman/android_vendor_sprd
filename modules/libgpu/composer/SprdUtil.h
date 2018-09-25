@@ -52,19 +52,19 @@
 #include "sc8830/gsp_hal.h"
 #endif
 
-#ifdef TRANSFORM_USE_DCAM
-#include "sc8825/dcam_hal.h"
-#endif
-
-#ifdef TRANSFORM_USE_GPU
-#include "sc8810/gpu_transform.h"
-#endif
-
 using namespace android;
 
 #ifndef ALIGN
 #define ALIGN(value, base) (((value) + ((base) - 1)) & ~((base) - 1))
 #endif
+
+typedef struct _SprdUtilTarget {
+    native_handle_t* buffer; /* This is Target buffer. */
+    native_handle_t* buffer2; /* This is Target buffer2. */
+    int acquireFenceFd;        /* acquire fence fd of Target buffer */
+    int releaseFenceFd; /* release fence fd of Target buffer */
+    int format;
+} SprdUtilTarget;
 
 #ifdef PROCESS_VIDEO_USE_GSP
 typedef enum {
@@ -126,8 +126,8 @@ private:
  * */
 class SprdUtil {
 public:
-    SprdUtil(FrameBufferInfo *fbInfo)
-        : mFBInfo(fbInfo),
+    SprdUtil()
+        : mFBInfo(NULL),
 #ifdef TRANSFORM_USE_DCAM
           tmpDCAMBuffer(NULL),
           mOSDTransform(NULL),
@@ -138,8 +138,8 @@ public:
           mGspDev(NULL),
           outBufferPhy(0),
           outBufferSize(0),
-#endif
           mOutputFormat(GSP_DST_FMT_YUV420_2P),
+#endif
           mInitFlag(0),
           mDebugFlag(0)
     {
@@ -158,6 +158,7 @@ public:
     int composerLayerList(SprdHWLayer **videoLayerList, int videoLayerCount,
                           SprdHWLayer **osdLayerList, int osdLayerCount,
                           native_handle_t* buffer1, native_handle_t* buffer2);
+
     /*
      *  Some device just want to use the specified address type
      * */

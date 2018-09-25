@@ -55,26 +55,24 @@
 #include "SprdExternalDisplayDevice/SprdExternalDisplayDevice.h"
 #include "SprdDisplayDevice.h"
 #include "SprdUtil.h"
+#include "SprdDisplayCore.h"
+#include "SprdFrameBufferDevice.h"
 
 #include "dump.h"
 
 using namespace android;
 
 
-class SprdHWComposer: public hwc_composer_device_1_t
-{
+class SprdHWComposer: public hwc_composer_device_1_t {
 public:
     SprdHWComposer()
         : mPrimaryDisplay(0),
           mExternalDisplay(0),
           mVirtualDisplay(0),
-          mFBInfo(0),
+          mDisplayCore(0),
           mInitFlag(0),
           mDebugFlag(0),
-          mDumpFlag(0)
-    {
-
-    }
+          mDumpFlag(0) {}
 
     ~SprdHWComposer();
 
@@ -200,7 +198,7 @@ public:
     /*
      *  Control vsync event, enable or disable.
      * */
-    bool eventControl(int disp, int enabled);
+    bool eventControl(int disp, int event, int enabled);
 
     /*
      *  pass the number of builtin display vendor support to SurfaceFlinger.
@@ -212,7 +210,7 @@ private:
     SprdPrimaryDisplayDevice  *mPrimaryDisplay;
     SprdExternalDisplayDevice *mExternalDisplay;
     SprdVirtualDisplayDevice  *mVirtualDisplay;
-    FrameBufferInfo *mFBInfo;
+    SprdDisplayCore *mDisplayCore;
     DisplayAttributes mDisplayAttributes[MAX_DISPLAYS];
     int mInitFlag;
     int mDebugFlag;
@@ -220,7 +218,8 @@ private:
 
     void resetDisplayAttributes();
 
-    int DevicePropertyProbe(size_t numDisplays, hwc_display_contents_1_t **displays);
+    int DevicePropertyProbe(size_t numDisplays, 
+                            hwc_display_contents_1_t **displays);
 };
 
-#endif
+#endif  // #ifndef _SPRD_HWCOMPOSER_H

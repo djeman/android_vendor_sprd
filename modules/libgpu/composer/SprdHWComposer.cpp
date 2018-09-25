@@ -37,36 +37,30 @@
 #include "SprdHWComposer.h"
 #include "AndroidFence.h"
 
-
 using namespace android;
 
-
-void SprdHWComposer:: resetDisplayAttributes()
-{
-    for (int i = 0; i < MAX_DISPLAYS; i ++)
-    {
+void SprdHWComposer::resetDisplayAttributes() {
+    for (int i = 0; i < MAX_DISPLAYS; i ++) {
         DisplayAttributes *dpyAttr = &(mDisplayAttributes[i]);
-#if 0
-        for (int j = 0; j < MAX_NUM_CONFIGS; j++)
-        {
-            dpyAttr->sets[j].vsync_period = 0;
-            dpyAttr->sets[j].xres = 0;
-            dpyAttr->sets[j].yres = 0;
-            dpyAttr->sets[j].stride = 0;
-            dpyAttr->sets[j].xdpi = 0;
-            dpyAttr->sets[j].ydpi = 0;
-        }
-#endif
         dpyAttr->configsIndex = 0;
         dpyAttr->connected = false;
         dpyAttr->AcceleratorMode = ACCELERATOR_NON;
     }
 }
 
-bool SprdHWComposer:: Init()
-{
+bool SprdHWComposer::Init() {
     resetDisplayAttributes();
 
+    mDisplayCore = new SprdFrameBufferDevice();
+    if (mDisplayCore == NULL) {
+        ALOGE("new SprdDisplayCore failed");
+        return false;
+    }
+
+    if (!(mDisplayCore->Init())) {
+        ALOGE("SprdDisplayCore Init failed");
+        return false;
+    }
 
     /*
      *  SprdPrimaryDisplayDevice information
@@ -77,14 +71,10 @@ bool SprdHWComposer:: Init()
         return false;
     }
 
-    if (!(mPrimaryDisplay->Init(&mFBInfo)))
-    {
+    if (!(mPrimaryDisplay->Init(mDisplayCore))) {
         ALOGE("mPrimaryDisplayDevice init failed");
         return false;
     }
-
-    mPrimaryDisplay->getDisplayAttributes(&(mDisplayAttributes[DISPLAY_PRIMARY]));
-
 
     /*
      *  SprdExternalDisplayDevice information
@@ -95,8 +85,10 @@ bool SprdHWComposer:: Init()
         return false;
     }
 
-    mExternalDisplay->getDisplayAttributes(&(mDisplayAttributes[DISPLAY_EXTERNAL]));
-
+    if (!(mExternalDisplay->Init(mDisplayCore))) {
+        ALOGE("mExternalDisplay Init failed");
+        return false;
+    }
 
     /*
      *  SprdVirtualDisplayDevice information
@@ -107,13 +99,10 @@ bool SprdHWComposer:: Init()
         return false;
     }
 
-    if ((mVirtualDisplay->Init() != 0))
-    {
+    if ((mVirtualDisplay->Init() != 0)) {
         ALOGE("VirtualDisplay Init failed");
         return false;
     }
-
-    mVirtualDisplay->getDisplayAttributes(&(mDisplayAttributes[DISPLAY_VIRTUAL]));
 
     openSprdFence();
 
@@ -122,8 +111,7 @@ bool SprdHWComposer:: Init()
     return true;
 }
 
-SprdHWComposer:: ~SprdHWComposer()
-{
+SprdHWComposer::~SprdHWComposer() {
     closeSprdFence();
 
     if (mPrimaryDisplay) {
@@ -144,15 +132,13 @@ SprdHWComposer:: ~SprdHWComposer()
     mInitFlag = 0;
 }
 
-int SprdHWComposer:: DevicePropertyProbe(size_t numDisplays, hwc_display_contents_1_t **displays)
-{
+int SprdHWComposer::DevicePropertyProbe(size_t numDisplays, 
+                                        hwc_display_contents_1_t **displays) {
     int ret = -1;
-    for(unsigned int i = 0; i < numDisplays; i++)
-    {
+    for(unsigned int i = 0; i < numDisplays; i++) {
         hwc_display_contents_1_t *display = displays[i];
 
-        switch(i)
-        {
+        switch(i) {
             case DISPLAY_PRIMARY:
                 mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode |= ACCELERATOR_GSP;
                 mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode |= ACCELERATOR_GSP_IOMMU;
@@ -180,28 +166,30 @@ int SprdHWComposer:: DevicePropertyProbe(size_t numDisplays, hwc_display_content
     return ret;
 }
 
-int SprdHWComposer:: prepareDisplays(size_t numDisplays, hwc_display_contents_1_t **displays)
-{
+int SprdHWComposer::prepareDisplays(size_t numDisplays, 
+                                    hwc_display_contents_1_t **displays) {
     int ret = 0;
+    queryDebugFlag(&mDebugFlag);
 
 #ifdef FORCE_ADJUST_ACCELERATOR
     DevicePropertyProbe(numDisplays, displays);
 #endif
 
-    for(unsigned int i = 0; i < numDisplays; i++)
-    {
+    for(unsigned int i = 0; i < numDisplays; i++) {
         hwc_display_contents_1_t *display = displays[i];
 
-        switch(i)
-        {
+        switch(i) {
             case DISPLAY_PRIMARY:
-                mPrimaryDisplay->prepare(display, mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode);
+                mPrimaryDisplay->prepare(
+                    display, mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode);
                 break;
             case DISPLAY_EXTERNAL:
-                mExternalDisplay->prepare(display, mDisplayAttributes[DISPLAY_EXTERNAL].AcceleratorMode);
+                mExternalDisplay->prepare(
+                    display, mDisplayAttributes[DISPLAY_EXTERNAL].AcceleratorMode);
                 break;
             case DISPLAY_VIRTUAL:
-                mVirtualDisplay->prepare(display,  mDisplayAttributes[DISPLAY_VIRTUAL].AcceleratorMode);
+                mVirtualDisplay->prepare(
+                    display,  mDisplayAttributes[DISPLAY_VIRTUAL].AcceleratorMode);
                 break;
             default:
                 ret = -EINVAL;
@@ -211,16 +199,16 @@ int SprdHWComposer:: prepareDisplays(size_t numDisplays, hwc_display_contents_1_
     return ret;
 }
 
-int SprdHWComposer:: commitDisplays(size_t numDisplays, hwc_display_contents_1_t **displays)
-{
+int SprdHWComposer::commitDisplays(size_t numDisplays, 
+                                   hwc_display_contents_1_t **displays) {
     int ret = 0;
 
-    for(unsigned int i = 0; i < numDisplays; i++)
-    {
+    hwc_display_contents_1_t *VDList = NULL;
+
+    for (int i = numDisplays - 1; i >= 0; i--) {
         hwc_display_contents_1_t *display = displays[i];
 
-        switch(i)
-        {
+        switch(i) {
             case DISPLAY_PRIMARY:
                 mPrimaryDisplay->commit(display);
                 break;
@@ -229,99 +217,101 @@ int SprdHWComposer:: commitDisplays(size_t numDisplays, hwc_display_contents_1_t
                 break;
             case DISPLAY_VIRTUAL:
                 mVirtualDisplay->commit(display);
+                VDList = display;
                 break;
             default:
                 ret = -EINVAL;
         }
     }
 
+    if (VDList) {
+        mVirtualDisplay->WaitForDisplay();
+    }
+    DisplayTrack tracker;
+    tracker.releaseFenceFd = -1;
+    tracker.retiredFenceFd = -1;
+    ret = mDisplayCore->PostDisplay(&tracker);
+
+    /*
+     *  Build Sync data for each display device
+     * */
+    for (unsigned int i = 0; i < numDisplays; i++) {
+        hwc_display_contents_1_t *display = displays[i];
+
+        switch (i) {
+            case DISPLAY_PRIMARY:
+                mPrimaryDisplay->buildSyncData(display, &tracker);
+                break;
+            case DISPLAY_EXTERNAL:
+                mExternalDisplay->buildSyncData(display, &tracker);
+                break;
+            case DISPLAY_VIRTUAL:
+                mVirtualDisplay->buildSyncData(display, &tracker);
+                break;
+            default:
+                ret = -EINVAL;
+        }
+    }
+
+    /*
+     *  Recycle file descriptor
+     * */
+    ALOGI_IF(mDebugFlag, "<11> close DisplayCore output rel_fd:%d,retire_fd:%d.",
+             tracker.releaseFenceFd, tracker.retiredFenceFd);
+    closeFence(&tracker.releaseFenceFd);
+    closeFence(&tracker.retiredFenceFd);
+
     return ret;
 }
 
-int SprdHWComposer:: blank(int disp, int blank)
-{
-    queryDebugFlag(&mDebugFlag);
+int SprdHWComposer::blank(int disp, int blank) {
+    int ret = 0;
+    // queryDebugFlag(&mDebugFlag);
     ALOGI_IF(mDebugFlag, "%s : %s display:%d", __func__,
              (blank == 1) ? "Blanking" : "UnBlanking", disp);
 
-    if (blank)
-    {
+    ret = mDisplayCore->Blank(disp, blank);
+    if (blank) {
         /*
          *  Here, we need free up all the Overlay Plane and
          *  Primary plane.
          * */
     }
 
-    /*
-     *  DisplayC need implementing this feature.
-     * */
-#if 0
-    switch(disp)
-    {
-        case DISPLAY_PRIMARY:
-            if (blank)
-            {
-                ioctl(mFBInfo->fbfd, FBIOBLANK, FB_BLANK_POWERDOWN);
-            }
-            else
-            {
-                ioctl(mFBInfo->fbfd, FBIOBLANK, FB_BLANK_UNBLANK);
-            }
-            break;
-        case DISPLAY_EXTERNAL:
-        case DISPLAY_VIRTUAL:
-            if (blank)
-            {
-
-            }
-            break;
-        default:
-            return -EINVAL;
-    }
-#endif
-
     return 0;
 }
 
-int SprdHWComposer:: query(int what, int* value)
-{
+int SprdHWComposer::query(int what, int* value) {
     HWC_IGNORE(what);
     HWC_IGNORE(value);
     return 0;
 }
 
-void SprdHWComposer:: dump(char *buff, int buff_len)
-{
+void SprdHWComposer::dump(char *buff, int buff_len) {
     HWC_IGNORE(buff);
     HWC_IGNORE(buff_len);
 }
 
-int SprdHWComposer:: getDisplayConfigs(int disp, uint32_t* configs, size_t* numConfigs)
-{
+int SprdHWComposer::getDisplayConfigs(int disp, uint32_t* configs, 
+                                      size_t* numConfigs) {
     int ret = -1;
+    int size = 0;
+    uint32_t *p = NULL;
 
-    switch(disp)
-    {
+    if (mDisplayCore->GetConfigs(disp, configs, numConfigs)) {
+        ALOGE("SprdHWComposer:: getDisplayConfigs disp: %d failed", disp);
+        return -1;
+    }
+
+    switch(disp) {
         case DISPLAY_PRIMARY:
-            if (*numConfigs > 0)
-            {
-                configs[0] = 0;
-                mDisplayAttributes[DISPLAY_PRIMARY].configsIndex = 0;
-                *numConfigs = 1;
-            }
+            p = mDisplayAttributes[DISPLAY_PRIMARY].configIndexSets;
+            size = (*numConfigs > MAX_NUM_CONFIGS) ? MAX_NUM_CONFIGS : *numConfigs;
+            memcpy(p, configs, size);
+            mDisplayAttributes[DISPLAY_PRIMARY].numConfigs = size;
             ret = 0;
             break;
         case DISPLAY_EXTERNAL:
-            ret = -1;
-            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected)
-            {
-                if (*numConfigs > 0)
-                {
-                    configs[0] = 0;
-                    mDisplayAttributes[DISPLAY_EXTERNAL].configsIndex = 0;
-                    *numConfigs = 1;
-                }
-            }
             ret = 0;
             break;
         default:
@@ -331,78 +321,117 @@ int SprdHWComposer:: getDisplayConfigs(int disp, uint32_t* configs, size_t* numC
     return ret;
 }
 
-int SprdHWComposer:: getDisplayAttributes(int disp, uint32_t config, const uint32_t* attributes, int32_t* value)
-{
-    if (DISPLAY_EXTERNAL == disp && !(mDisplayAttributes[disp].connected))
-    {
+int SprdHWComposer::getDisplayAttributes(int disp, uint32_t config, 
+                                         const uint32_t* attributes, 
+                                         int32_t* value) {
+    if (DISPLAY_EXTERNAL == disp && !(mDisplayAttributes[disp].connected)) {
         //ALOGD("External Display Device is not connected");
         return -1;
     }
 
-    if (DISPLAY_VIRTUAL == disp && !(mDisplayAttributes[disp].connected))
-    {
+    if (DISPLAY_VIRTUAL == disp && !(mDisplayAttributes[disp].connected)) {
         ALOGD("VIRTUAL Display Device is not connected");
         return -1;
     }
 
-    static const uint32_t DISPLAY_ATTRIBUTES[] = {
-        HWC_DISPLAY_VSYNC_PERIOD,
-        HWC_DISPLAY_WIDTH,
-        HWC_DISPLAY_HEIGHT,
-        HWC_DISPLAY_DPI_X,
-        HWC_DISPLAY_DPI_Y,
-        HWC_DISPLAY_NO_ATTRIBUTE,
-    };
-
-    const int NUM_DISPLAY_ATTRIBUTES = sizeof(DISPLAY_ATTRIBUTES) / (sizeof(DISPLAY_ATTRIBUTES[0]));
+    if (mDisplayCore->GetConfigAttributes(disp, config, attributes, value) < 0) {
+        ALOGE("SprdHWComposer:: getDisplayAttributes get Config attributes error");
+        return -1;
+    }
 
     AttributesSet *dpyAttr = &(mDisplayAttributes[disp].sets[config]);
+    bool is_end = false;
 
-    for (int i = 0; i < NUM_DISPLAY_ATTRIBUTES -1; i++)
-    {
-        switch(attributes[i])
-        {
+    for (unsigned int i = 0; i < NUM_DISPLAY_ATTRIBUTES -1; i++) {
+        switch(attributes[i]) {
             case HWC_DISPLAY_VSYNC_PERIOD:
-                value[i] = dpyAttr->vsync_period;
-                ALOGI("getDisplayAttributes: disp:%d vsync_period:%d", disp, dpyAttr->vsync_period);
+                //value[i] = value[i] * 1000;
+                dpyAttr->vsync_period = value[i];
+                ALOGI("getDisplayAttributes: disp:%d vsync_period:%u", disp,
+                      dpyAttr->vsync_period);
+                if (dpyAttr->vsync_period == 0) {
+                    ALOGI(
+                        "getDisplayAttributes: disp:%d vsync_period:0,set to default "
+                        "60fps.",
+                        disp);
+                    dpyAttr->vsync_period = (1e9 / 60);
+                }
                 break;
             case HWC_DISPLAY_WIDTH:
-                value[i] = dpyAttr->xres;
+                dpyAttr->xres = value[i];
                 ALOGI("getDisplayAttributes: disp:%d width:%d", disp, dpyAttr->xres);
                 break;
             case HWC_DISPLAY_HEIGHT:
-                value[i] = dpyAttr->yres;
+                dpyAttr->yres = value[i];
                 ALOGI("getDisplayAttributes: disp:%d height:%d", disp, dpyAttr->yres);
                 break;
             case HWC_DISPLAY_DPI_X:
-                value[i] = (int32_t)(dpyAttr->xdpi);
-                ALOGI("getDisplayAttributes: disp:%d xdpi:%f", disp, dpyAttr->xdpi / 1000.0);
+                dpyAttr->xdpi = (float)(value[i]);
+                if (dpyAttr->xdpi == 0) {
+                    // the driver doesn't return that information
+                    // default to 160 dpi
+                    dpyAttr->xdpi = 160;
+                }
+                ALOGI("getDisplayAttributes: disp:%d xdpi:%f", disp, dpyAttr->xdpi/1000.0);
                 break;
             case HWC_DISPLAY_DPI_Y:
-                value[i] = (int32_t)(dpyAttr->ydpi);
-                ALOGI("getDisplayAttributes: disp:%d ydpi:%f", disp, dpyAttr->ydpi / 1000.0);
+                dpyAttr->ydpi = (float)(value[i]);
+                if (dpyAttr->ydpi == 0) {
+                    // the driver doesn't return that information
+                    // default to 160 dpi
+                    dpyAttr->ydpi = 160;
+                }
+                ALOGI("getDisplayAttributes: disp:%d ydpi:%f", disp, dpyAttr->ydpi/1000.0);
+                break;
+            case HWC_DISPLAY_NO_ATTRIBUTE:
+                is_end = true;
+                ALOGI("getDisplayAttributes: HWC_DISPLAY_NO_ATTRIBUTE");
                 break;
             default:
                 ALOGE("Unknown Display Attributes:%d", attributes[i]);
                 return -EINVAL;
         }
+
+        if (is_end)
+        {
+            ALOGI("getDisplayAttributes end, i=%d", i);
+            break;
+        }
+    }
+
+    switch (disp) {
+        case DISPLAY_PRIMARY:
+            mPrimaryDisplay->syncAttributes(dpyAttr);
+            mDisplayAttributes[disp].connected = true;
+            break;
+        case DISPLAY_EXTERNAL:
+            mExternalDisplay->syncAttributes(dpyAttr);
+            // mDisplayAttributes[disp].connected = true;
+            break;
+        case DISPLAY_VIRTUAL:
+            mVirtualDisplay->syncAttributes(dpyAttr);
+            // mDisplayAttributes[disp].connected = true;
+            break;
+        default:
+            ALOGE(
+                "SprdHWComposer:: getDisplayAttributes do not support display type "
+                "%d",
+                disp);
+            break;
     }
 
     return 0;
 }
 
-int SprdHWComposer:: getActiveConfig(int disp)
-{
+int SprdHWComposer::getActiveConfig(int disp) {
     int ret = -1;
 
-    switch(disp)
-    {
+    switch(disp) {
         case DISPLAY_PRIMARY:
             ret = mDisplayAttributes[DISPLAY_PRIMARY].configsIndex;
             break;
         case DISPLAY_EXTERNAL:
-            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected)
-            {
+            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected) {
                 ret = mDisplayAttributes[DISPLAY_EXTERNAL].configsIndex;
             }
             break;
@@ -413,18 +442,15 @@ int SprdHWComposer:: getActiveConfig(int disp)
     return ret;
 }
 
-int SprdHWComposer:: setActiveConfig(int disp, int index)
-{
+int SprdHWComposer::setActiveConfig(int disp, int index) {
     int ret = -1;
 
-    if (index < 0)
-    {
+    if (index < 0) {
         ALOGE("setActiveConfig input index is invalid");
         return -1;
     }
 
-    switch(disp)
-    {
+    switch(disp) {
         case DISPLAY_PRIMARY:
             mDisplayAttributes[DISPLAY_PRIMARY].configsIndex = index;
             ret = mPrimaryDisplay->ActiveConfig(&(mDisplayAttributes[DISPLAY_PRIMARY]));
@@ -440,20 +466,17 @@ int SprdHWComposer:: setActiveConfig(int disp, int index)
             return ret;
     }
 
-    if (ret < 0)
-    {
+    if (ret < 0) {
         ALOGE("setActiveConfig display: %d ActiveConfig failed", disp);
     }
 
     return ret;
 }
 
-int SprdHWComposer:: setPowerMode(int disp, int mode)
-{
+int SprdHWComposer::setPowerMode(int disp, int mode) {
     int ret = -1;
 
-    switch(disp)
-    {
+    switch(disp) {
         case DISPLAY_PRIMARY:
             ret = mPrimaryDisplay->setPowerMode(mode);
             break;
@@ -464,28 +487,24 @@ int SprdHWComposer:: setPowerMode(int disp, int mode)
             return ret;
     }
 
-    if (ret < 0)
-    {
+    if (ret < 0) {
         ALOGE("SprdHWComposer:: setPowerMode display: %d, failed", disp);
     }
 
     return ret;
 }
 
-int SprdHWComposer:: setCursorPositionAsync(int disp, int x_pos, int y_pos)
-{
+int SprdHWComposer::setCursorPositionAsync(int disp, int x_pos, int y_pos) {
     int ret = -1;
 
-    switch(disp)
-    {
+    switch(disp) {
         case DISPLAY_PRIMARY:
             ret = mPrimaryDisplay->setCursorPositionAsync(x_pos, y_pos);
             break;
         case DISPLAY_VIRTUAL:
             ret = mVirtualDisplay->setCursorPositionAsync(x_pos, y_pos);
         case DISPLAY_EXTERNAL:
-            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected)
-            {
+            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected) {
                 ret = mExternalDisplay->setCursorPositionAsync(x_pos, y_pos);
             }
             break;
@@ -496,8 +515,7 @@ int SprdHWComposer:: setCursorPositionAsync(int disp, int x_pos, int y_pos)
     return ret;
 }
 
-int SprdHWComposer:: getBuiltInDisplayNum(uint32_t *number)
-{
+int SprdHWComposer::getBuiltInDisplayNum(uint32_t *number) {
     int ret = -1;
 
     ret = mPrimaryDisplay->getBuiltInDisplayNum(number);
@@ -505,77 +523,55 @@ int SprdHWComposer:: getBuiltInDisplayNum(uint32_t *number)
     return ret;
 }
 
-void SprdHWComposer:: registerProcs(hwc_procs_t const* procs)
-{
+void SprdHWComposer::registerProcs(hwc_procs_t const* procs) {
     /*
      *  At present, the Android callback procs is just
      *  used by Primary Display Device.
      *  Other Display Device do not generate vsync event.
      * */
-    mPrimaryDisplay->setVsyncEventProcs(const_cast<hwc_procs_t *>(procs));
+    mDisplayCore->SetEventProcs(procs);
 }
 
-bool SprdHWComposer:: eventControl(int disp, int enabled)
-{
-    HWC_IGNORE(disp);
-
+bool SprdHWComposer::eventControl(int disp, int event, int enabled) {
     /*
      *  At present, only Primary Display Device support
      *  Hardware vsync event.
      * */
-    mPrimaryDisplay->eventControl(enabled);
+    mDisplayCore->EventControl(disp, event, enabled);
 
     return true;
 }
-
-
-
-
 
 /*
  *  HWC module info
  * */
 
-static int hwc_eventControl(hwc_composer_device_1* dev, int disp, int event, int enabled)
-{
+static int hwc_eventControl(hwc_composer_device_1 *dev, int disp, int event, 
+                            int enabled) {
     int status = -EINVAL;
     bool ret = false;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
 
-    switch(event)
-    {
-        case HWC_EVENT_VSYNC:
-            ret = HWC->eventControl(disp, enabled);
-            if (!ret)
-            {
-                ALOGE("Vsync event control failed");
-                status = -EPERM;
-                return status;
-            }
-            break;
-
-        default:
-            ALOGE("unsupported event");
-            status = -EPERM;
-            return status;
+    ret = HWC->eventControl(disp, event, enabled);
+    if (!ret) {
+        ALOGE("Vsync event control failed");
+        status = -EPERM;
+        return status;
     }
 
     return 0;
 }
 
-static int hwc_blank(hwc_composer_device_1 *dev, int disp, int blank)
-{
+static int hwc_blank(hwc_composer_device_1 *dev, int disp, int blank) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -585,13 +581,11 @@ static int hwc_blank(hwc_composer_device_1 *dev, int disp, int blank)
     return status;
 }
 
-static int hwc_query(hwc_composer_device_1 *dev, int what, int* value)
-{
+static int hwc_query(hwc_composer_device_1 *dev, int what, int *value) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -601,11 +595,9 @@ static int hwc_query(hwc_composer_device_1 *dev, int what, int* value)
     return status;
 }
 
-static void hwc_dump(hwc_composer_device_1 *dev, char *buff, int buff_len)
-{
+static void hwc_dump(hwc_composer_device_1 *dev, char *buff, int buff_len) {
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return ;
     }
@@ -613,13 +605,12 @@ static void hwc_dump(hwc_composer_device_1 *dev, char *buff, int buff_len)
     HWC->dump(buff, buff_len);
 }
 
-static int hwc_getDisplayConfigs(hwc_composer_device_1 *dev, int disp, uint32_t* configs, size_t* numConfigs)
-{
+static int hwc_getDisplayConfigs(hwc_composer_device_1 *dev, int disp, 
+                                 uint32_t *configs, size_t *numConfigs) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -629,13 +620,13 @@ static int hwc_getDisplayConfigs(hwc_composer_device_1 *dev, int disp, uint32_t*
     return status;
 }
 
-static int hwc_getDisplayAttributes(hwc_composer_device_1 *dev, int disp, uint32_t config, const uint32_t* attributes, int32_t* value)
-{
+static int hwc_getDisplayAttributes(hwc_composer_device_1 *dev, int disp, 
+                                    uint32_t config, const uint32_t *attributes, 
+                                    int32_t *value) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -645,13 +636,11 @@ static int hwc_getDisplayAttributes(hwc_composer_device_1 *dev, int disp, uint32
     return status;
 }
 
-static int hwc_getActiveConfig(hwc_composer_device_1* dev, int disp)
-{
+static int hwc_getActiveConfig(hwc_composer_device_1 *dev, int disp) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -661,13 +650,12 @@ static int hwc_getActiveConfig(hwc_composer_device_1* dev, int disp)
     return status;
 }
 
-static int hwc_setActiveConfig(hwc_composer_device_1* dev, int disp, int index)
-{
+static int hwc_setActiveConfig(hwc_composer_device_1 *dev, int disp, 
+                               int index) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -677,13 +665,11 @@ static int hwc_setActiveConfig(hwc_composer_device_1* dev, int disp, int index)
     return status;
 }
 
-static int hwc_setPowerMode(hwc_composer_device_1* dev, int disp, int mode)
-{
+static int hwc_setPowerMode(hwc_composer_device_1 *dev, int disp, int mode) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -693,13 +679,12 @@ static int hwc_setPowerMode(hwc_composer_device_1* dev, int disp, int mode)
     return status;
 }
 
-static int hwc_setCursorPositionAsync(hwc_composer_device_1* dev, int disp, int x_pos, int y_pos)
-{
+static int hwc_setCursorPositionAsync(hwc_composer_device_1 *dev, int disp, 
+                                      int x_pos, int y_pos) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -709,13 +694,12 @@ static int hwc_setCursorPositionAsync(hwc_composer_device_1* dev, int disp, int 
     return status;
 }
 
-static int hwc_getBuiltInDisplayNum(hwc_composer_device_1* dev, uint32_t *number)
-{
+static int hwc_getBuiltInDisplayNum(hwc_composer_device_1 *dev, 
+                                    uint32_t *number) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -725,13 +709,12 @@ static int hwc_getBuiltInDisplayNum(hwc_composer_device_1* dev, uint32_t *number
     return status;
 }
 
-static int hwc_prepareDisplays(hwc_composer_device_1 *dev, size_t numDisplays, hwc_display_contents_1_t **displays)
-{
+static int hwc_prepareDisplays(hwc_composer_device_1 *dev, size_t numDisplays, 
+                               hwc_display_contents_1_t **displays) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -741,13 +724,12 @@ static int hwc_prepareDisplays(hwc_composer_device_1 *dev, size_t numDisplays, h
     return status;
 }
 
-static int hwc_setDisplays(hwc_composer_device_1 *dev, size_t numDisplays, hwc_display_contents_1_t **displays)
-{
+static int hwc_setDisplays(hwc_composer_device_1 *dev, size_t numDisplays, 
+                           hwc_display_contents_1_t **displays) {
     int status = -EINVAL;
 
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return status;
     }
@@ -757,23 +739,20 @@ static int hwc_setDisplays(hwc_composer_device_1 *dev, size_t numDisplays, hwc_d
     return status;
 }
 
-static int hwc_device_close(struct hw_device_t *dev)
-{
+static int hwc_device_close(struct hw_device_t *dev) {
     SprdHWComposer *HWC = (SprdHWComposer*)(dev);
-    if (HWC != NULL)
-    {
+    if (HWC != NULL) {
         delete HWC;
         HWC = NULL;
     }
 
     return 0;
-};
+}
 
-static void hwc_registerProcs(hwc_composer_device_1 *dev, hwc_procs_t const* procs)
-{
+static void hwc_registerProcs(hwc_composer_device_1 *dev, 
+                              hwc_procs_t const *procs) {
     SprdHWComposer *HWC = static_cast<SprdHWComposer*>(dev);
-    if (HWC == NULL)
-    {
+    if (HWC == NULL) {
         ALOGE("Can NOT get SprdHWComposer reference");
         return;
     }
@@ -781,12 +760,11 @@ static void hwc_registerProcs(hwc_composer_device_1 *dev, hwc_procs_t const* pro
     HWC->registerProcs(procs);
 }
 
-static int hwc_device_open(const struct hw_module_t* module, const char* name, struct hw_device_t** device)
-{
+static int hwc_device_open(const struct hw_module_t *module, const char *name, 
+                           struct hw_device_t **device) {
     int status = -EINVAL;
 
-    if (strcmp(name, HWC_HARDWARE_COMPOSER))
-    {
+    if (strcmp(name, HWC_HARDWARE_COMPOSER)) {
         ALOGE("The module name is not HWC_HARDWARE_COMPOSER");
         return status;
     }
@@ -799,8 +777,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name, s
     }
 
     bool ret = HWC->Init();
-    if (!ret)
-    {
+    if (!ret) {
         ALOGE("Init HWComposer failed");
         delete HWC;
         HWC = NULL;

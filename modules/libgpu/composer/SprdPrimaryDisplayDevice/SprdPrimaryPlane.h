@@ -49,22 +49,39 @@ using namespace android;
 
 class SprdPrimaryPlane: public SprdDisplayPlane {
 public:
-    SprdPrimaryPlane(FrameBufferInfo *fbInfo);
+    SprdPrimaryPlane();
     virtual ~SprdPrimaryPlane();
 
     /*
      *  These interfaces are from the father class SprdDisplayPlane.
      *  dequeueBuffer: gain a available buffer for SprdPrimaryPlane.
-     *  queueBuffer: display a buffer.
+     *  queueBuffer: send a display buffer to FIFO.
+     *  flush:       update the Plane Context according to
+     *               flusing buffer info.
      * */
-    virtual native_handle_t* dequeueBuffer();
-    virtual int queueBuffer();
+    virtual native_handle_t* dequeueBuffer(int *fenceFd);
+    virtual int queueBuffer(int fenceFd);
+    virtual native_handle_t* flush(int *fenceFd);
     virtual native_handle_t* getPlaneBuffer() const;
-    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const;
+    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, 
+                                  int *format) const;
+
+    virtual void InvalidatePlane();
+
+    /*
+     *  setup the DisplayPlane context.
+     * */
+    virtual int setPlaneContext(void *context);
+    virtual PlaneContext *getPlaneContext() const;
+
     /**************************************************************************************/
+
+    virtual int getPlaneFormat() const;
 
     virtual bool open();
     virtual bool close();
+
+    void updateFBInfo(FrameBufferInfo *fbInfo);
 
     /*
      *  Bind OSD layer to SprdPrimaryPlane.
@@ -75,11 +92,6 @@ public:
      *  Attach HWC_FRAMEBUFFER_TARGET layer to SprdPrimaryPlane.
      * */
     void AttachFramebufferTargetLayer(hwc_layer_1_t *FBTargetLayer);
-
-    /*
-     *  Finally display Overlay plane and Primary plane buffer.
-     * */
-    void display(bool DisplayOverlayPlane, bool DisplayPrimaryPlane, bool DisplayFBTarget);
 
     /*
      * Check whether SprdPrimaryPlane is available.
@@ -106,10 +118,6 @@ public:
 
     int getPlaneBufferIndex() const;
 
-    inline bool GetDirectDisplay() { return mDirectDisplayFlag; }
-
-    enum PlaneFormat getPlaneFormat();
-
 private:
     FrameBufferInfo *mFBInfo;
     SprdHWLayer *mHWLayer;
@@ -121,18 +129,9 @@ private:
     int mDefaultDisplayFormat;
     int mDisplayFormat;
     bool mPlaneDisable;
-    bool mDisplayFBTargetLayerFlag;
-    bool mDirectDisplayFlag;
-    unsigned char *mPlaneBufferPhyAddr;
-    unsigned char *mDisplayFBTargetPhyAddr;
-    unsigned char *mDirectDisplayPhyAddr;
     int mThreadID;
     int mDebugFlag;
     int mDumpFlag;
-
-    virtual native_handle_t* flush();
-
-    void InvalidatePlaneContext();
 
     int checkHWLayer(SprdHWLayer *l);
 
@@ -148,11 +147,13 @@ private:
      * */
     friend SprdOverlayPlane;
 
-    native_handle_t* dequeueFriendBuffer();
+    native_handle_t* dequeueFriendBuffer(int *fenceFd);
 
-    int queueFriendBuffer();
+    int queueFriendBuffer(int fenceFd);
 
-    native_handle_t* flushFriend();
+    native_handle_t* flushFriend(int *fenceFd);
+
+    int addFriendFlushReleaseFence(int fenceFd);
 #endif
 
 };

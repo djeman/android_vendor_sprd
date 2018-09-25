@@ -968,7 +968,7 @@ void SprdUtil::gsp_intermedia_dump(native_handle_t* dst_buffer) {
 
     queryDumpFlag(&mDumpFlag);
     if (HWCOMPOSER_DUMP_MULTI_LAYER_FLAG & mDumpFlag) {
-        dumpOverlayImage(dst_buffer, "GSPMULTI");
+        //dumpOverlayImage(dst_buffer, "GSPMULTI");
     }
 }
 
@@ -1930,7 +1930,6 @@ int SprdUtil::composerLayers(SprdHWLayer *l1,
             return -1;
         }
     }
-
 
     //layer1 must valid, layer2 can be invalid
     if (dst_buffer == NULL || (l1 == NULL && l2 == NULL)) {

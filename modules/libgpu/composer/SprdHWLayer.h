@@ -90,38 +90,52 @@ struct sprdPoint {
 };
 
 enum layerType {
-    LAYER_OSD = 1,
-    LAYER_OVERLAY,
+    LAYER_OSD = 1,// means rgb format, should bind to OSD layer of dispc
+    LAYER_OVERLAY,// means yuv format, should bind to IMG layer of dispc
     LAYER_INVALIDE
 };
 
-
 /*
- *  Android layers info from Android Framework is not enough,
- *  here, SprdHWLayer object just add some info.
+ *  SprdHWLayer wrapped the hwc_layer_1_t which come from SF.
+ *  SprdHWLayer is a local layer abstract, include src-rect,
+ *  dst-rect, overlay buffer layer's handle,etc.
  * */
 class SprdHWLayer
 {
 public:
+    /*
+     *  SprdHWLayer
+     *  default constractor used to wrap src layer.
+     * */
     SprdHWLayer()
-        : mAndroidLayer(0), mLayerType(LAYER_INVALIDE), 
+        : mInit(false),
+          mAndroidLayer(0), mLayerType(LAYER_INVALIDE),
+          mPrivateH(NULL),
           mFormat(-1),
           mLayerIndex(-1),
           mSprdLayerIndex(-1),
           mAccelerator(-1),
           mProtectedFlag(false),
-          mDebugFlag(0)
-    {
+          mPlaneAlpha(255),
+          mBlending(HWC_BLENDING_NONE),
+          mTransform(0x0),
+          mAcquireFenceFd(-1),
+          mDebugFlag(0) {}
 
-    }
-    ~SprdHWLayer()
-    {
+    SprdHWLayer(hwc_layer_1_t *androidLayer, int format);
+    SprdHWLayer(native_handle_t *handle, int format, int32_t planeAlpha,
+                int32_t blending, int32_t transform, int32_t fenceFd);
 
-    }
+    ~SprdHWLayer() {}
 
     inline bool InitCheck()
     {
         return (mAndroidLayer->compositionType == HWC_OVERLAY);
+    }
+
+    inline void setLayerAccelerator(int flag)
+    {
+        mAccelerator = flag;
     }
 
     inline int getLayerIndex()
@@ -143,7 +157,6 @@ public:
     {
         return mLayerType;
     }
-
 
     inline int getLayerFormat()
     {
@@ -185,29 +198,63 @@ public:
     inline void updateAndroidLayer(hwc_layer_1_t *l)
     {
         mAndroidLayer = l;
+        mInit = false;
     }
-
-    bool checkRGBLayerFormat();
-    bool checkYUVLayerFormat();
 
     inline bool getProtectedFlag() const
     {
         return mProtectedFlag;
     }
 
+    inline int getPlaneAlpha()
+    {
+        return mPlaneAlpha;
+    }
+
+    inline int32_t getBlendMode()
+    {
+        return  mBlending;
+    }
+
+    inline uint32_t getTransform()
+    {
+        return  mTransform;
+    }
+
+    inline native_handle_t *getBufferHandle()
+    {
+        return mPrivateH;
+    }
+    inline void setAcquireFenceFd(int fd)
+    {
+        mAcquireFenceFd = fd;
+    }
+    inline int getAcquireFence()
+    {
+        return mAcquireFenceFd;
+    }
+    bool checkRGBLayerFormat();
+    bool checkYUVLayerFormat();
+
 private:
     friend class SprdHWLayerList;
     friend class SprdVDLayerList;
 
+    bool mInit;
     hwc_layer_1_t *mAndroidLayer;
-    enum layerType mLayerType;
+    enum layerType mLayerType;// indicate this layer should bind to OSD/IMG layer of dispc
+    native_handle_t *mPrivateH;
     int mFormat;
     int mLayerIndex;
     int mSprdLayerIndex;
     struct sprdRect srcRect;
     struct sprdRect FBRect;
-    int mAccelerator;
+    int mAccelerator;//default is ACCELERATOR_OVERLAYCOMPOSER, then check dispc&gsp can process or not.
     bool mProtectedFlag;
+    int mPlaneAlpha;
+    int32_t mBlending;
+    int32_t mTransform;
+    int32_t mAcquireFenceFd;
     int mDebugFlag;
 
     inline void setAndroidLayer(hwc_layer_1_t *l)
@@ -235,14 +282,24 @@ private:
         mFormat = f;
     }
 
-    inline void setLayerAccelerator(int flag)
-    {
-        mAccelerator = flag;
-    }
-
     inline void setProtectedFlag(bool flag)
     {
         mProtectedFlag = flag;
+    }
+
+    inline void setPlaneAlpha(int32_t alpha)
+    {
+        mPlaneAlpha = alpha;
+    }
+
+    inline void setBlending(int32_t blend)
+    {
+        mBlending = blend;
+    }
+
+    inline void setTransform(int32_t transform)
+    {
+        mTransform = transform;
     }
 };
 
