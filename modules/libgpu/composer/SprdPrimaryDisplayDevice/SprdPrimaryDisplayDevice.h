@@ -52,10 +52,10 @@
 #include "SprdHWLayerList.h"
 #include "SprdOverlayPlane.h"
 #include "SprdPrimaryPlane.h"
-#include "SprdVsyncEvent.h"
 #include "SprdFrameBufferHAL.h"
 #include "../SprdDisplayDevice.h"
 #include "../AndroidFence.h"
+#include "../SprdDisplayCore.h"
 
 #ifdef OVERLAY_COMPOSER_GPU
 #include "../OverlayComposer/OverlayComposer.h"
@@ -69,18 +69,16 @@ using namespace android;
 class SprdHWLayerList;
 class SprdUtil;
 
-class SprdPrimaryDisplayDevice
-{
+class SprdPrimaryDisplayDevice {
 public:
     SprdPrimaryDisplayDevice();
 
     ~SprdPrimaryDisplayDevice();
 
     /*
-     *  Initialize the SprdPrimaryDisplayDevice member and return
-     *  FrameBufferInfo.
+     *  Initialize the SprdPrimaryDisplayDevice member
      * */
-    bool Init(FrameBufferInfo **fbInfo);
+    bool Init(SprdDisplayCore *core);
 
     /*
      *  Traversal layer list, and find layers which comply with SprdDisplayPlane
@@ -94,21 +92,14 @@ public:
     int commit(hwc_display_contents_1_t* list);
 
     /*
-     *  set up the Android Procs callback to Primary
-     *  Display Decice.
+     *  Build Sync data for SurfaceFligner
      * */
-    void setVsyncEventProcs(const hwc_procs_t *procs);
-
-    /*
-     *  Primary Display Device event control interface.
-     *  Make vsync event enable or disable.
-     * */
-    void eventControl(int enabled);
+    int buildSyncData(hwc_display_contents_1_t *list, DisplayTrack *tracker);
 
     /*
      *  Display configure attribution.
      * */
-    int getDisplayAttributes(DisplayAttributes *dpyAttributes);
+    int syncAttributes(AttributesSet *dpyAttributes);
 
     int ActiveConfig(DisplayAttributes *dpyAttributes);
 
@@ -130,33 +121,38 @@ public:
     int getBuiltInDisplayNum(uint32_t *number);
 
 private:
-    FrameBufferInfo   *mFBInfo;
-    SprdHWLayerList   *mLayerList;
-    SprdOverlayPlane  *mOverlayPlane;
-    SprdPrimaryPlane  *mPrimaryPlane;
+    FrameBufferInfo *mFBInfo;
+    SprdDisplayCore *mDispCore;
+    SprdHWLayerList *mLayerList;
+    SprdOverlayPlane *mOverlayPlane;
+    SprdPrimaryPlane *mPrimaryPlane;
 #ifdef OVERLAY_COMPOSER_GPU
     sp<OverlayNativeWindow> mWindow;
     sp<OverlayComposer> mOverlayComposer;
 #endif
-    sp<SprdVsyncEvent>  mVsyncEvent;
-    SprdUtil          *mUtil;
-    bool mPostFrameBuffer;
+    SprdHWLayer *mComposedLayer;
+    SprdUtil *mUtil;
+    SprdUtilTarget *mUtilTarget;
+    bool mDisplayFBTarget;
+    bool mDisplayPrimaryPlane;
+    bool mDisplayOverlayPlane;
+    bool mDisplayOVC;
+    bool mSchedualUtil;
+    bool mFirstFrameFlag;
     int mHWCDisplayFlag;
     unsigned int mAcceleratorMode;
 #ifdef PROCESS_VIDEO_USE_GSP
     GSP_CAPABILITY_T *mGXPCap;
 #endif
+
+    bool mBlank;
+    Mutex mLock;
+
     int mDebugFlag;
     int mDumpFlag;
 
-    inline SprdHWLayerList *getHWLayerList()
-    {
+    inline SprdHWLayerList *getHWLayerList() {
         return mLayerList;
-    }
-
-    inline sp<SprdVsyncEvent> getVsyncEventHandle()
-    {
-        return mVsyncEvent;
     }
 
     /*
@@ -164,12 +160,21 @@ private:
      * */
     int attachToDisplayPlane(int DisplayFlag);
 
+    int WrapFBTargetLayer(hwc_display_contents_1_t *list);
+
+    int WrapOverlayLayer(native_handle_t* buf, int format, int fenceFd);
+
     int AcceleratorProbe(void *pData);
 
     int AcceleratorAdapt(int DisplayDeviceAccelerator);
 
 #ifdef HWC_DUMP_CAMERA_SHAKE_TEST
     void dumpCameraShakeTest(hwc_display_contents_1_t* list);
+#endif
+
+#ifdef OVERLAY_COMPOSER_GPU
+    int OverlayComposerScheldule(hwc_display_contents_1_t *list,
+                                 SprdDisplayPlane *DisplayPlane);
 #endif
 };
 

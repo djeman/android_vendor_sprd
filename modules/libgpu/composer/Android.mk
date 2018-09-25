@@ -17,7 +17,7 @@ LOCAL_PATH := $(call my-dir)
 
 # HAL module implemenation stored in
 # hw/<OVERLAY_HARDWARE_MODULE_ID>.<ro.product.board>.so
-ifneq ($(strip $(TARGET_SUPPORT_ADF_DISPLAY)),true)
+
 ifeq ($(strip $(USE_SPRD_HWCOMPOSER)),true)
 
 include $(CLEAR_VARS)
@@ -34,12 +34,12 @@ LOCAL_SHARED_LIBRARIES := liblog \
                           libui \
                           libsync
 LOCAL_SRC_FILES := SprdHWComposer.cpp \
-		   SprdPrimaryDisplayDevice/SprdFrameBufferHAL.cpp \
 		   AndroidFence.cpp \
 		   SprdDisplayPlane.cpp \
 		   SprdHWLayer.cpp \
+		   SprdVsyncEvent.cpp \
+		   SprdFrameBufferDevice.cpp \
 		   SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.cpp \
-		   SprdPrimaryDisplayDevice/SprdVsyncEvent.cpp \
 		   SprdPrimaryDisplayDevice/SprdHWLayerList.cpp \
 		   SprdPrimaryDisplayDevice/SprdOverlayPlane.cpp \
 		   SprdPrimaryDisplayDevice/SprdPrimaryPlane.cpp \
@@ -205,4 +205,4 @@ include $(BUILD_SHARED_LIBRARY)
 endif
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
-endif
+

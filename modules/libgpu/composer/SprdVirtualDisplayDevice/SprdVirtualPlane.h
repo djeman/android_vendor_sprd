@@ -61,10 +61,20 @@ public:
      *  dequeuebuffer: gain a available buffer for SprdVirtualPlane.
      *  queueBuffer: display a buffer.
      * */
-    virtual native_handle_t* dequeueBuffer();
-    virtual int queueBuffer();
+    virtual native_handle_t* dequeueBuffer(int *fenceFd);
+    virtual int queueBuffer(int fenceFd);
+    /*
+     *  Restore the plane info to unused state.
+     * */
+    virtual void InvalidatePlane();
+
+    /*
+     *  setup the DisplayPlane context.
+     * */
+    virtual int setPlaneContext(void *context);
     virtual native_handle_t* getPlaneBuffer() const;
     virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const;
+    virtual PlaneContext *getPlaneContext() const;
     /*****************************************************************************/
 
     virtual bool open();

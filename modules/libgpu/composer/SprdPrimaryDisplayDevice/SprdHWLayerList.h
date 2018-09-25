@@ -65,14 +65,14 @@ class SprdPrimaryDisplayDevice;
 class SprdHWLayerList
 {
 public:
-    SprdHWLayerList(FrameBufferInfo* fbInfo)
-        : mFBInfo(fbInfo),
+    SprdHWLayerList()
+        : mFBInfo(NULL),
           mLayerList(0),
           mOSDLayerList(0),
           mVideoLayerList(0),
           mFBTargetLayer(0),
           mLayerCount(0),
-          mRGBLayerCount(0), mYUVLayerCount(0),
+          mYUVLayerCount(0),
           mOSDLayerCount(0), mVideoLayerCount(0),
           mFBLayerCount(0),
           mRGBLayerFullScreenFlag(false),
@@ -98,7 +98,12 @@ public:
      *  mainly judge whether upper layer and bottom layer
      *  is consistent with SprdDisplayPlane Hardware requirements.
      * */
-    int revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice *mPrimary);
+    int revisitGeometry(int& DisplayFlag, SprdPrimaryDisplayDevice *mPrimary);
+
+    inline void updateFBInfo(FrameBufferInfo* fbInfo)
+    {
+        mFBInfo = fbInfo;
+    }
 
     int checkHWLayerList(hwc_display_contents_1_t* list);
 
@@ -147,6 +152,11 @@ public:
         return mFBLayerCount;
     }
 
+    inline bool& getDisableHWCFlag()
+    {
+        return mDisableHWCFlag;
+    }
+
 #ifdef PROCESS_VIDEO_USE_GSP
     inline void transforGXPCapParameters(GSP_CAPABILITY_T *GXPCap)
     {
@@ -160,7 +170,6 @@ private:
     SprdHWLayer **mVideoLayerList;
     hwc_layer_1_t *mFBTargetLayer;
     unsigned int mLayerCount;
-    unsigned int mRGBLayerCount;
     unsigned int mYUVLayerCount;
     int mOSDLayerCount;
     int mVideoLayerCount;
@@ -171,7 +180,6 @@ private:
     bool mDisableHWCFlag;
     bool mSkipLayerFlag;
     void *mPData;
-    uint32_t mPrivateFlag[2];
     bool mGlobalProtectedFlag;
     int mDebugFlag;
     int mDumpFlag;
@@ -198,8 +206,7 @@ private:
 #ifdef OVERLAY_COMPOSER_GPU
     int prepareOverlayComposerLayer(SprdHWLayer *l);
 
-    int revisitOverlayComposerLayer(SprdHWLayer *YUVLayer, SprdHWLayer *RGBLayer,
-                            int LayerCount, int *FBLayerCount, int *DisplayFlag);
+    int revisitOverlayComposerLayer(int& DisplayFlag);
 #endif
 
 #ifdef TRANSFORM_USE_DCAM

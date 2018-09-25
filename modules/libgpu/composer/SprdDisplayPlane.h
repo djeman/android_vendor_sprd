@@ -58,7 +58,7 @@
 
 using namespace android;
 
-#define PLANE_BUFFER_NUMBER 2
+#define PLANE_BUFFER_NUMBER 3
 
 /*
  *  Manage DisplayPlane buffer, including
@@ -75,12 +75,14 @@ struct BufferSlot {
         FREE = 0,
         DEQUEUEED = 1,
         QUEUEED = 2,
-        RELEASE = 4,
+        FLUSHED = 3
     };
 
     BufferState mBufferState;
     uint32_t mTransform;
     native_handle_t* mIonBuffer;
+    uint32_t flushCount;
+    int fenceFd;
 };
 
 enum PlaneFormat {
@@ -98,9 +100,10 @@ enum PlaneRunStatus {
     PLANE_STATUS_INVALID = 4,
 };
 
-typedef struct DisplayPlaneContext{
-    struct overlay_setting BaseContext;
-    //struct overlay_display_setting DisplayContext;
+typedef struct DisplayPlaneContext {
+    void *BaseContext;
+    bool DirectDisplay;
+    bool DisplayFBTarget;
 } PlaneContext;
 
 #ifdef DYNAMIC_RELEASE_PLANEBUFFER
@@ -139,12 +142,53 @@ public:
     /*
      *  Gain a available buffer for SprdDisplayPlane.
      * */
-    virtual native_handle_t* dequeueBuffer();
+    virtual native_handle_t* dequeueBuffer(int *fenceFd);
 
     /*
-     *  Display a buffer filled with content to SprdDisplayPlane.
+     *  Send a display buffer to SprdDisplayPlane FIFO.
      * */
-    virtual int queueBuffer();
+    virtual int queueBuffer(int fenceFd);
+
+    /*
+     *  Update SprdDisplayPlane display registers(Plane Context).
+     * */
+    virtual native_handle_t* flush(int *fenceFd);
+
+    /*
+     *  Restore the plane info to unused state.
+     * */
+    virtual void InvalidatePlane() = 0;
+
+    /*
+     *  setup the DisplayPlane context.
+     * */
+    virtual int setPlaneContext(void *context) = 0;
+
+    /*
+     *  get the Plane context.
+     *  the child class should realize this interface.
+     * */
+    virtual PlaneContext *getPlaneContext() const = 0;
+
+    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, 
+                                  int *format) const;
+
+    virtual int addFlushReleaseFence(int fenceFd);
+
+    virtual int getPlaneFormat() const = 0;
+
+    inline int getPlaneBufferIndex() const { return mDisplayBufferIndex; }
+
+    inline int getPlaneCount() const { return mBufferCount; }
+
+    /*
+     *  Reset Plane Buffer status to FREE.
+     * */
+    inline void resetPlaneBufferState(int index) {
+        if (index >= 0) {
+            mSlots[index].mBufferState = BufferSlot::FREE;
+        }
+    }
 
     unsigned int getWidth()  { return mWidth; }
     unsigned int getHeight() { return mHeight; }
@@ -159,26 +203,25 @@ public:
 
     int getPlaneUsage() { return mPlaneUsage; }
 
+    /*
+     *  Just for OverlayComposer.
+     * */
+    int getFlushAcquireFence() const;
+
 protected:
     virtual bool open();
     virtual bool close();
 
-    /*
-     *  Update SprdDisplayPlane display registers.
-     * */
-    virtual native_handle_t* flush();
-
-    inline PlaneContext *getPlaneContext() { return mContext; }
-
     virtual native_handle_t* getPlaneBuffer() const;
-    virtual void getPlaneGeometry(unsigned int *width, unsigned int *height, int *format) const;
-    inline int getPlaneBufferIndex() { return mDisplayBufferIndex; }
 
-    void setGeometry(unsigned int width, unsigned int height, int format);
+    void setGeometry(unsigned int width, unsigned int height, int format, 
+                     int usage);
 
     inline void setPlaneRunThreshold(int threshold) {
         mPlaneRunThreshold = threshold;
     }
+
+    inline PlaneContext *getPlaneBaseContext() const { return mContext; }
 
 private:
     PlaneContext *mContext;

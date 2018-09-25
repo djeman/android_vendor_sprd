@@ -41,7 +41,12 @@ SprdExternalDisplayDevice::SprdExternalDisplayDevice()
 
 SprdExternalDisplayDevice::~SprdExternalDisplayDevice() {}
 
-int SprdExternalDisplayDevice::getDisplayAttributes(DisplayAttributes *dpyAttributes) {
+bool SprdExternalDisplayDevice::Init(SprdDisplayCore *core) {
+    ALOGI_IF(mDebugFlag, "core:%p", core);
+    return true;
+}
+
+int SprdExternalDisplayDevice::syncAttributes(AttributesSet *dpyAttributes) {
     int index = 0;
     float refreshRate = 60.0;
 
@@ -50,25 +55,18 @@ int SprdExternalDisplayDevice::getDisplayAttributes(DisplayAttributes *dpyAttrib
         return -1;
     }
 
-    index = dpyAttributes->configsIndex;
-    if (index < 0) {
-        ALOGE("SprdExternalDisplayDevice:: getDisplayAttributes invalid index");
-        return -1;
-    }
-
-    dpyAttributes->sets[index].vsync_period = 0;
-    dpyAttributes->sets[index].xres = 0;
-    dpyAttributes->sets[index].yres = 0;
-    dpyAttributes->sets[index].stride = 0;
-    dpyAttributes->sets[index].xdpi = 0;
-    dpyAttributes->sets[index].ydpi = 0;
-    dpyAttributes->connected = false;
+    dpyAttributes->vsync_period = 0;
+    dpyAttributes->xres = 0;
+    dpyAttributes->yres = 0;
+    dpyAttributes->stride = 0;
+    dpyAttributes->xdpi = 0;
+    dpyAttributes->ydpi = 0;
 
     return 0;
 }
 
 int SprdExternalDisplayDevice::ActiveConfig(DisplayAttributes *dpyAttributes) {
-    HWC_IGNORE(dpyAttributes);
+    ALOGI_IF(mDebugFlag, "dpyAttributes:%p", dpyAttributes);
     return 0;
 }
 
@@ -104,18 +102,17 @@ int SprdExternalDisplayDevice::setPowerMode(int mode) {
 }
 
 int SprdExternalDisplayDevice::setCursorPositionAsync(int x_pos, int y_pos) {
-    HWC_IGNORE(x_pos);
-    HWC_IGNORE(y_pos);
+    ALOGI_IF(mDebugFlag, "%d,%d", x_pos, y_pos);
     return 0;
 }
 
-int SprdExternalDisplayDevice::prepare(hwc_display_contents_1_t *list, unsigned int accelerator) {
-    HWC_IGNORE(accelerator);
-
+int SprdExternalDisplayDevice::prepare(hwc_display_contents_1_t *list, 
+                                       unsigned int accelerator) {
     queryDebugFlag(&mDebugFlag);
 
     if (list == NULL) {
-        ALOGI_IF(mDebugFlag, "commit: External Display Device maybe closed");
+        ALOGI_IF(mDebugFlag, "commit: External Display Device maybe closed,accelerator:%x",
+                 accelerator);
         return 0;
     }
 
@@ -140,7 +137,8 @@ int SprdExternalDisplayDevice::commit(hwc_display_contents_1_t *list) {
         return -1;
     }
 
-    ALOGI_IF(mDebugFlag, "Start Displaying ExternalDisplay FramebufferTarget layer");
+    ALOGI_IF(mDebugFlag, 
+             "Start Displaying ExternalDisplay FramebufferTarget layer");
 
     if (FBTargetLayer->acquireFenceFd >= 0) {
         String8 name("HWCFBTExternal::Post");
@@ -155,7 +153,13 @@ int SprdExternalDisplayDevice::commit(hwc_display_contents_1_t *list) {
 
     HWCBufferSyncBuild(list, DISPLAY_EXTERNAL);
 
-    closeAcquireFDs(list);
+    closeAcquireFDs(list, mDebugFlag);
 
+    return 0;
+}
+
+int SprdExternalDisplayDevice::buildSyncData(hwc_display_contents_1_t *list,
+                                             DisplayTrack *tracker) {
+    ALOGI_IF(mDebugFlag, "list:%p tracker:%p", list, tracker);
     return 0;
 }

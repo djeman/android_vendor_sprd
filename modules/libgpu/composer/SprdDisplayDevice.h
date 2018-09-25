@@ -73,10 +73,23 @@ typedef struct _DisplayAttributesSet
 } AttributesSet;
 
 typedef struct _DisplayAttributes {
-    AttributesSet sets[MAX_NUM_CONFIGS];
-    uint32_t configsIndex; // config index
-    bool connected;
-    unsigned int AcceleratorMode;
+    AttributesSet      sets[MAX_NUM_CONFIGS];
+    uint32_t           configIndexSets[MAX_NUM_CONFIGS];
+    size_t             numConfigs;
+    uint32_t           configsIndex; // config index
+    bool               connected;
+    unsigned int       AcceleratorMode;
 } DisplayAttributes;
+
+static const uint32_t DISPLAY_ATTRIBUTES[] = {
+    HWC_DISPLAY_VSYNC_PERIOD,
+    HWC_DISPLAY_WIDTH,
+    HWC_DISPLAY_HEIGHT,
+    HWC_DISPLAY_DPI_X,
+    HWC_DISPLAY_DPI_Y,
+    HWC_DISPLAY_NO_ATTRIBUTE
+};
+
+#define NUM_DISPLAY_ATTRIBUTES (sizeof(DISPLAY_ATTRIBUTES) / (sizeof(DISPLAY_ATTRIBUTES[0])))
 
 #endif

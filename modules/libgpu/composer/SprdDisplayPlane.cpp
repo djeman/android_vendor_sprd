@@ -39,6 +39,7 @@
 
 #include <ui/GraphicBufferAllocator.h>
 #include "SprdDisplayPlane.h"
+#include "AndroidFence.h"
 
 using namespace android;
 
@@ -86,24 +87,25 @@ SprdDisplayPlane::~SprdDisplayPlane()
     }
 }
 
-void SprdDisplayPlane::setGeometry(unsigned int width, unsigned int height, int format)
+void SprdDisplayPlane::setGeometry(unsigned int width, unsigned int height, int format, int usage)
 {
     mWidth = width;
     mHeight = height;
     mFormat = format;
+    mPlaneUsage = usage;
 }
 
 native_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
 {
     native_handle_t* BufHandle = NULL;
-    uint32_t stride;
-    size_t size;
+    uint32_t stride=0;
 
     if (index < 0)
     {
         ALOGE("plane buffer index < 0");
         return NULL;
     }
+    mPlaneUsage |= GRALLOC_USAGE_HW_RENDER;
 
     GraphicBufferAllocator::get().allocate(mWidth, mHeight, mFormat, mPlaneUsage, (buffer_handle_t*)&BufHandle, &stride, getUniqueId(), "[HWC]");
     if (BufHandle == NULL)
@@ -112,21 +114,23 @@ native_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
         return NULL;
     }
 
-    MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(BufHandle), &(ADP_PHYADDR(BufHandle)), &size);
-
     mSlots[index].mIonBuffer = static_cast<native_handle_t* >(BufHandle);
-
-    ALOGI("DisplayPlane createPlaneBuffer phy addr:%p, size:%zd",
-          (void *)(ADP_PHYADDR(BufHandle)), size);
+    mSlots[index].flushCount = 0;
+    mSlots[index].fenceFd = -1;
+    ALOGI("DisplayPlane createPlaneBuffer handle:%p", (void *)BufHandle);
 
     return BufHandle;
 }
 
-native_handle_t* SprdDisplayPlane::dequeueBuffer()
+native_handle_t* SprdDisplayPlane::dequeueBuffer(int *fenceFd)
 {
     bool repeat = true;
     int found = -1;
     mWaitingBuffer = false;
+    int dequeuedCount = 0;
+    int queuedCount = 0;
+    int flushedCount = 0;
+    int freedCount = 0;
 
     queryDebugFlag(&mDebugFlag);
 
@@ -137,17 +141,40 @@ native_handle_t* SprdDisplayPlane::dequeueBuffer()
         {
             const int state = mSlots[i].mBufferState;
 
-            if (state == BufferSlot::FREE)
+            switch (state)
             {
-                found = i;
-                break;
+                case BufferSlot::DEQUEUEED:
+                {
+                    dequeuedCount++;
+                    break;
+                }
+                case BufferSlot::QUEUEED:
+                {
+                    queuedCount++;
+                    break;
+                }
+                case BufferSlot::FLUSHED:
+                {
+                    flushedCount++;
+                    break;
+                }
+                case BufferSlot::FREE:
+                {
+                    freedCount++;
+
+                    if (found < 0 || mSlots[i].flushCount < mSlots[found].flushCount)
+                    {
+                        found = i;
+                    }
+                    break;
+                }
             }
         }
 
         if (found < 0)
         {
             /*
-             *  Wait availeable buffer
+             *  Wait available buffer
              **/
             mWaitingBuffer = true;
             nsecs_t timeout = ms2ns(3000);
@@ -182,6 +209,7 @@ native_handle_t* SprdDisplayPlane::dequeueBuffer()
         ALOGE("buffer is NULL");
     }
 
+#if 0
     /*
      *  eglMakeCurrent will call dequeueBuffer first.
      *  If GPU do not use this buffer, just release the
@@ -195,13 +223,28 @@ native_handle_t* SprdDisplayPlane::dequeueBuffer()
         mSlots[mDisplayBufferIndex].mBufferState = BufferSlot::FREE;
         dequeueFirstFlag = 1;
     }
+#endif
 
     mDisplayBufferIndex = found;
+
+    if (mSlots[found].fenceFd >= 0)
+    {
+        *fenceFd = mSlots[found].fenceFd;
+    }
+    else
+    {
+        *fenceFd = -1;
+    }
+    ALOGI_IF(mDebugFlag,"<01-1> OverlayBuffer dequeue, get rel_fd:%d",*fenceFd);
+#if 1
+    ALOGI_IF(mDebugFlag,"SprdDisplayPlane::dequeueBuffer found: %d, mDisplayBufferIndex: %d, dequeuedCount: %d, queuedCount: %d, flushedCount: %d, freedCount: %d",
+           found, mDisplayBufferIndex, dequeuedCount, queuedCount, flushedCount, freedCount);
+#endif
 
     return (mSlots[found].mIonBuffer);
 }
 
-int SprdDisplayPlane::queueBuffer()
+int SprdDisplayPlane::queueBuffer(int fenceFd)
 {
     int bufferIndex = mDisplayBufferIndex;
 
@@ -210,16 +253,31 @@ int SprdDisplayPlane::queueBuffer()
 
     mQueue.push_back(bufferIndex);
 
+    ALOGI_IF(mDebugFlag,"<03> OverlayBuffer queue, mSlots[%d].rel:%d closed and replaced by acq_fd:%d",
+		bufferIndex, mSlots[bufferIndex].fenceFd, fenceFd);
+
+    if (mSlots[bufferIndex].fenceFd > -1)
+    {
+        closeFence(&(mSlots[bufferIndex].fenceFd));
+    }
+
+    if (fenceFd > -1)
+    {
+        mSlots[bufferIndex].fenceFd = fenceFd;
+    }
+
     return 0;
 }
 
-native_handle_t* SprdDisplayPlane::flush()
+native_handle_t* SprdDisplayPlane::flush(int *fenceFd)
 {
     if (mQueue.empty())
     {
         ALOGE("SprdDisplayPlane::flush no avaialbe buffer for flushing");
         return NULL;
     }
+
+    Mutex::Autolock _l(mLock);
 
     FIFO::iterator front(mQueue.begin());
     int index(*front);
@@ -263,19 +321,99 @@ native_handle_t* SprdDisplayPlane::flush()
      *  Update the flushing buffer index
      * */
     mFlushingBufferIndex = index;
+    mSlots[mFlushingBufferIndex].mBufferState = BufferSlot::FLUSHED;
+    mSlots[mFlushingBufferIndex].flushCount++;
 
     if (mWaitingBuffer)
     {
         mCondition.broadcast();
     }
 
+    int *fd = &(mSlots[mFlushingBufferIndex].fenceFd);
+    if (*fd >= 0)
+    {
+        *fenceFd = *fd;
+    }
+    else
+    {
+        *fenceFd = -1;
+    }
+    ALOGI_IF(mDebugFlag,"<04> OverlayBuffer acquire, mFlushingBufferIndex:%d, return acq_fd:%d",
+        mFlushingBufferIndex, *fenceFd);
     return flushingBuffer;
 }
 
-//bool SprdDisplayPlane::display()
-//{
-//    return true;
-//}
+int SprdDisplayPlane:: addFlushReleaseFence(int fenceFd)
+{
+    int new_fd = -1;
+
+    if (fenceFd < 0)
+    {
+        ALOGI_IF(mDebugFlag,"SprdDisplayPlane:: addReleaseFence cannot add invalid fence");
+        return 0;
+    }
+
+    if (mSlots[mFlushingBufferIndex].mBufferState != BufferSlot::FLUSHED)
+    {
+        ALOGI("SprdDisplayPlane:: addReleaseFence BufferState wrong, cannot add fence, mFlushingBufferIndex: %d, BufferState: %d",
+               mFlushingBufferIndex, (mSlots[mFlushingBufferIndex].mBufferState));
+        //return 0;
+    }
+
+    int *acq_fd = &(mSlots[mFlushingBufferIndex].fenceFd);
+#if 0
+    if (*acq_fd >= 0)
+    {
+        new_fd = FenceMerge("DPRel", fenceFd, *acq_fd);
+        if (new_fd < 0)
+        {
+            new_fd = dup(fenceFd);
+        }
+        else
+        {
+            //closeFence(&fenceFd);
+        }
+    }
+	else
+#endif
+	{
+	    new_fd = dup(fenceFd);
+	}
+	ALOGI_IF(mDebugFlag,"<06> OverlayBuffer release,mSlots[%d].acq:%d closed and replaced by rel_fd:%d=dup(%d)",
+		mFlushingBufferIndex,*acq_fd,new_fd,fenceFd);
+    closeFence(acq_fd);
+    mSlots[mFlushingBufferIndex].fenceFd = new_fd;
+#if 1
+    ALOGI_IF(mDebugFlag,"SprdDisplayPlane:: addReleaseFence mFlushingBufferIndex: %d, BufferState: %d, fenceFd: %d, acuireFd: %d, newFd:%d",
+           mFlushingBufferIndex, (mSlots[mFlushingBufferIndex].mBufferState), fenceFd, *acq_fd, new_fd);
+#endif
+
+    return 0;
+}
+
+int SprdDisplayPlane:: getFlushAcquireFence() const
+{
+    int fenceFd = -1;
+    if (mFlushingBufferIndex < 0)
+    {
+        return -1;
+    }
+
+    if (mSlots[mFlushingBufferIndex].mBufferState != BufferSlot::FLUSHED)
+    {
+        ALOGI(" SprdDisplayPlane:: getFlushAcquireFence BufferState buffer: mFlushingBufferIndex: %d, BufferSlot: %d",
+               mFlushingBufferIndex, mSlots[mFlushingBufferIndex].mBufferState);
+    }
+
+    fenceFd = dup(mSlots[mFlushingBufferIndex].fenceFd);
+
+#if 0
+    ALOGI("SprdDisplayPlane:: getFlushAcquireFence: mFlushingBufferIndex: %d, BufferSlot: %d, fenceFd: %d",
+           mFlushingBufferIndex, mSlots[mFlushingBufferIndex].mBufferState, mSlots[mFlushingBufferIndex].fenceFd);
+#endif
+
+    return fenceFd;
+}
 
 bool SprdDisplayPlane:: openBase()
 {
@@ -338,12 +476,10 @@ bool SprdDisplayPlane::close()
     for (int i = 0; i < mBufferCount; i++)
     {
         native_handle_t* bufferHandle = mSlots[i].mIonBuffer;
-        ALOGI_IF(mDebugFlag, "SprdDisplayPlane::close free buffer phy: %p", 
-            (void *)(ADP_PHYADDR(bufferHandle)));
         GraphicBufferAllocator::get().free((buffer_handle_t)bufferHandle);
         bufferHandle = NULL;
         mSlots[i].mIonBuffer = NULL;
-        mSlots[i].mBufferState = BufferSlot::RELEASE;
+        mSlots[i].mBufferState = BufferSlot::FREE;
     }
 
     mFlushingBufferIndex = -1;

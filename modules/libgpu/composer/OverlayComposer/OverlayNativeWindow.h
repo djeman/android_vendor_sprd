@@ -66,7 +66,7 @@ private:
 };
 
 
-#define NUM_FRAME_BUFFERS  2
+#define NUM_FRAME_BUFFERS  3
 
 
 class OverlayNativeWindow   //: public overlayNativeWindow
@@ -76,7 +76,7 @@ class OverlayNativeWindow   //: public overlayNativeWindow
         LightRefBase<OverlayNativeWindow> >
 {
 public:
-    OverlayNativeWindow(SprdPrimaryPlane *displayPlane);
+    OverlayNativeWindow(SprdDisplayPlane *displayPlane);
     ~OverlayNativeWindow();
 
     bool Init();
@@ -86,7 +86,7 @@ public:
     void notifyDirtyTarget(bool flag);
 
 private:
-    SprdPrimaryPlane *mDisplayPlane;
+    SprdDisplayPlane *mDisplayPlane;
     unsigned int mWidth;
     unsigned int mHeight;
     int mFormat;

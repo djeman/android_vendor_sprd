@@ -41,6 +41,78 @@
 using namespace android;
 
 /*
+ *  SprdHWLayer
+ *  constract from a hwc_layer_1_t that composited in SF and can be directly show.
+ * */
+SprdHWLayer:: SprdHWLayer(hwc_layer_1_t *androidLayer, int format)
+    : mInit(false),
+      mAndroidLayer(androidLayer),
+      mLayerType(LAYER_INVALIDE),
+      mPrivateH(NULL),
+      mFormat(format),
+      mLayerIndex(-1),
+      mSprdLayerIndex(-1),
+      mAccelerator(-1),
+      mProtectedFlag(false),
+      mPlaneAlpha(255),
+      mBlending(HWC_BLENDING_NONE),
+      mTransform(0x0),
+      mAcquireFenceFd(-1),
+      mDebugFlag(0)
+{
+      if (checkRGBLayerFormat())
+      {
+          setLayerType(LAYER_OSD);
+      }
+      else if (checkYUVLayerFormat())
+      {
+          setLayerType(LAYER_OVERLAY);
+      }
+}
+
+/*
+ *  SprdHWLayer
+ *  constract from a overlay buffer that used to send to dispc.
+ * */
+SprdHWLayer:: SprdHWLayer(native_handle_t *handle, int format, int32_t planeAlpha,
+                          int32_t blending, int32_t transform, int32_t fenceFd)
+    : mInit(false),
+      mAndroidLayer(NULL),
+      mLayerType(LAYER_INVALIDE),
+      mPrivateH(handle),
+      mFormat(format),
+      mLayerIndex(-1),
+      mSprdLayerIndex(-1),
+      mAccelerator(-1),
+      mProtectedFlag(false),
+      mPlaneAlpha(planeAlpha),
+      mBlending(blending),
+      mTransform(transform),
+      mAcquireFenceFd(fenceFd),
+      mDebugFlag(0)
+{
+    if (handle)
+    {
+
+        if (((mFormat & HAL_PIXEL_FORMAT_RGBA_8888) == HAL_PIXEL_FORMAT_RGBA_8888) ||
+            ((mFormat & HAL_PIXEL_FORMAT_RGBX_8888) == HAL_PIXEL_FORMAT_RGBX_8888) ||
+            ((mFormat & HAL_PIXEL_FORMAT_RGB_888) == HAL_PIXEL_FORMAT_RGB_888) ||
+            ((mFormat & HAL_PIXEL_FORMAT_BGRA_8888) == HAL_PIXEL_FORMAT_BGRA_8888) ||
+            ((mFormat & HAL_PIXEL_FORMAT_RGB_565) == HAL_PIXEL_FORMAT_RGB_565))
+        {
+            setLayerType(LAYER_OSD);
+        }
+        else if (((mFormat & HAL_PIXEL_FORMAT_YCbCr_420_SP) == HAL_PIXEL_FORMAT_YCbCr_420_SP) ||
+                 ((mFormat & HAL_PIXEL_FORMAT_YCrCb_420_SP)== HAL_PIXEL_FORMAT_YCrCb_420_SP) ||
+                 ((mFormat & HAL_PIXEL_FORMAT_YV12) == HAL_PIXEL_FORMAT_YV12))
+       {
+           setLayerType(LAYER_OVERLAY);
+       }
+        mInit = true;
+    }
+}
+
+/*
  *  checkRGBLayerFormat
  *  if it's rgb format,init SprdHWLayer from hwc_layer_1_t.
  * */
@@ -59,14 +131,31 @@ bool SprdHWLayer:: checkRGBLayerFormat()
         return false;
     }
 
-    if ((ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBA_8888) &&
-        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGBX_8888) &&
-        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_RGB_565))
-    {
-        return false;
-    }
-
-    return true;
+    ALOGI_IF(mDebugFlag, "function = %s, line = %d, privateH -> format = %x", __FUNCTION__, __LINE__, ADP_FORMAT(privateH));
+    bool result = false;
+    switch (ADP_FORMAT(privateH)) {
+	case HAL_PIXEL_FORMAT_RGBA_8888:
+	case HAL_PIXEL_FORMAT_RGBX_8888:
+	case HAL_PIXEL_FORMAT_RGB_888:
+	case HAL_PIXEL_FORMAT_RGB_565:
+	case HAL_PIXEL_FORMAT_BGRA_8888:
+	//case HAL_PIXEL_FORMAT_BGRX_8888:
+	case 0x101:
+	    if (!mInit) {
+		mPrivateH = privateH;
+		setPlaneAlpha(layer->planeAlpha);
+		setBlending(layer->blending);
+		setTransform(layer->transform);
+		setAcquireFenceFd(layer->acquireFenceFd);
+		mInit = true;
+	    }
+	    result = true;
+	    break;
+	default:
+	    result = false;
+	}
+    ALOGI_IF(mDebugFlag,"function = %s, line = %d, privateH -> format = %x, result = %u", __FUNCTION__, __LINE__, ADP_FORMAT(privateH), result);
+    return result;
 }
 
 /*
@@ -87,14 +176,24 @@ bool SprdHWLayer:: checkYUVLayerFormat()
     {
         return false;
     }
-
-    if ((ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YCbCr_420_SP) &&
-        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YCrCb_420_SP) &&
-        (ADP_FORMAT(privateH) != HAL_PIXEL_FORMAT_YV12))
-    {
-        return false;
+    bool result = false;
+    switch (ADP_FORMAT(privateH)) {
+	case HAL_PIXEL_FORMAT_YCbCr_420_SP:
+	case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+	case HAL_PIXEL_FORMAT_YV12:
+	    if (!mInit) {
+		mPrivateH = privateH;
+		setPlaneAlpha(layer->planeAlpha);
+		setBlending(layer->blending);
+		setTransform(layer->transform);
+		setAcquireFenceFd(layer->acquireFenceFd);
+		mInit = true;
+	    }
+	    result = true;
+	    break;
+	default:
+	    result = false;
     }
-
-    return true;
+    return result;
 }
 

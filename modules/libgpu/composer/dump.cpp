@@ -4,6 +4,7 @@
 #include <hardware/hwcomposer.h>
 #include <ui/Rect.h>
 #include <ui/GraphicBufferMapper.h>
+#include "AndroidFence.h"
 
 //static char valuePath[PROPERTY_VALUE_MAX];
 
@@ -11,7 +12,7 @@ static int64_t GeometryChangedNum = 0;
 static bool GeometryChanged = false;
 static bool GeometryChangedFirst = false;
 char dumpPath[MAX_DUMP_PATH_LENGTH];
-
+int g_debugFlag = 0;
 using namespace android;
 
 static int dump_bmp(const char* filename, void* buffer_addr, unsigned int buffer_format, unsigned int buffer_width, unsigned int buffer_height)
@@ -257,7 +258,7 @@ void queryDebugFlag(int *debugFlag)
     {
         *debugFlag = 0;
     }
-
+    g_debugFlag = *debugFlag;
 #define HWC_LOG_PATH "/data/hwc.cfg"
     if (access(HWC_LOG_PATH, R_OK) != 0)
     {
@@ -395,6 +396,7 @@ int dumpImage(hwc_display_contents_1_t *list)
         Rect bounds(ADP_STRIDE(pH), ADP_HEIGHT(pH));
         void* vaddr;
 
+        waitAcquireFence(list);
         GraphicBufferMapper::get().lock((buffer_handle_t)pH, GRALLOC_USAGE_SW_READ_OFTEN, bounds, &vaddr);
 
         dump_layer(dumpPath, (char *)vaddr, "Layer", ADP_STRIDE(pH), ADP_HEIGHT(pH), 
@@ -408,7 +410,7 @@ int dumpImage(hwc_display_contents_1_t *list)
     return 0;
 }
 
-int dumpOverlayImage(native_handle_t* buffer, const char *name)
+int dumpOverlayImage(native_handle_t* buffer, const char *name, int fencefd)
 {
     static int index = 0;
 
@@ -416,6 +418,9 @@ int dumpOverlayImage(native_handle_t* buffer, const char *name)
 
     Rect bounds(ADP_STRIDE(buffer), ADP_HEIGHT(buffer));
     void* vaddr;
+
+    String8 fence_name(name);
+    FenceWaitForever(fence_name, fencefd);
 
     GraphicBufferMapper::get().lock((buffer_handle_t)buffer, GRALLOC_USAGE_SW_READ_OFTEN, bounds, &vaddr);
 

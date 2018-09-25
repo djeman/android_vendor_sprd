@@ -34,24 +34,24 @@
 #include <hardware/hwcomposer.h>
 #include <hardware/hardware.h>
 #include <sys/ioctl.h>
-#include "sprd_fb.h"
+//#include "sprd_fb.h"
 #include "SyncThread.h"
 
 #include "OverlayNativeWindow.h"
 #include "dump.h"
-
+#include "../AndroidFence.h"
 
 namespace android {
 
 static int mDebugFlag = 0;
 
-OverlayNativeWindow::OverlayNativeWindow(SprdPrimaryPlane *displayPlane)
+OverlayNativeWindow::OverlayNativeWindow(SprdDisplayPlane *displayPlane)
     : mDisplayPlane(displayPlane),
       mWidth(1), mHeight(1), mFormat(-1),
       mWindowUsage(-1),
-      mNumBuffers(NUM_FRAME_BUFFERS),
-      mNumFreeBuffers(NUM_FRAME_BUFFERS), mBufferHead(0),
-      mInvalidateCount(NUM_FRAME_BUFFERS),
+      mNumBuffers(displayPlane->getPlaneCount()),
+      mNumFreeBuffers(displayPlane->getPlaneCount()), mBufferHead(0),
+      mInvalidateCount(displayPlane->getPlaneCount()),
       mCurrentBufferIndex(0),
       mUpdateOnDemand(false),
       mDirtyTargetFlag(false)
@@ -83,7 +83,7 @@ OverlayNativeWindow::~OverlayNativeWindow()
 
 int OverlayNativeWindow:: releaseNativeBuffer()
 {
-    for (int i = 0; i < NUM_FRAME_BUFFERS; i++)
+    for (int i = 0; i < mNumBuffers; i++)
     {
         if (buffers[i] != NULL)
         {
@@ -127,13 +127,14 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
     OverlayNativeWindow* self = getSelf(window);
     Mutex::Autolock _l(self->mutex);
     int index = -1;
+    int fd = -1;
 
     // wait for a free buffer
     while (!self->mNumFreeBuffers) {
         self->mCondition.wait(self->mutex);
     }
 
-    native_handle_t* IONBuffer = self->mDisplayPlane->dequeueBuffer();
+    native_handle_t* IONBuffer = self->mDisplayPlane->dequeueBuffer(&fd);
     if (buffer == NULL)
     {
         ALOGE("Failed to get the Display plane buffer");
@@ -141,7 +142,7 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
     }
 
     index = self->mDisplayPlane->getPlaneBufferIndex();
-    if (index < 0)
+    if (index < 0 || index > 2)
     {
         ALOGE("OverlayNativeWindow get invalid buffer index");
         return -1;
@@ -167,11 +168,17 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
     }
 #endif
 
-    *fenceFd = -1;
+    if(fd>-1)
+    {
+        *fenceFd = dup(fd);
+        ALOGI_IF(mDebugFlag,"<01-2> OverlayBuffer GPU dequeue, get rel_fd:%d = dup(%d)",*fenceFd,fd);
+    }
+    else
+    {
+        *fenceFd = -1;
+    }
 
     queryDebugFlag(&mDebugFlag);
-    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::dequeueBuffer phy addr:%p", 
-        (void *)(ADP_PHYADDR((*buffer)->handle)));
     return 0;
 }
 
@@ -182,13 +189,8 @@ int OverlayNativeWindow::queueBuffer(ANativeWindow* window,
     native_handle_t *hnd = (native_handle_t *)buffer->handle;
     OverlayNativeWindow* self = getSelf(window);
     Mutex::Autolock _l(self->mutex);
-
-    sp<Fence> fence(new Fence(fenceFd));
-    fence->wait(Fence::TIMEOUT_NEVER);
-
-    self->mDisplayPlane->queueBuffer();
-
-    self->mDisplayPlane->display(false, true, false);
+    ALOGI_IF(mDebugFlag,"<02-2> OverlayComposerScheldule() return, dst acqFd:%d",fenceFd);
+    self->mDisplayPlane->queueBuffer(fenceFd);
 
     postSem();
 
@@ -206,8 +208,6 @@ int OverlayNativeWindow::queueBuffer(ANativeWindow* window,
     self->mCondition.broadcast();
 
     queryDebugFlag(&mDebugFlag);
-    ALOGI_IF(mDebugFlag, "OverlayNativeWindow::queueBuffer phy addr:%p", 
-        (void *)(ADP_PHYADDR(buffer->handle)));
 
     return 0;
 }
@@ -232,11 +232,23 @@ int OverlayNativeWindow::lockBuffer(ANativeWindow* window,
 
 int OverlayNativeWindow::cancelBuffer(ANativeWindow* window, ANativeWindowBuffer* buffer, int fenceFd)
 {
-    HWC_IGNORE(buffer);
-    HWC_IGNORE(fenceFd);
-
     const OverlayNativeWindow* self = getSelf(window);
     Mutex::Autolock _l(self->mutex);
+
+    if (fenceFd >= 0)
+    {
+        sp<Fence> fence(new Fence(fenceFd));
+        int waitResult = fence->wait(Fence::TIMEOUT_NEVER);
+        if (waitResult != OK)
+        {
+            ALOGE("OverlayNativeWindow::cancelBuffer Fence::wait returned an error: %d,buffer:%p", waitResult,buffer);
+        }
+
+        close(fenceFd);
+        fenceFd = -1;
+    }
+
+    self->mDisplayPlane->resetPlaneBufferState(self->mCurrentBufferIndex);
 
     return 0;
 }

@@ -50,6 +50,7 @@ namespace android
 SprdWIDIBlit:: SprdWIDIBlit(SprdVirtualPlane *plane)
     : mDisplayPlane(plane),
       mAccelerator(0),
+      mAcceleratorTarget(NULL),
       mFBInfo(0),
       mDebugFlag(0)
 {
@@ -126,6 +127,13 @@ status_t SprdWIDIBlit:: readyToRun()
         ALOGE("new SprdUtil failed");
         return -1;
     }
+
+    mAcceleratorTarget = (SprdUtilTarget *)malloc(sizeof(SprdUtilTarget));
+    if (mAcceleratorTarget == NULL)
+    {
+        ALOGE("SprdWIDIBlit:: readyToRun malloc SprdUtilTarget failed");
+        return -1;
+    }
     mAccelerator->getGSPCapability(NULL);
     mAccelerator->forceUpdateAddrType(GSP_ADDR_TYPE_PHYSICAL);
 #else
@@ -140,6 +148,7 @@ bool SprdWIDIBlit:: threadLoop()
     sem_wait(&startSem);
 
     int ret = -1;
+    int PlaneBufferFenceFd = -1;
     bool SourcePhyAddrType = -1;
     bool DestPhyAddrType = -1;
     SprdHWLayer *SprdHWSourceLayer = NULL;
@@ -154,7 +163,7 @@ bool SprdWIDIBlit:: threadLoop()
 
     HWC_TRACE_BEGIN_WIDIBLIT;
 
-    DisplayHandle = mDisplayPlane->dequeueBuffer();
+    DisplayHandle = mDisplayPlane->dequeueBuffer(&PlaneBufferFenceFd);
     if (DisplayHandle == NULL)
     {
         ALOGE("SprdWIDIBlit:: threadLoop DisplayHanle is NULL");
@@ -171,6 +180,9 @@ bool SprdWIDIBlit:: threadLoop()
         sem_post(&doneSem);
         return true;
     }
+
+    mAcceleratorTarget->buffer = DisplayHandle;
+    mAcceleratorTarget->acquireFenceFd = PlaneBufferFenceFd;
 
     mFBInfo->fb_width = width;
     mFBInfo->fb_height = height;
@@ -204,25 +216,12 @@ bool SprdWIDIBlit:: threadLoop()
 
 #if HWC_USE_GXP_BLIT
     SourcePhyAddrType = (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
-
     DestPhyAddrType = (ADP_FLAGS(DisplayHandle) & private_handle_t::PRIV_FLAGS_USES_PHY);
 
     ALOGI_IF(mDebugFlag, "SprdWIDIBlit:: threadLoop source handle addr: %p, flag: 0x%x, dest handle addr: %p, flag: 0x%x", (void *)privateH, privateH->flags, (void *)DisplayHandle, DisplayHandle->flags);
     if (SourcePhyAddrType && DestPhyAddrType)
     {
-        MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(DisplayHandle), &(ADP_PHYADDR(DisplayHandle)), &size);
-        MemoryHeapIon::Get_phy_addr_from_ion(ADP_BUFFD(privateH), &(ADP_PHYADDR(privateH)), &size2);
-
         mAccelerator->UpdateOutputFormat(GSP_DST_FMT_YUV420_2P);
-
-        if (SprdHWSourceLayer->checkYUVLayerFormat())
-        {
-            ret = mAccelerator->composerLayers(SprdHWSourceLayer, NULL, NULL, DisplayHandle, GSP_DST_FMT_MAX_NUM);
-        }
-        else if (SprdHWSourceLayer->checkRGBLayerFormat())
-        {
-            ret = mAccelerator->composerLayers(NULL, SprdHWSourceLayer, NULL, DisplayHandle, GSP_DST_FMT_MAX_NUM);
-        }
     }
     else
     {
@@ -265,7 +264,7 @@ bool SprdWIDIBlit:: threadLoop()
     //queryDumpFlag(&dumpFlag);
     //if (dumpFlag & HWCOMPOSER_DUMP_VD_OVERLAY_FLAG)
     //{
-    //    dumpOverlayImage(privateH, "VDSource");
+    //    dumpOverlayImage(privateH, "VDSource", AndroidLayer->acquireFenceFd);
     //}
 
     Source = 0;
@@ -278,7 +277,7 @@ bool SprdWIDIBlit:: threadLoop()
         //return true;
     }
 
-    mDisplayPlane->queueBuffer();
+    mDisplayPlane->queueBuffer(mAcceleratorTarget->releaseFenceFd);
 
     queryDebugFlag(&mDebugFlag);
     ALOGI_IF(mDebugFlag, "SprdWIDIBlit Source Layer width: %d, height: %d, "
@@ -296,11 +295,10 @@ bool SprdWIDIBlit:: threadLoop()
 int SprdWIDIBlit:: NEONBlit(uint8_t *inrgb, uint8_t *outy, uint8_t *outuv, int32_t width_org, 
                             int32_t height_org, int32_t width_dst, int32_t height_dst)
 {
-    HWC_IGNORE(height_dst);
     HWC_TRACE_CALL;
     if (inrgb == NULL || outy == NULL || outuv == NULL)
     {
-        ALOGE("SprdWIDIBlit:: NEONBlit input is NULL");
+        ALOGE("SprdWIDIBlit:: NEONBlit input is NULL, height_dst:%d",height_dst);
         return -1;
     }
     uint32_t i, j;

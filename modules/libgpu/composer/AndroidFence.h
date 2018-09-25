@@ -49,24 +49,57 @@
 #include <ui/Fence.h>
 #include <sync/sync.h>
 #include <utils/String8.h>
-
+#include "SprdHWLayer.h"
 
 using namespace android;
+
+typedef struct {
+    int acq_fen_fd_cnt;
+    int *acq_fen_fd;
+    int rel_fen_fd;
+    int retired_fen_fd;
+} sprdfb_buffer_sync;
 
 extern int openSprdFence();
 
 extern void closeSprdFence();
 
+/*
+ *  Obsolete interface for Primary Display
+ *  ======================================
+ * */
 extern int waitAcquireFence(hwc_display_contents_1_t *list);
 
-extern void closeAcquireFDs(hwc_display_contents_1_t *list);
+extern void closeAcquireFDs(hwc_display_contents_1_t *list, int debug);
 
 extern int HWCBufferSyncBuild(hwc_display_contents_1_t *list, int display);
+/*
+ *  ======================================
+ * */
+
+/*
+ *  New interface is used now.
+ *  -------------------------
+ * */
+int GenerateSyncFenceForFBDevice(int display, int *relFd, int *retiredFd);
+
+int BufferSyncBuild(hwc_display_contents_1_t *list, int releaseFenceFd,
+                    int retiredFenceFd);
+int BufferSyncBuild2(SprdHWLayer **list, unsigned int layerCount, int releaseFenceFd1,
+                      int releaseFenceFd2, int retiredFenceFd, int *dstRetiredFenceFd);
+/*
+ *  -------------------------
+ * */
+
+int FenceMerge(const char *name, int fd1, int fd2);
+
+void closeFence(int *fd);
 
 extern int FenceWaitForever(const String8& name, int fenceFd);
 
-extern int HWCBufferSyncBuildForVirtualDisplay(hwc_display_contents_1_t *list);
+extern int HWCBufferSyncBuildForVirtualDisplay(hwc_display_contents_1_t *list,
+                                               int *relFenceFd);
 
 extern int HWCBufferSyncReleaseForVirtualDisplay(hwc_display_contents_1_t *list);
 
-#endif
+#endif  // #ifndef _ANDROID_FENCE_H_

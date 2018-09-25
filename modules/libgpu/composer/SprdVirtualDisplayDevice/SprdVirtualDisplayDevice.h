@@ -51,6 +51,8 @@
 #include "../AndroidFence.h"
 #include "../dump.h"
 
+#include "SprdDisplayCore.h"
+
 using namespace android;
 
 class SprdVirtualDisplayDevice {
@@ -61,7 +63,7 @@ public:
     /*
      *  Display configure attribution.
      * */
-    int getDisplayAttributes(DisplayAttributes *dpyAttributes);
+    int syncAttributes(AttributesSet *dpyAttributes);
 
     /*
      *  Asynchronously update the location of the cursor layer.
@@ -80,18 +82,25 @@ public:
     int commit(hwc_display_contents_1_t *list);
 
     /*
+     *  Build Sync data for SurfaceFligner
+     * */
+    int buildSyncData(hwc_display_contents_1_t *list, DisplayTrack *tracker);
+
+    /*
      *  Init Virtual Display.
      * */
     int Init();
+
+    void WaitForDisplay();
 
 private:
     SprdVDLayerList *mLayerList;
     SprdVirtualPlane *mDisplayPlane;
     sp<SprdWIDIBlit> mBlit;
     bool mHWCCopy;
+    int mReleaseFenceFd;
     int mDebugFlag;
     int mDumpFlag;
-
 };
 
 #endif  // #ifndef _SPRD_VIRTUAL_DISPLAY_DEVICE_H_

@@ -44,6 +44,7 @@ SprdVirtualDisplayDevice:: SprdVirtualDisplayDevice()
       mDisplayPlane(0),
       mBlit(NULL),
       mHWCCopy(false),
+      mReleaseFenceFd(-1),
       mDebugFlag(0),
       mDumpFlag(0)
 {
@@ -96,7 +97,7 @@ int SprdVirtualDisplayDevice:: Init()
     return 0;
 }
 
-int SprdVirtualDisplayDevice:: getDisplayAttributes(DisplayAttributes *dpyAttributes)
+int SprdVirtualDisplayDevice:: syncAttributes(AttributesSet *dpyAttributes)
 {
     HWC_IGNORE(dpyAttributes);
     return 0;
@@ -111,13 +112,12 @@ int SprdVirtualDisplayDevice:: setCursorPositionAsync(int x_pos, int y_pos)
 
 int SprdVirtualDisplayDevice:: prepare(hwc_display_contents_1_t *list, unsigned int accelerator)
 {
-    HWC_IGNORE(accelerator);
     queryDebugFlag(&mDebugFlag);
     queryDumpFlag(&mDumpFlag);
 
     if (list == NULL)
     {
-        ALOGI_IF(mDebugFlag, "commit: Virtual Display Device maybe closed");
+        ALOGI_IF(mDebugFlag, "commit: Virtual Display Device maybe closed, accelerator:%x",accelerator);
         return 0;
     }
 
@@ -154,6 +154,7 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
     if (list == NULL)
     {
         ALOGI_IF(mDebugFlag, "commit: Virtual Display Device maybe closed");
+        mReleaseFenceFd = -1;
         return 0;
     }
 
@@ -163,6 +164,7 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
     if (SprdFBTLayer == NULL)
     {
         ALOGE("SprdVirtualDisplayDevice:: commit cannot get SprdFBTLayer");
+        mReleaseFenceFd = -1;
         return -1;
     }
 
@@ -170,6 +172,7 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
     if (FBTargetLayer == NULL)
     {
         ALOGE("VirtualDisplay FBTLayer is NULL");
+        mReleaseFenceFd = -1;
         return -1;
     }
     SprdFBTLayer->updateAndroidLayer(FBTargetLayer);
@@ -189,7 +192,7 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
         }
     }
 
-    closeAcquireFDs(list);
+    closeAcquireFDs(list, mDebugFlag);
 
     if (mHWCCopy)
     {
@@ -223,6 +226,7 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
          * */
         ALOGI_IF(mDebugFlag, "SprdVirtualDisplayDevice:: commit do not need COPY");
         list->retireFenceFd = list->outbufAcquireFenceFd;
+        mReleaseFenceFd = -1;
     }
     else if (mHWCCopy && BlitCond)
     {
@@ -254,15 +258,34 @@ int SprdVirtualDisplayDevice:: commit(hwc_display_contents_1_t *list)
             }
         }
 
-        HWCBufferSyncBuildForVirtualDisplay(list);
+        HWCBufferSyncBuildForVirtualDisplay(list, &mReleaseFenceFd);
 
         /*
          *  Blit buffer for Virtual Display
          * */
         mBlit->onStart();
 
-        mBlit->onDisplay();
+        //mBlit->onDisplay();
     }
 
     return 0;
+}
+
+int SprdVirtualDisplayDevice:: buildSyncData(hwc_display_contents_1_t* list, DisplayTrack *tracker)
+{
+    HWC_IGNORE(list);
+    HWC_IGNORE(tracker);
+    return 0;
+}
+
+void SprdVirtualDisplayDevice:: WaitForDisplay()
+{
+    HWC_TRACE_CALL;
+    if (mReleaseFenceFd >= 0)
+    {
+        String8 name("HWCVDREL");
+        FenceWaitForever(name, mReleaseFenceFd);
+        close(mReleaseFenceFd);
+        mReleaseFenceFd = -1;
+    }
 }

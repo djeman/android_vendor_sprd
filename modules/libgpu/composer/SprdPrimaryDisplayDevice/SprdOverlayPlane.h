@@ -54,24 +54,44 @@ using namespace android;
 class SprdOverlayPlane: public SprdDisplayPlane
 {
 public:
-    SprdOverlayPlane(FrameBufferInfo *fbInfo);
+    SprdOverlayPlane();
 #ifdef BORROW_PRIMARYPLANE_BUFFER
-    SprdOverlayPlane(FrameBufferInfo *fbInfo, SprdPrimaryPlane *PrimaryPlane);
+    SprdOverlayPlane(SprdPrimaryPlane *PrimaryPlane);
 #endif
     virtual ~SprdOverlayPlane();
 
     /*
      *  These interfaces are from the father class.
      *  dequeueBuffer: gain a buffer for SprdOverlayPlane;
-     *  queueBuffer: display a buffer.
+     *  queueBuffer: send a display buffer to FIFO.
+     *  flush:       update the Plane Context according to
+     *               flusing buffer info.
      * */
-    virtual native_handle_t* dequeueBuffer();
-    virtual int queueBuffer();
+    virtual native_handle_t* dequeueBuffer(int *fenceFd);
+    virtual int queueBuffer(int fenceFd);
+    virtual native_handle_t* flush(int *fenceFd);
+
+    /*
+     *  setup the DisplayPlane context.
+     * */
+    virtual int setPlaneContext(void *context);
     virtual native_handle_t* getPlaneBuffer() const;
+    virtual PlaneContext *getPlaneContext() const;
+
+    /*
+     *  Restore the plane info to unused state.
+     * */
+    virtual void InvalidatePlane();
     /****************************************************/
+
+    virtual int getPlaneFormat() const;
 
     virtual bool open();
     virtual bool close();
+
+    virtual int addFlushReleaseFence(int fenceFd);
+
+    void updateFBInfo(FrameBufferInfo* fbInfo);
 
     /*
      *  Setup a Overlay layer to SprdOverlayPlane
@@ -95,8 +115,6 @@ public:
 
     SprdHWLayer *getOverlayLayer() const;
 
-    enum PlaneFormat getPlaneFormat();
-
 private:
     FrameBufferInfo *mFBInfo;
 #ifdef BORROW_PRIMARYPLANE_BUFFER
@@ -111,19 +129,6 @@ private:
     bool mPlaneDisable;
     int mDebugFlag;
     int mDumpFlag;
-
-    /*
-     * father classe SprdDisplayPlane interface.
-     * flush: update the plane registers.
-     * */
-    virtual native_handle_t* flush();
-    //virtual void display();
-    /********************************************/
-
-    /*
-     *  reset the displayplane context.
-     * */
-    void InvalidatePlaneContext();
 
     int checkHWLayer(SprdHWLayer *l);
 
