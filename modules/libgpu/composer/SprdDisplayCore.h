@@ -98,6 +98,8 @@ class SprdDisplayCore {
 
   virtual int Blank(int DisplayType, bool enabled) = 0;
 
+  virtual int SetPowerMode(int disp, int mode) = 0;
+
   virtual int Dump(char *buffer) = 0;
 
  protected:

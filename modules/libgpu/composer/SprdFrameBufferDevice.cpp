@@ -334,6 +334,39 @@ int SprdFrameBufferDevice::Blank(int DisplayType, bool enabled) {
   return ret;
 }
 
+int SprdFrameBufferDevice::SetPowerMode(int disp, int mode) {
+  int ret = 0;
+  int sprdMode = -1;
+
+  if (disp == DISPLAY_PRIMARY) {
+    switch (mode) {
+      case HWC_POWER_MODE_OFF:
+        sprdMode = SPRD_FB_POWER_OFF;
+        break;
+      case HWC_POWER_MODE_NORMAL:
+        sprdMode = SPRD_FB_POWER_NORMAL;
+        break;
+      case HWC_POWER_MODE_DOZE:
+        sprdMode = SPRD_FB_POWER_DOZE;
+        break;
+#ifdef __LP64__
+      case HWC_POWER_MODE_DOZE_SUSPEND:
+        sprdMode = SPRD_FB_POWER_SUSPEND;
+        break;
+#endif
+      default:
+        return 0;
+    }
+
+    if (ioctl(mFBDInfo->fd, SPRD_FB_SET_POWER_MODE, &sprdMode) < 0) {
+      ALOGE("SprdFrameBufferDevice:: SetPowerMode: mode: %d, failed", mode);
+      ret = -1;
+    }
+  }
+
+  return ret;
+}
+
 int SprdFrameBufferDevice::Dump(char *buffer) { return 0; }
 
 /*

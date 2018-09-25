@@ -66,9 +66,7 @@ SprdPrimaryDisplayDevice::SprdPrimaryDisplayDevice()
      mGXPCap(NULL),
 #endif
      mDebugFlag(0),
-     mDumpFlag(0) {
-    mBlank = false;
-}
+     mDumpFlag(0) {}
 
 bool SprdPrimaryDisplayDevice::Init(SprdDisplayCore *core) {
     int GXPAddrType = 0;
@@ -377,25 +375,6 @@ int SprdPrimaryDisplayDevice::ActiveConfig(DisplayAttributes *dpyAttributes) {
     return 0;
 }
 
-int SprdPrimaryDisplayDevice::setPowerMode(int mode) {
-    int ret = 0;
-
-    Mutex::Autolock _l(mLock);
-    switch (mode) {
-        case HWC_POWER_MODE_OFF:
-        case HWC_POWER_MODE_DOZE:
-            mBlank = 1;
-        case HWC_POWER_MODE_NORMAL:
-        case HWC_POWER_MODE_DOZE_SUSPEND:
-            mBlank = 0;
-        default:
-            return false;
-    }
-    mDispCore->Blank(DISPLAY_PRIMARY, mBlank);
-
-    return ret;
-}
-
 int SprdPrimaryDisplayDevice::setCursorPositionAsync(int x_pos, int y_pos) {
     HWC_IGNORE(x_pos);
     HWC_IGNORE(y_pos);
@@ -647,12 +626,6 @@ int SprdPrimaryDisplayDevice::prepare(hwc_display_contents_1_t *list,
 
     ALOGI_IF(mDebugFlag, "HWC start prepare");
 
-    Mutex::Autolock _l(mLock);
-    if (mBlank) {
-        ALOGI_IF(mDebugFlag, "we don't do prepare action when in blanke state");
-        return 0;
-    }
-
     if (list == NULL) {
         ALOGE("The input parameters list is NULl");
         return -1;
@@ -710,12 +683,6 @@ int SprdPrimaryDisplayDevice::commit(hwc_display_contents_1_t* list) {
     int VideoLayerCount = mLayerList->getVideoLayerCount();
     SprdHWLayer **OSDLayerList = mLayerList->getSprdOSDLayerList();
     SprdHWLayer **VideoLayerList = mLayerList->getSprdVideoLayerList();
-
-    Mutex::Autolock _l(mLock);
-    if (mBlank) {
-        ALOGI_IF(mDebugFlag, "we don't do commit action when in blanke state");
-        return 0;
-    }
 
     if (list == NULL) {
         /*

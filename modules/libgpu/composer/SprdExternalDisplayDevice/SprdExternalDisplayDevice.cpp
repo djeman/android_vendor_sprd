@@ -70,37 +70,6 @@ int SprdExternalDisplayDevice::ActiveConfig(DisplayAttributes *dpyAttributes) {
     return 0;
 }
 
-int SprdExternalDisplayDevice::setPowerMode(int mode) {
-    int ret = -1;
-
-    switch (mode) {
-        case POWER_MODE_NORMAL:
-            /*
-             *  Turn on the display (if it was previously off),
-             *  and take it out of low power mode.
-             * */
-
-             break;
-        case POWER_MODE_DOZE:
-            /*
-             *  Turn on the display (if it was previously off),
-             *  and put the display in a low power mode.
-             * */
-
-             break;
-        case POWER_MODE_OFF:
-            /*
-             *  Turn the display off.
-             * */
-
-             break;
-        default:
-            return 0;
-    }
-
-    return 0;
-}
-
 int SprdExternalDisplayDevice::setCursorPositionAsync(int x_pos, int y_pos) {
     ALOGI_IF(mDebugFlag, "%d,%d", x_pos, y_pos);
     return 0;

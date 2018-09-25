@@ -67,8 +67,6 @@ public:
      * */
     int ActiveConfig(DisplayAttributes *dpyAttributes);
 
-    int setPowerMode(int mode);
-
     /*
      *  Asynchronously update the location of the cursor layer.
      * */
