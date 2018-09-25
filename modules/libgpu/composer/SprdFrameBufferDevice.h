@@ -67,6 +67,8 @@ class SprdFrameBufferDevice : public SprdDisplayCore {
 
   virtual int Blank(int DisplayType, bool enabled);
 
+  virtual int SetPowerMode(int disp, int mode);
+
   virtual int Dump(char *buffer);
 
  private:

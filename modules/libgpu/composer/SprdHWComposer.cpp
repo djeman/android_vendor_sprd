@@ -476,17 +476,7 @@ int SprdHWComposer::setActiveConfig(int disp, int index) {
 int SprdHWComposer::setPowerMode(int disp, int mode) {
     int ret = -1;
 
-    switch(disp) {
-        case DISPLAY_PRIMARY:
-            ret = mPrimaryDisplay->setPowerMode(mode);
-            break;
-        case DISPLAY_EXTERNAL:
-            ret = mExternalDisplay->setPowerMode(mode);
-            break;
-        default:
-            return ret;
-    }
-
+    ret = mDisplayCore->SetPowerMode(disp, mode);
     if (ret < 0) {
         ALOGE("SprdHWComposer:: setPowerMode display: %d, failed", disp);
     }

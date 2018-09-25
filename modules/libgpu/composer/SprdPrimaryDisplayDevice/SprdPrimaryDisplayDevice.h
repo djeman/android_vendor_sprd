@@ -103,8 +103,6 @@ public:
 
     int ActiveConfig(DisplayAttributes *dpyAttributes);
 
-    int setPowerMode(int mode);
-
     /*
      *  Asynchronously update the location of the cursor layer.
      * */
@@ -144,10 +142,6 @@ private:
 #ifdef PROCESS_VIDEO_USE_GSP
     GSP_CAPABILITY_T *mGXPCap;
 #endif
-
-    bool mBlank;
-    Mutex mLock;
-
     int mDebugFlag;
     int mDumpFlag;
 
