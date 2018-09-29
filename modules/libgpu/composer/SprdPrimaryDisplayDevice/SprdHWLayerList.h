@@ -75,7 +75,6 @@ public:
           mYUVLayerCount(0),
           mOSDLayerCount(0), mVideoLayerCount(0),
           mFBLayerCount(0),
-          mRGBLayerFullScreenFlag(false),
           mList(NULL),
           mAcceleratorMode(ACCELERATOR_NON),
           mDisableHWCFlag(false),
@@ -168,14 +167,17 @@ private:
     SprdHWLayer *mLayerList;
     SprdHWLayer **mOSDLayerList;
     SprdHWLayer **mVideoLayerList;
+
     hwc_layer_1_t *mFBTargetLayer;
+
     unsigned int mLayerCount;
+    unsigned int mOSDLayerCount;
+    unsigned int mVideoLayerCount;
     unsigned int mYUVLayerCount;
-    int mOSDLayerCount;
-    int mVideoLayerCount;
-    int mFBLayerCount;
-    bool mRGBLayerFullScreenFlag;
+
+    unsigned int mFBLayerCount;
     hwc_display_contents_1_t *mList;
+
     int mAcceleratorMode;
     bool mDisableHWCFlag;
     bool mSkipLayerFlag;

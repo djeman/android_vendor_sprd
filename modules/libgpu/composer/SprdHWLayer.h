@@ -178,13 +178,6 @@ public:
         return (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_USES_PHY);
     }
 
-    inline bool checkNotSupportOverlay(native_handle_t *privateH)
-    {
-        HWC_IGNORE(privateH);
-        return false;
-        //return (ADP_FLAGS(privateH) & private_handle_t::PRIV_FLAGS_NOT_OVERLAY);
-    }
-
     inline int getAccelerator()
     {
         return mAccelerator;
