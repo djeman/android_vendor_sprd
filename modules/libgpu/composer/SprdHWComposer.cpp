@@ -149,12 +149,11 @@ int SprdHWComposer::DevicePropertyProbe(size_t numDisplays,
                 ret = 0;
                 break;
             case DISPLAY_VIRTUAL:
-                 if (display != NULL)
-                 {
+                 if (display != NULL) {
                      mDisplayAttributes[DISPLAY_VIRTUAL].AcceleratorMode |= ACCELERATOR_GSP;
                      mDisplayAttributes[DISPLAY_VIRTUAL].AcceleratorMode |= ACCELERATOR_GSP_IOMMU;
-                     mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode &= ~ACCELERATOR_GSP;
-                     mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode &= ~ACCELERATOR_GSP_IOMMU;
+                     //mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode &= ~ACCELERATOR_GSP;
+                     //mDisplayAttributes[DISPLAY_PRIMARY].AcceleratorMode &= ~ACCELERATOR_GSP_IOMMU;
                  }
                 ret = 0;
                 break;
