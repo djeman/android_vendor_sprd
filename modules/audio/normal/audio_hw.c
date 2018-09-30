@@ -985,11 +985,6 @@ static int setModemPath(struct tiny_audio_device *adev);
 
 static int setModemPath(struct tiny_audio_device *adev) {
     int ret = 0;
-    if ((adev->mode != AUDIO_MODE_IN_CALL) && (!adev->voip_start)) {
-        ALOGD("###[setModemPath] Not Realcall or Not Voip ##");
-        return ret;
-    }
-
     if (adev->out_devices & (AUDIO_DEVICE_BIT_IN | AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT)) {
         ALOGD("### Call Recording ##");
     } else {
@@ -2686,9 +2681,10 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
             cur_mode = adev->mode;
             if ((!adev->call_start)&&(!adev->voip_state))
                 select_devices_signal(adev);
-            if ((AUDIO_MODE_IN_CALL == adev->mode) || adev->voip_start)
-                ret = setModemPath(adev);  //send at command to cp
+            
+            ret = setModemPath(adev);  //send at command to cp
             //AudioRilsetExtraVolume(audio_ril, adev->extra_volume);
+
             pthread_mutex_unlock(&out->lock);
             pthread_mutex_unlock(&adev->lock);
           } else {
