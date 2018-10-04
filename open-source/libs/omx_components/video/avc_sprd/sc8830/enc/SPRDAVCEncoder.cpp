@@ -1490,7 +1490,7 @@ OMX_ERRORTYPE SPRDAVCEncoder::setConfig(
             mIschangebitrate=1;
             return OMX_ErrorNone;
         }
-        case OMX_IndexConfigEncSceneMode:
+        /*case OMX_IndexConfigEncSceneMode:
         {
             OMX_VIDEO_CONFIG_ENCODERSCENEMODE *pConfigParams=
              (OMX_VIDEO_CONFIG_ENCODERSCENEMODE *)params;
@@ -1499,7 +1499,7 @@ OMX_ERRORTYPE SPRDAVCEncoder::setConfig(
             }
             mEncSceneMode = pConfigParams->nMode;
             return OMX_ErrorNone;
-        }
+        }*/
         default:
             return SprdSimpleOMXComponent::setConfig(index, params);
     }
