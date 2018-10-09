@@ -792,6 +792,7 @@ struct tiny_stream_in {
     void *pFMBuffer;
     record_nr_handle rec_nr_handle;
     transform_handle Tras48To44;
+    int64_t frames_read; /* total frames read, not cleared when entering standby */
 };
 
 struct config_parse_state {
@@ -4474,6 +4475,11 @@ exit:
         memset(buffer, 0, bytes);
     }
     pthread_mutex_unlock(&in->lock);
+
+    if (bytes > 0) {
+        in->frames_read += bytes / audio_stream_in_frame_size(stream);
+    }
+
     return bytes;
 }
 
@@ -4481,6 +4487,34 @@ static uint32_t in_get_input_frames_lost(struct audio_stream_in *stream)
 {
     return 0;
 }
+
+#ifdef AUDIO_HAL_ANDROID_N_API
+static int in_get_capture_position(const struct audio_stream_in *stream,
+                                   int64_t *frames, int64_t *time)
+{
+    if (stream == NULL || frames == NULL || time == NULL) {
+        return -EINVAL;
+    }
+    struct tiny_stream_in *in = (struct tiny_stream_in *)stream;
+    int ret = -ENOSYS;
+
+    pthread_mutex_lock(&in->lock);
+    if (in->pcm) {
+        struct timespec timestamp;
+        unsigned int avail;
+        if (pcm_get_htimestamp(in->pcm, &avail, &timestamp) == 0) {
+            if(in->requested_rate == 44100 && in->config.rate != 0)
+                avail = (avail * in->requested_rate)/in->config.rate;
+
+            *frames = in->frames_read + avail;
+            *time = timestamp.tv_sec * 1000000000LL + timestamp.tv_nsec;
+            ret = 0;
+        }
+    }
+    pthread_mutex_unlock(&in->lock);
+    return ret;
+}
+#endif
 
 static int adev_open_output_stream(struct audio_hw_device *dev,
         audio_io_handle_t handle,
@@ -5332,6 +5366,9 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     in->stream.set_gain = in_set_gain;
     in->stream.read = in_read;
     in->stream.get_input_frames_lost = in_get_input_frames_lost;
+#ifdef AUDIO_HAL_ANDROID_N_API
+    in->stream.get_capture_position = in_get_capture_position;
+#endif
 
     in->requested_rate = config->sample_rate;
 
