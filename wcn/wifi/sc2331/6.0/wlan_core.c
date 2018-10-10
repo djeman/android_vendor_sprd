@@ -1389,11 +1389,11 @@ RX_SLEEP:
 		{
 			rx_chn->timeout_flag = false;
 		}
-		/*if(10 == index)
+		if(10 == index)
 		{
 			fm_read();
 			goto TX;
-		}*/
+		}
 		if(11 == index)
 		{
 			mdbg_at_cmd_read();
