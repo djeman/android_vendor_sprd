@@ -146,7 +146,7 @@ LOCAL_SRC_FILES += audiotest/auto_audio_v2.cpp
 LOCAL_CFLAGS += -DAUDIO_HAL_ANDROID_N_API
 
 #when use google fm solution to set below the macro
-#LOCAL_CFLAGS += -DFM_VERSION_IS_GOOGLE
+LOCAL_CFLAGS += -DFM_VERSION_IS_GOOGLE
 #### android 6.x Version
 endif
 
