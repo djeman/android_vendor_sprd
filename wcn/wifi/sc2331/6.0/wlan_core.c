@@ -1626,21 +1626,16 @@ static int wlan_hw_init(hw_info_t *hw)
 	hw->sdio_tx_chn.timeout_time = 2000;
 	hw->sdio_tx_chn.timeout_flag = false;
 
-
+	hw->sdio_rx_chn.num          = 7;
 	hw->sdio_rx_chn.chn[0]       = 8;
 	hw->sdio_rx_chn.chn[1]       = 9;
 	hw->sdio_rx_chn.chn[2]       = 14;
 	hw->sdio_rx_chn.chn[3]       = 11;
 	hw->sdio_rx_chn.chn[4]       = 15;
 	hw->sdio_rx_chn.chn[5]       = 13;
-#ifdef CONFIG_MACH_SAMSUNG
-	hw->sdio_rx_chn.num          = 6;
-	hw->sdio_rx_chn.bit_map      = 0xeb00;
-#else
-	hw->sdio_rx_chn.num          = 7;
 	hw->sdio_rx_chn.chn[6]       = 10;
 	hw->sdio_rx_chn.bit_map      = 0xef00;
-#endif
+
 	hw->sdio_rx_chn.gpio_high    = false;
 	hw->sdio_rx_chn.timeout_time = 600;
 	hw->sdio_rx_chn.timeout_flag = false;
