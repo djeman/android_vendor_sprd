@@ -423,7 +423,7 @@ int SprdHWComposer::getDisplayAttributes(int disp, uint32_t config,
 }
 
 int SprdHWComposer::getActiveConfig(int disp) {
-    int ret = -1;
+    int ret = 0;
 
     switch(disp) {
         case DISPLAY_PRIMARY:
@@ -455,8 +455,7 @@ int SprdHWComposer::setActiveConfig(int disp, int index) {
             ret = mPrimaryDisplay->ActiveConfig(&(mDisplayAttributes[DISPLAY_PRIMARY]));
             break;
         case DISPLAY_EXTERNAL:
-            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected)
-            {
+            if (mDisplayAttributes[DISPLAY_EXTERNAL].connected) {
                 mDisplayAttributes[DISPLAY_EXTERNAL].configsIndex = index;
                 ret = mExternalDisplay->ActiveConfig(&(mDisplayAttributes[DISPLAY_EXTERNAL]));
             }

@@ -236,7 +236,6 @@ int SprdFrameBufferDevice::GetConfigs(int DisplayType, uint32_t *Configs,
       ret = 0;
       break;
     case DISPLAY_EXTERNAL:
-      ret = -1;
       if (*NumConfigs > 0) {
         Configs[0] = 0;
         *NumConfigs = 1;
