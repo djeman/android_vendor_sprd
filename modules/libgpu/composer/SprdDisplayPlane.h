@@ -58,7 +58,7 @@
 
 using namespace android;
 
-#define PLANE_BUFFER_NUMBER 3
+#define PLANE_BUFFER_NUMBER 2
 
 /*
  *  Manage DisplayPlane buffer, including
