@@ -135,7 +135,7 @@ int OverlayNativeWindow::dequeueBuffer(ANativeWindow* window,
     }
 
     native_handle_t* IONBuffer = self->mDisplayPlane->dequeueBuffer(&fd);
-    if (buffer == NULL)
+    if (IONBuffer == NULL)
     {
         ALOGE("Failed to get the Display plane buffer");
         return -1;
