@@ -44,7 +44,7 @@ using namespace android;
  *  SprdHWLayer
  *  constract from a hwc_layer_1_t that composited in SF and can be directly show.
  * */
-SprdHWLayer:: SprdHWLayer(hwc_layer_1_t *androidLayer, int format)
+SprdHWLayer::SprdHWLayer(hwc_layer_1_t *androidLayer, int format)
     : mInit(false),
       mAndroidLayer(androidLayer),
       mLayerType(LAYER_INVALIDE),
@@ -60,22 +60,21 @@ SprdHWLayer:: SprdHWLayer(hwc_layer_1_t *androidLayer, int format)
       mAcquireFenceFd(-1),
       mDebugFlag(0)
 {
-      if (checkRGBLayerFormat())
-      {
+      if (checkRGBLayerFormat()) {
           setLayerType(LAYER_OSD);
-      }
-      else if (checkYUVLayerFormat())
-      {
+      } else if (checkYUVLayerFormat()) {
           setLayerType(LAYER_OVERLAY);
       }
+
+      ALOGI_IF(mDebugFlag, "%s:%d: layer type = %d", __FUNCTION__, __LINE__, getLayerType());
 }
 
 /*
  *  SprdHWLayer
  *  constract from a overlay buffer that used to send to dispc.
  * */
-SprdHWLayer:: SprdHWLayer(native_handle_t *handle, int format, int32_t planeAlpha,
-                          int32_t blending, int32_t transform, int32_t fenceFd)
+SprdHWLayer::SprdHWLayer(native_handle_t *handle, int format, int32_t planeAlpha,
+                         int32_t blending, int32_t transform, int32_t fenceFd)
     : mInit(false),
       mAndroidLayer(NULL),
       mLayerType(LAYER_INVALIDE),
@@ -91,47 +90,38 @@ SprdHWLayer:: SprdHWLayer(native_handle_t *handle, int format, int32_t planeAlph
       mAcquireFenceFd(fenceFd),
       mDebugFlag(0)
 {
-    if (handle)
-    {
-
-        if (((mFormat & HAL_PIXEL_FORMAT_RGBA_8888) == HAL_PIXEL_FORMAT_RGBA_8888) ||
-            ((mFormat & HAL_PIXEL_FORMAT_RGBX_8888) == HAL_PIXEL_FORMAT_RGBX_8888) ||
-            ((mFormat & HAL_PIXEL_FORMAT_RGB_888) == HAL_PIXEL_FORMAT_RGB_888) ||
-            ((mFormat & HAL_PIXEL_FORMAT_BGRA_8888) == HAL_PIXEL_FORMAT_BGRA_8888) ||
-            ((mFormat & HAL_PIXEL_FORMAT_RGB_565) == HAL_PIXEL_FORMAT_RGB_565))
-        {
+    if (handle) {
+        if ((mFormat == HAL_PIXEL_FORMAT_RGBA_8888) ||
+                (mFormat == HAL_PIXEL_FORMAT_RGBX_8888) ||
+                (mFormat == HAL_PIXEL_FORMAT_RGB_888) ||
+                (mFormat == HAL_PIXEL_FORMAT_BGRA_8888) ||
+                (mFormat == HAL_PIXEL_FORMAT_RGB_565)) {
             setLayerType(LAYER_OSD);
+        } else if ((mFormat == HAL_PIXEL_FORMAT_YCbCr_420_SP) ||
+                (mFormat == HAL_PIXEL_FORMAT_YCrCb_420_SP) ||
+                (mFormat == HAL_PIXEL_FORMAT_YV12)) {
+            setLayerType(LAYER_OVERLAY);
         }
-        else if (((mFormat & HAL_PIXEL_FORMAT_YCbCr_420_SP) == HAL_PIXEL_FORMAT_YCbCr_420_SP) ||
-                 ((mFormat & HAL_PIXEL_FORMAT_YCrCb_420_SP)== HAL_PIXEL_FORMAT_YCrCb_420_SP) ||
-                 ((mFormat & HAL_PIXEL_FORMAT_YV12) == HAL_PIXEL_FORMAT_YV12))
-       {
-           setLayerType(LAYER_OVERLAY);
-       }
+
         mInit = true;
     }
+
+    ALOGI_IF(mDebugFlag, "%s:%d: format = %d, layer type = %d", __FUNCTION__, __LINE__, mFormat, getLayerType());
 }
 
 /*
  *  checkRGBLayerFormat
  *  if it's rgb format,init SprdHWLayer from hwc_layer_1_t.
  * */
-bool SprdHWLayer:: checkRGBLayerFormat()
+bool SprdHWLayer::checkRGBLayerFormat()
 {
     hwc_layer_1_t *layer = mAndroidLayer;
-    if (layer == NULL)
-    {
+    if (layer == NULL || layer->handle == NULL) {
         return false;
     }
 
     native_handle_t *privateH = (native_handle_t*)layer->handle;
 
-    if (privateH == NULL)
-    {
-        return false;
-    }
-
-    ALOGI_IF(mDebugFlag, "function = %s, line = %d, privateH -> format = %x", __FUNCTION__, __LINE__, ADP_FORMAT(privateH));
     bool result = false;
     switch (ADP_FORMAT(privateH)) {
 	case HAL_PIXEL_FORMAT_RGBA_8888:
@@ -153,8 +143,8 @@ bool SprdHWLayer:: checkRGBLayerFormat()
 	    break;
 	default:
 	    result = false;
-	}
-    ALOGI_IF(mDebugFlag,"function = %s, line = %d, privateH -> format = %x, result = %u", __FUNCTION__, __LINE__, ADP_FORMAT(privateH), result);
+    }
+
     return result;
 }
 
@@ -162,20 +152,15 @@ bool SprdHWLayer:: checkRGBLayerFormat()
  *  checkYUVLayerFormat
  *  if it's yuv format,init SprdHWLayer from hwc_layer_1_t.
  * */
-bool SprdHWLayer:: checkYUVLayerFormat()
+bool SprdHWLayer::checkYUVLayerFormat()
 {
     hwc_layer_1_t *layer = mAndroidLayer;
-    if (layer == NULL || layer->handle == NULL)
-    {
+    if (layer == NULL || layer->handle == NULL) {
         return false;
     }
 
     native_handle_t *privateH = (native_handle_t*)layer->handle;
 
-    if (privateH == NULL)
-    {
-        return false;
-    }
     bool result = false;
     switch (ADP_FORMAT(privateH)) {
 	case HAL_PIXEL_FORMAT_YCbCr_420_SP:
