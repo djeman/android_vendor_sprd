@@ -574,7 +574,7 @@ void SPRDAVCDecoder::releaseDecoder() {
     for (int i = 0; i < 17; i++) {
         if (mPbuf_mbinfo_v[i]) {
             if (mIOMMUEnabled) {
-                mPmem_mbinfo[i]->free_iova(ION_MM, mPbuf_mbinfo_p[i], mPbuf_mbinfo_size[i]);
+                mPmem_mbinfo[i]->free_iova(mIOMMUID, mPbuf_mbinfo_p[i], mPbuf_mbinfo_size[i]);
             }
             mPmem_mbinfo[i].clear();
             mPbuf_mbinfo_v[i] = NULL;
@@ -1771,7 +1771,7 @@ int SPRDAVCDecoder::VSP_malloc_mbinfo_cb(unsigned int size_mbinfo, unsigned long
 
     if (mPbuf_mbinfo_v[idx] != NULL) {
         if (mIOMMUEnabled) {
-            mPmem_mbinfo[idx]->free_iova(ION_MM, mPbuf_mbinfo_p[idx], mPbuf_mbinfo_size[idx]);
+            mPmem_mbinfo[idx]->free_iova(mIOMMUID, mPbuf_mbinfo_p[idx], mPbuf_mbinfo_size[idx]);
         }
         mPmem_mbinfo[idx].clear();
         mPbuf_mbinfo_v[idx] = NULL;
@@ -1791,7 +1791,7 @@ int SPRDAVCDecoder::VSP_malloc_mbinfo_cb(unsigned int size_mbinfo, unsigned long
         size_t buffer_size;
 
         if (mIOMMUEnabled) {
-            ret = mPmem_mbinfo[idx]->get_iova(ION_MM, &phy_addr, &buffer_size);
+            ret = mPmem_mbinfo[idx]->get_iova(mIOMMUID, &phy_addr, &buffer_size);
         } else {
             ret = mPmem_mbinfo[idx]->get_phy_addr_from_ion(&phy_addr, &buffer_size);
         }

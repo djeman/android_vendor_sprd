@@ -1742,7 +1742,7 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
                                 int ret = 0;
 
                                 if (mIOMMUEnabled) {
-                                    ret = MemoryHeapIon::Get_iova(ION_MM, fd,&py_addr,&buf_size);
+                                    ret = MemoryHeapIon::Get_iova(mIOMMUID, fd,&py_addr,&buf_size);
                                 } else {
                                     ret = MemoryHeapIon::Get_phy_addr_from_ion(fd,&py_addr,&buf_size);
                                 }
