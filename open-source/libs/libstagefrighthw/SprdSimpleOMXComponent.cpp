@@ -444,8 +444,10 @@ void SprdSimpleOMXComponent::onMessageReceived(const sp<AMessage> &msg) {
                 if(pBufCtrl != NULL && pBufCtrl->iRefCount > 0) {
                     pBufCtrl->iRefCount--;
                 }
+#ifdef DUMP_DEBUG
                 if(pBufCtrl != NULL)
                     ALOGI("fillThisBuffer, buffer: 0x%p, header: 0x%p, iRefCount: %d",buffer, header,pBufCtrl->iRefCount);
+#endif
                 port->mQueue.push_back(buffer);
 
                 onQueueFilled(OMX_DirOutput);

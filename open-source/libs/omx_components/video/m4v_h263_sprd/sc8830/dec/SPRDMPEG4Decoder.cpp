@@ -958,7 +958,9 @@ void SPRDMPEG4Decoder::onQueueFilled(OMX_U32 portIndex) {
         size_t count = 0;
         do {
             if(count >= outQueue.size()) {
+#ifdef DUMP_DEBUG
                 ALOGI("onQueueFilled, get outQueue buffer, return, count=%d, queue_size=%d",count, outQueue.size());
+#endif
                 return;
             }
 
@@ -975,10 +977,10 @@ void SPRDMPEG4Decoder::onQueueFilled(OMX_U32 portIndex) {
             count++;
         }
         while(pBufCtrl->iRefCount > 0);
-
+#ifdef DUMP_DEBUG
         ALOGI("%s, %d, outHeader:0x%p, inHeader: 0x%p, len: %d, time: %lld, EOS: %d, cfg:%d", __FUNCTION__, __LINE__,outHeader,
               inHeader, inHeader->nFilledLen,inHeader->nTimeStamp,inHeader->nFlags & OMX_BUFFERFLAG_EOS,inHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG);
-
+#endif
         if (inHeader->nFlags & OMX_BUFFERFLAG_EOS) {
             mEOSStatus = INPUT_EOS_SEEN; //the last frame size may be not zero, it need to be decoded.
         }
@@ -1030,10 +1032,10 @@ void SPRDMPEG4Decoder::onQueueFilled(OMX_U32 portIndex) {
             video_format.yuv_format = mThumbnailMode ? YUV420P_YU12 : YUV420SP_NV12;
 
             MMDecRet ret = (*mMP4DecVolHeader)(mHandle, &video_format);
-
+#ifdef DUMP_DEBUG
             ALOGI("%s, %d, MP4DecVolHeader, ret: %d, width: %d, height: %d, yuv_format: %d", __FUNCTION__, __LINE__,
                   ret, video_format.frame_width, video_format.frame_height, video_format.yuv_format);
-
+#endif
             if (ret != MMDEC_OK) {
                 ALOGW("MP4DecVolHeader failed. Unsupported content?");
 
@@ -1495,7 +1497,9 @@ int SPRDMPEG4Decoder::extMemoryAlloc(unsigned int extra_mem_size) {
             mPbuf_extra_p = phy_addr;
             mPbuf_extra_size = buffer_size;
             mPbuf_extra_v = (uint8_t *)mPmem_extra->getBase();
+#ifdef DUMP_DEBUG
             ALOGI("pmem 0x%lx - %p - %zd", mPbuf_extra_p, mPbuf_extra_v, mPbuf_extra_size);
+#endif
             extra_mem[HW_NO_CACHABLE].common_buffer_ptr = mPbuf_extra_v;
             extra_mem[HW_NO_CACHABLE].common_buffer_ptr_phy = mPbuf_extra_p;
             extra_mem[HW_NO_CACHABLE].size = extra_mem_size;
@@ -1514,20 +1518,20 @@ int SPRDMPEG4Decoder::extMemoryAlloc(unsigned int extra_mem_size) {
 
 int SPRDMPEG4Decoder::VSP_bind_cb(void *pHeader,int flag) {
     BufferCtrlStruct *pBufCtrl = (BufferCtrlStruct *)(((OMX_BUFFERHEADERTYPE *)pHeader)->pOutputPortPrivate);
-
+#ifdef DUMP_DEBUG
     ALOGI("VSP_bind_cb, pBuffer: 0x%p, pHeader: 0x%p; iRefCount=%d",
           ((OMX_BUFFERHEADERTYPE *)pHeader)->pBuffer, pHeader,pBufCtrl->iRefCount);
-
+#endif
     pBufCtrl->iRefCount++;
     return 0;
 }
 
 int SPRDMPEG4Decoder::VSP_unbind_cb(void *pHeader,int flag) {
     BufferCtrlStruct *pBufCtrl = (BufferCtrlStruct *)(((OMX_BUFFERHEADERTYPE *)pHeader)->pOutputPortPrivate);
-
+#ifdef DUMP_DEBUG
     ALOGI("VSP_unbind_cb, pBuffer: 0x%p, pHeader: 0x%p; iRefCount=%d",
           ((OMX_BUFFERHEADERTYPE *)pHeader)->pBuffer, pHeader,pBufCtrl->iRefCount);
-
+#endif
     if (pBufCtrl->iRefCount  > 0) {
         pBufCtrl->iRefCount--;
     }
