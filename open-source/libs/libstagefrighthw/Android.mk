@@ -31,5 +31,9 @@ LOCAL_MODULE := libstagefrighthw
 
 LOCAL_CFLAGS := -DLOG_TAG=\"$(TARGET_BOARD_PLATFORM).libstagefright\"
 
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    LOCAL_CPPFLAGS += -DDUMP_DEBUG
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 

@@ -35,6 +35,10 @@ LOCAL_ADDITIONAL_DEPENDENCIES := \
 LOCAL_MODULE := libstagefright_sprd_mpeg4dec
 LOCAL_MODULE_TAGS := optional
 
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    LOCAL_CPPFLAGS += -DDUMP_DEBUG
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
