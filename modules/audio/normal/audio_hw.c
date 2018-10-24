@@ -4283,7 +4283,6 @@ static ssize_t read_pcm_data(void *stream, void* buffer,
         else
 #endif
         if (in->fmUlDlHandle) {
-        ALOGE("do what");
             if(in->requested_channels == 1) {
                 if (in->pFMBuffer) {
                     ret =  (fm_pcm_read(in->fmUlDlHandle, in->pFMBuffer, bytes * 2, 1, 2)==bytes * 2)?0:-1;
