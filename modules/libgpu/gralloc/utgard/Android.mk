@@ -40,7 +40,7 @@ LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 ifneq (,$(wildcard $(MALI_DDK_TEST_PATH)))
 # Mali-T6xx DDK
 MALI_DDK_PATH := vendor/arm/mali6xx
-LOCAL_SHARED_LIBRARIES := libsync libui liblog libcutils libGLESv1_CM libGLES_mali libion
+LOCAL_SHARED_LIBRARIES := libui liblog libcutils libGLESv1_CM libGLES_mali libion
 
 # All include files are accessed from the DDK root
 DDK_PATH := $(LOCAL_PATH)/../../..
@@ -53,7 +53,7 @@ else
 MALI_DDK_PATH := vendor/sprd/modules/libgpu
 #SHARED_MEM_LIBS := libUMP
 SHARED_MEM_LIBS := libion libhardware
-LOCAL_SHARED_LIBRARIES := libsync libui liblog libcutils libGLESv1_CM $(SHARED_MEM_LIBS)
+LOCAL_SHARED_LIBRARIES := libui liblog libcutils libGLESv1_CM $(SHARED_MEM_LIBS)
 
 LOCAL_C_INCLUDES := system/core/include/ $(MALI_DDK_PATH)/include 
 # Include the UMP header files
