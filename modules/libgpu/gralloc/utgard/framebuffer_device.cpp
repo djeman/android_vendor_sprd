@@ -113,10 +113,7 @@ typedef android::Vector<int> FD_FiFo;
 #endif
 
 // numbers of buffers for page flipping
-//#define DEBUG_FB_POST
-#define DEBUG_FB_POST_1SECOND
 #define NUM_BUFFERS NUM_FB_BUFFERS
-
 
 #ifdef DUMP_FB
 extern void dump_fb(void* addr, struct fb_var_screeninfo * info , int format);
