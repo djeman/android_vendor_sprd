@@ -1057,7 +1057,7 @@ int SprdHWLayerList::prepareOverlayComposerLayer(SprdHWLayer *l)
         sourceBottom < 0 ||
         sourceRight < 0 ||
         sourceBottom - sourceTop > mFBInfo->fb_height ||
-        sourceRight - sourceLeft > mFBInfo->fb_height)
+        sourceRight - sourceLeft > mFBInfo->fb_width)
     {
         mSkipLayerFlag = true;
         return -1;
