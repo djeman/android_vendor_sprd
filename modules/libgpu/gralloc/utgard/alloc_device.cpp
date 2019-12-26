@@ -44,8 +44,6 @@
 
 #include <ion_sprd.h>
 
-int g_useTileAlign = 0;
-
 #if GRALLOC_SIMULATE_FAILURES
 #include <cutils/properties.h>
 
@@ -127,18 +125,7 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 		}
 		else
 		{
-#ifdef TARGET_SUPPORT_ADF_DISPLAY
-			if (usage & GRALLOC_USAGE_HW_FB)
-			{
-				ion_heap_mask = ION_HEAP_ID_MASK_FB;
-			}
-			else
-			{
-				ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
-			}
-#else
 			ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
-#endif
 		}
 		if (usage & (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK))
 		{
@@ -300,7 +287,6 @@ static int gralloc_alloc_buffer(alloc_device_t *dev, size_t size, int usage, buf
 
 }
 
-#ifndef TARGET_SUPPORT_ADF_DISPLAY
 static int gralloc_alloc_framebuffer_locked(alloc_device_t *dev, size_t size, int usage, buffer_handle_t *pHandle)
 {
 	private_module_t *m = reinterpret_cast<private_module_t *>(dev->common.module);
@@ -398,8 +384,6 @@ static int gralloc_alloc_framebuffer(alloc_device_t *dev, size_t size, int usage
 	pthread_mutex_unlock(&m->lock);
 	return err;
 }
-
-#endif
 
 static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int usage, buffer_handle_t *pHandle, int *pStride)
 {
@@ -502,28 +486,11 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 		size = bpr * h;
 		stride = bpr / bpp;
 
-#ifdef GPU_USE_TILE_ALIGN
-                /*
-                 *  Aligned tile need 16 * 16 pixel aligned, for GPU read/write.
-                 *  If CPU access buffer, should disable tile alignment feature.
-                 * */
-                if ((g_useTileAlign > 0) && (usage & GRALLOC_USAGE_HW_TILE_ALIGN) &&
-                    (((usage & GRALLOC_USAGE_SW_READ_OFTEN) != GRALLOC_USAGE_SW_READ_OFTEN) &&
-                     ((usage & GRALLOC_USAGE_SW_WRITE_OFTEN) != GRALLOC_USAGE_SW_WRITE_OFTEN)) &&
-                    (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_2D)))
-                {
-                    stride = GRALLOC_ALIGN(w, 16);
-                    size = GRALLOC_ALIGN(h, 16) * stride * bpp;
-                }
-                else
-#endif
-                {
-                    usage &= ~GRALLOC_USAGE_HW_TILE_ALIGN;
-                }
+        usage &= ~GRALLOC_USAGE_HW_TILE_ALIGN;
 	}
 
 	int err;
-#ifndef TARGET_SUPPORT_ADF_DISPLAY
+
 #ifndef MALI_600
 
 	if ((usage & GRALLOC_USAGE_HW_FB) && (w != 1 && h != 1))
@@ -532,7 +499,7 @@ static int alloc_device_alloc(alloc_device_t *dev, int w, int h, int format, int
 	}
 	else
 #endif
-#endif
+
 	{
 		err = gralloc_alloc_buffer(dev, size, usage, pHandle);
 		if(err>=0)

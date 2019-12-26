@@ -1,6 +1,6 @@
 config MALI400
 	tristate "Mali-300/400/450 support"
-	depends on ARM || ARM64
+	depends on ARM
 	select DMA_SHARED_BUFFER
 	---help---
 	  This enables support for the ARM Mali-300, Mali-400, and Mali-450
@@ -14,12 +14,6 @@ config MALI450
 	depends on MALI400
 	---help---
 	  This enables support for Mali-450 specific features.
-
-config MALI470
-	bool "Enable Mali-470 support"
-	depends on MALI400
-	---help---
-	  This enables support for Mali-470 specific features.
 
 config MALI400_DEBUG
 	bool "Enable debug in Mali driver"
@@ -88,7 +82,7 @@ config MALI_PMU_PARALLEL_POWER_UP
 
 config MALI_DT
 	bool "Using device tree to initialize module"
-	depends on MALI400 && OF
+	depends on MALI400 && CONFIG_OF
 	default n
 	---help---
 	  This enable the Mali driver to choose the device tree path to get platform resoures

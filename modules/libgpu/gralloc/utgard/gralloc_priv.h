@@ -31,8 +31,6 @@
 #include <alloc_device.h>
 #include <utils/Log.h>
 
-#include "gralloc_ext_sprd.h"
-
 #ifdef MALI_600
 #define GRALLOC_ARM_UMP_MODULE 0
 #define GRALLOC_ARM_DMA_BUF_MODULE 1
@@ -80,11 +78,6 @@ typedef int ion_user_handle_t;
 
 static int mDebug=0;
 
-/* mali 400 use tile buffer to get high DDR access performance when use 720P LCD.
- */
-#define SIZE_USE_TILE_ALIGN	(1280*720)
-extern int g_useTileAlign;
-
 /* the max string size of GRALLOC_HARDWARE_GPU0 & GRALLOC_HARDWARE_FB0
  * 8 is big enough for "gpu0" & "fb0" currently
  */
@@ -112,7 +105,6 @@ struct private_module_t
 	gralloc_module_t base;
 
 	private_handle_t *framebuffer;
-	void *psCtx;// SPRD_ADF_context_t *psCtx;
 	uint32_t flags;
 	uint32_t numBuffers;
 	uint32_t bufferMask;
@@ -174,15 +166,15 @@ struct private_handle_t
 	int     flags;
 	int     usage;
 	int     size;
-	int     width;
-	int     height;
-	int     format;
-	int     stride;
 	union
 	{
 		void   *base;
 		uint64_t padding;
 	};
+	int     width;
+	int     height;
+	int     format;
+	int     stride;
 	int     lockState;
 	int     writeOwner;
 	int     pid;
@@ -195,14 +187,14 @@ struct private_handle_t
 	int     ump_mem_handle;
 #endif
 
+#if GRALLOC_ARM_DMA_BUF_MODULE
+	ion_user_handle_t ion_hnd;
+#endif
+
 	// Following members is for framebuffer only
 	int     fd;
 	int     offset;
 	unsigned long phyaddr;
-
-#if GRALLOC_ARM_DMA_BUF_MODULE
-	ion_user_handle_t ion_hnd;
-#endif
 
 #if GRALLOC_ARM_DMA_BUF_MODULE
 #define GRALLOC_ARM_NUM_FDS 1
