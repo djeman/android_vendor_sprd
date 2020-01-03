@@ -21,21 +21,19 @@
 extern "C" {
 #endif
 
-
-typedef enum mali_vsync_event
-{
+typedef enum mali_vsync_event {
 	MALI_VSYNC_EVENT_BEGIN_WAIT = 0,
 	MALI_VSYNC_EVENT_END_WAIT
 } mali_vsync_event;
 
 extern void _mali_base_arch_vsync_event_report(mali_vsync_event);
 
-inline void gralloc_mali_vsync_report(mali_vsync_event event)
-{
+inline void gralloc_mali_vsync_report(mali_vsync_event event) {
 	_mali_base_arch_vsync_event_report(event);
 }
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* GRALLOC_VSYNC_REPORT_H_ */
