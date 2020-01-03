@@ -59,7 +59,6 @@ SprdPrimaryDisplayDevice::SprdPrimaryDisplayDevice()
      mDisplayOverlayPlane(false),
      mDisplayOVC(false),
      mSchedualUtil(false),
-     mFirstFrameFlag(true),
      mHWCDisplayFlag(HWC_DISPLAY_MASK),
      mAcceleratorMode(ACCELERATOR_NON),
 #ifdef PROCESS_VIDEO_USE_GSP
@@ -631,7 +630,7 @@ int SprdPrimaryDisplayDevice::prepare(hwc_display_contents_1_t *list,
         return -1;
     }
 
-    if (list->numHwLayers<2 && mFirstFrameFlag) {
+    if (list->numHwLayers < 2) {
         ALOGI_IF(mDebugFlag,"we don't do prepare action when only has FBT");
         return 0;
     }
@@ -691,14 +690,9 @@ int SprdPrimaryDisplayDevice::commit(hwc_display_contents_1_t* list) {
          * */
          return 0;
     }
-    if (list->numHwLayers<2 && mFirstFrameFlag) {
+    if (list->numHwLayers < 2) {
         ALOGI_IF(mDebugFlag,"we don't do commit action when only has FBT");
         return 0;
-    }
-
-    if (mFirstFrameFlag) {
-        ALOGI_IF(mDebugFlag,"set mFirstFrameFlag to false");
-        mFirstFrameFlag = false;
     }
 
     ALOGI_IF(mDebugFlag, "HWC start commit");

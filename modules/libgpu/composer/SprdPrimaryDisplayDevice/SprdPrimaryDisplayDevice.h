@@ -136,7 +136,6 @@ private:
     bool mDisplayOverlayPlane;
     bool mDisplayOVC;
     bool mSchedualUtil;
-    bool mFirstFrameFlag;
     int mHWCDisplayFlag;
     unsigned int mAcceleratorMode;
 #ifdef PROCESS_VIDEO_USE_GSP
