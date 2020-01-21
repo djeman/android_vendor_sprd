@@ -12,7 +12,7 @@
 
 #define CP_LOG_CONFIG_FILE "/system/etc/slog_modem.conf"
 #define CP_LOG_TMP_CONFIG_FILE "/data/local/tmp/slogmodem/slog_modem.conf"
-#define TMP_SLOG_CONFIG "/data/local/tmp/slog/slog.conf"
+#define TMP_SLOG_CONFIG "/data/local/tmp/slog.conf"
 
 #define PERSIST_MODEM_CHAR "persist.modem."
 
