@@ -388,7 +388,7 @@ static BT_ENG_ERROR_E bteng_bt_init(void) {
         return BT_ENG_NONE_ERROR;
 
     BTENG_LOGD("INIT BT ");
-    status = sBtInterface->init(&bt_callbacks);
+    status = sBtInterface->init(&bt_callbacks, false);
 
     if (status == BT_STATUS_SUCCESS) {
         status = sBtInterface->set_os_callouts(&callouts);
